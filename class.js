@@ -14,18 +14,20 @@
 
     async create({ deckType, gameType, gameConfig, gameTimer } = {}) {
       const { structuredClone: clone } = lib.utils;
+      const {
+        [gameType]: {
+          //
+          items: { [gameConfig]: settings },
+        } = {},
+      } = domain.game.configs.filledGames;
 
-      const gameTypeSettings = domain.game.configs.games[gameType];
-      const settingsJSON = gameTypeSettings?.[gameConfig];
-      if (!settingsJSON)
+      if (!settings)
         throw new Error(
           `Not found initial game data (deckType='${deckType}', gameType='${gameType}', gameConfig='${gameConfig}').`
         );
 
-      const settings = clone(gameTypeSettings.default || {});
-      Object.assign(settings, clone(settingsJSON));
       const gameData = {
-        settings,
+        settings: clone(settings),
         addTime: Date.now(),
         ...{ deckType, gameType, gameConfig, gameTimer },
       };
@@ -70,11 +72,21 @@
         this.id(),
         {
           id: this.id(),
+          deckType: this.deckType,
           workerId: application.worker.id,
           port: application.server.port,
         },
         { json: true }
       );
+    }
+
+    /**
+     * Сохраняет данные при получении обновлений
+     * @param {*} data
+     */
+    async processData(data) {
+      this.set(data, { removeEmptyObject: true });
+      await this.saveChanges();
     }
 
     logs(data, { consoleMsg } = {}) {
@@ -113,23 +125,23 @@
     getPlayerByUserId(id) {
       return this.getPlayerList().find((player) => player.userId === id);
     }
-    async playerJoin({ userId, userName, avatarCode }) {
+    async playerJoin({ userId, userName }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
         const player = this.getFreePlayerSlot();
         if (!player) throw new Error('Свободных мест не осталось');
 
-        player.set({ ready: true, userId, userName, avatarCode });
+        player.set({ ready: true, userId, userName });
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
         this.checkStatus({ cause: 'PLAYER_JOIN' });
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction(`user-${userId}`, 'joinGame', {
+        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
           gameId: this.id(),
           playerId: player.id(),
-          gameType: this.deckType,
+          deckType: this.deckType,
           isSinglePlayer: this.isSinglePlayer(),
         });
       } catch (exception) {
@@ -138,20 +150,20 @@
         });
       }
     }
-    async viewerJoin({ userId, userName, userAvatarCode }) {
+    async viewerJoin({ userId, userName }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
         const viewer = new lib.game.objects.Viewer({ userId }, { parent: this });
-        viewer.set({ userId, userName, avatarCode: userAvatarCode });
+        viewer.set({ userId, userName });
         this.logs({ msg: `Наблюдатель присоединился к игре.` });
 
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction(`user-${userId}`, 'joinGame', {
+        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
           gameId: this.id(),
           viewerId: viewer.id(),
-          gameType: this.deckType,
+          deckType: this.deckType,
           isSinglePlayer: this.isSinglePlayer(),
         });
       } catch (exception) {
@@ -171,7 +183,7 @@
           } else throw exception;
         }
       }
-      lib.store.broadcaster.publishAction(`user-${userId}`, 'leaveGame', {});
+      lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
     }
     endGame({ winningPlayer, canceledByUser } = {}) {
       lib.timers.timerDelete(this);
@@ -289,21 +301,22 @@
 
         // !!! защитить методы, которые не должны вызываться с фронта
         const result = this.run(eventName, eventData);
-        const { clientCustomUpdates } = result || {};
 
         await this.saveChanges();
 
-        if (clientCustomUpdates) {
-          lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
-            type: 'db/smartUpdated',
-            data: clientCustomUpdates,
-          });
-        }
+        // не используется
+        // const { clientCustomUpdates } = result || {};
+        // if (clientCustomUpdates) {
+        //   lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
+        //     type: 'db/smartUpdated',
+        //     data: clientCustomUpdates,
+        //   });
+        // }
       } catch (exception) {
         if (exception instanceof lib.game.endGameException) {
           await this.removeGame();
         } else {
-          lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
+          lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'broadcastToSessions', {
             data: { message: exception.message, stack: exception.stack },
           });
         }

@@ -119,6 +119,7 @@
     if (item.constructor != itemClass) item = new itemClass(item, { parent: this });
 
     this.set({ itemMap: { [item._id]: {} } });
+    this.addToObjectStorage(item);
 
     const game = this.game();
     if (!game.checkChangesDisabled()) {
@@ -133,6 +134,7 @@
   }
   removeItem(itemToRemove) {
     this.set({ itemMap: { [itemToRemove._id]: null } });
+    this.deleteFromObjectStorage(itemToRemove);
 
     const game = this.game();
     if (!game.checkChangesDisabled()) {
@@ -142,8 +144,6 @@
         action: itemToRemove.visible ? 'removeVisible' : 'remove',
       });
     }
-
-    this.deleteFromObjectStorage(itemToRemove);
   }
   /**
    * Наполняем данные для рассылки фронту (о fakeId, которые нужно удалить из deck)

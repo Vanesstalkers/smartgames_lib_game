@@ -8,7 +8,7 @@
       name: data.name,
       played: data.played,
     });
-    this.events(domain.cardEvent[this.name]);
+    this.events(domain.game.cardEvent[this.name]);
   }
   /**
    * Перемещает карту к новому держателю (колоду)

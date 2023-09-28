@@ -8,7 +8,7 @@
       '_id',
       'code',
       'userId',
-      'avatarCode',
+      'avatarsMap',
       'active',
       'ready',
       'timerEndTime',
