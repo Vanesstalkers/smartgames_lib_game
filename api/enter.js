@@ -2,7 +2,7 @@ async (context, { gameId }) => {
   const { sessionId } = context.session.state;
   const session = lib.store('session').get(sessionId);
   const user = session.user();
-  if (gameId && gameId !== user.gameId) throw new Error('Пользователь не участвует в игре');
+  if (!gameId || gameId !== user.gameId) throw new Error('Пользователь не участвует в игре');
 
   const gameLoaded = await db.redis.hget('games', gameId);
   if (!gameLoaded) {

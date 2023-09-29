@@ -89,6 +89,12 @@
       await this.saveChanges();
     }
 
+    run(actionName, data) {
+      const action = domain.game.actions?.[actionName] || lib.game.actions?.[actionName];
+      if (!action) throw new Error(`action "${actionName}" not found`);
+      return action.call(this, data);
+    }
+
     logs(data, { consoleMsg } = {}) {
       if (!data) return this.#logs;
 
