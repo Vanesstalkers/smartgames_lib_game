@@ -185,12 +185,12 @@
       }
       lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
     }
-    endGame({ winningPlayer, canceledByUser } = {}) {
+    endGame({ winningPlayer, canceledByUser, customFinalize = false } = {}) {
       lib.timers.timerDelete(this);
-      this.emitCardEvents('endRound'); // костыли должны восстановить свои значения
+      this.emitCardEvents('endRound');
 
       if (this.status !== 'IN_PROCESS') canceledByUser = true; // можно отменить игру, еще она еще не начата (ставим true, чтобы ниже попасть в условие cancel-ветку)
-      this.set({ status: 'FINISHED' });
+
       if (winningPlayer) this.setWinner({ player: winningPlayer });
 
       const playerList = this.getObjects({ className: 'Player' });
@@ -201,7 +201,7 @@
           ? userId === canceledByUser
             ? 'lose'
             : 'cancel'
-          : this.winUserId
+          : this.winUserId // у игры есть победитель
           ? userId === this.winUserId
             ? 'win'
             : 'lose'
@@ -210,14 +210,16 @@
         playerEndGameStatus[userId] = endGameStatus;
       }
 
-      this.checkCrutches();
+      this.set({ status: 'FINISHED', playerEndGameStatus });
+
+      if (customFinalize) return; // для кастомных endGame-обработчиков 
+
       this.broadcastAction('gameFinished', {
         gameId: this.id(),
         gameType: this.deckType,
         playerEndGameStatus,
         fullPrice: this.getFullPrice(),
         roundCount: this.round,
-        crutchCount: this.crutchCount(),
       });
 
       throw new lib.game.endGameException();
