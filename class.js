@@ -84,9 +84,9 @@
      * Сохраняет данные при получении обновлений
      * @param {*} data
      */
-    async processData(data) {
+    async processData(data, processOwner) {
       this.set(data, { removeEmptyObject: true });
-      await this.saveChanges();
+      await this.saveChanges(`processData(${JSON.stringify(processOwner)})`);
     }
 
     run(actionName, data) {
@@ -142,7 +142,7 @@
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
         this.checkStatus({ cause: 'PLAYER_JOIN' });
-        await this.saveChanges();
+        await this.saveChanges('playerJoin');
 
         lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
           gameId: this.id(),
@@ -164,7 +164,7 @@
         viewer.set({ userId, userName });
         this.logs({ msg: `Наблюдатель присоединился к игре.` });
 
-        await this.saveChanges();
+        await this.saveChanges('viewerJoin');
 
         lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
           gameId: this.id(),
@@ -310,7 +310,7 @@
         // !!! защитить методы, которые не должны вызываться с фронта
         const result = this.run(eventName, eventData);
 
-        await this.saveChanges();
+        await this.saveChanges(`handleAction[${eventName}]`);
 
         // не используется
         // const { clientCustomUpdates } = result || {};
@@ -413,7 +413,7 @@
     }
     async removeGame() {
       await db.redis.hdel('games', this.id());
-      await this.saveChanges();
+      await this.saveChanges('removeGame');
       await this.broadcastData({ logs: this.logs() });
       this.remove();
     }
@@ -443,7 +443,7 @@
         // console.log('setInterval', player.timerEndTime - Date.now()); // временно оставил для отладки (все еще появляются setInterval NaN - отловить не смог)
         if (player.timerEndTime < Date.now()) {
           this.checkStatus({ cause: 'PLAYER_TIMER_END' });
-          await this.saveChanges();
+          await this.saveChanges('onTimerTick');
         }
       } catch (exception) {
         if (exception instanceof lib.game.endGameException) {
