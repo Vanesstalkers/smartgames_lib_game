@@ -7,10 +7,11 @@
      * @param {string} config.deckListName
      * @returns {(import('application/lib/game/types.js').objects.Deck)}
      */
-    addDeck(
-      data,
-      { deckClass = lib.game.objects.Deck, deckListName = 'deckMap', deckItemClass = lib.game.objects.Card } = {}
-    ) {
+    addDeck(data, { deckListName = 'deckMap', deckClass, deckItemClass } = {}) {
+      const { Deck: defaultDeckClass, Card: defaultCardClass } = this.game().defaultClasses();
+      if (!deckClass) deckClass = defaultDeckClass;
+      if (!deckItemClass) deckItemClass = defaultCardClass;
+
       if (!data.settings) data.settings = {};
       if (!data.access) data.access = {};
       data.settings.parentDeckContainer = deckListName;

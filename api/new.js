@@ -17,7 +17,7 @@ async (context, { deckType, gameType, gameConfig, gameTimer }) => {
     gameTimer,
   });
 
-  processOwner = { f: `game.api.new` };
+  const processOwner = { f: `game.api.new` };
   await lib.store.broadcaster.publishData(
     `user-${userId}`,
     {

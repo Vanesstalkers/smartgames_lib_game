@@ -11,6 +11,7 @@
       'avatarsMap',
       'active',
       'ready',
+      'activeReady',
       'timerEndTime',
       'timerUpdateTime',
       'eventData',

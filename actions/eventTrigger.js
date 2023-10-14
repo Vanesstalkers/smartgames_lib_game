@@ -1,3 +1,3 @@
-(function ({ eventData = {} }) {
-  this.emitCardEvents('eventTrigger', eventData);
+(function ({ eventData = {} }, initPlayer) {
+  this.toggleEventHandlers('TRIGGER', eventData, initPlayer);
 });

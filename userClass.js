@@ -28,7 +28,7 @@
       for (const session of this.sessions()) {
         session.set({ gameId, playerId, viewerId });
         await session.saveChanges('userClass.joinGame');
-        session.emit('joinGame', { deckType, gameId, playerId, viewerId });
+        session.emit('joinGame', { deckType, gameId, playerId, viewerId }, 'userClass.joinGame');
       }
 
       this.set({
@@ -77,10 +77,8 @@
         session.unsubscribe(`game-${gameId}`);
         session.set({ gameId: null, playerId: null, viewerId: null });
         await session.saveChanges('userClass.leaveGame');
-        session.emit('leaveGame', {});
+        session.emit('leaveGame', {}, 'userClass.leaveGame');
       }
-
-      lib.store.broadcaster.publishAction(`gameuser-${this.id()}`, 'leaveGame');
     }
 
     async gameFinished({ gameId, gameType, playerEndGameStatus, fullPrice, roundCount }) {

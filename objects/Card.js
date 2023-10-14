@@ -1,14 +1,12 @@
 (class Card extends lib.game.GameObject {
   constructor(data, { parent }) {
     super(data, { col: 'card', parent });
-    this.broadcastableFields(['_id', 'name', 'played', 'eventData']);
+    this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData', 'activeEvent']);
 
     this.set({
       title: data.title,
       name: data.name,
-      played: data.played,
     });
-    this.events(domain.game.cardEvent[this.name]);
   }
   /**
    * Перемещает карту к новому держателю (колоду)
@@ -25,11 +23,15 @@
     }
     return moveResult;
   }
-  getSelfConfig() {
-    return { handlers: Object.keys(this.events().handlers || {}) };
+
+  getEvent(eventName) {
+    if(!eventName) eventName = this.name;
+    const event = domain.game.events?.card?.[eventName] || lib.game.events?.card?.[eventName];
+    if (!event) return null;
+    return event();
   }
   isPlayOneTime() {
-    return this.events()?.config?.playOneTime;
+    return this.getEvent()?.config?.playOneTime;
   }
   restoreAvailable() {
     if (this.isPlayOneTime()) {
@@ -38,17 +40,10 @@
       return true;
     }
   }
-  play() {
-    const game = this.game();
-    const player = game.getActivePlayer();
-    const config = this.getSelfConfig();
-    for (const event of config.handlers) game.addCardEvent({ event, source: this });
-    if (this.events().init) {
-      const { removeEvent } = this.events().init.call(this, { game, player }) || {};
-      if (removeEvent) {
-        for (const event of config.handlers) game.deleteCardEvent({ event, source: this });
-      }
-    }
+
+  play({ player }) {
+    const event = this.initEvent(this.name, { player });
+    if (event.hasInitAction()) this.game().logs(`Разыграна карта "${this.title}"`);
     this.set({ played: Date.now() });
   }
 });

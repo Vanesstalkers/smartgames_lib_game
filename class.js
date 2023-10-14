@@ -5,11 +5,24 @@
     playerMap = {};
     #broadcastObject = {};
     #broadcastDataAfterHandlers = {};
+    #objectsDefaultClasses = {};
 
     constructor() {
       const storeData = { col: 'game' };
       const gameObjectData = { col: 'game' };
       super(storeData, gameObjectData);
+
+      this.defaultClasses({
+        Player: lib.game.objects.Player,
+        Viewer: lib.game.objects.Viewer,
+        Deck: lib.game.objects.Deck,
+        Card: lib.game.objects.Card,
+      });
+    }
+
+    defaultClasses(map) {
+      if (map) Object.assign(this.#objectsDefaultClasses, map);
+      return this.#objectsDefaultClasses;
     }
 
     async create({ deckType, gameType, gameConfig, gameTimer } = {}) {
@@ -89,10 +102,57 @@
       await this.saveChanges(`processData(${JSON.stringify(processOwner)})`);
     }
 
-    run(actionName, data) {
+    /**
+     * Обработчики, вынесенные в отдельные файлы (папка actions)
+     */
+    run(actionName, data, initPlayer) {
       const action = domain.game.actions?.[actionName] || lib.game.actions?.[actionName];
       if (!action) throw new Error(`action "${actionName}" not found`);
-      return action.call(this, data);
+      return action.call(this, data, initPlayer);
+    }
+
+    eventListeners = {};
+    addEventListener({ handler, event }) {
+      if (!this.eventListeners[handler]) this.set({ eventListeners: { [handler]: [] } });
+      this.set({
+        eventListeners: {
+          [handler]: this.eventListeners[handler].concat(event),
+        },
+      });
+    }
+    removeEventListener({ handler, sourceId }) {
+      const listeners = this.eventListeners[handler];
+      if (!listeners) throw new Error(`listeners not found (handler=${handler})`);
+      this.set({
+        eventListeners: {
+          [handler]: listeners.filter((event) => event.sourceId() !== sourceId),
+        },
+      });
+    }
+    removeAllEventListeners({ sourceId }) {
+      const eventListeners = {};
+      for (const [handler, listeners] of Object.entries(this.eventListeners)) {
+        eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
+      }
+
+      this.set({ eventListeners });
+    }
+    toggleEventHandlers(handler, data = {}, initPlayers) {
+      if (!this.eventListeners[handler]) return;
+
+      if (!Array.isArray(initPlayers)) initPlayers = [initPlayers];
+      for (const event of this.eventListeners[handler]) {
+        if (!initPlayers.includes(event.player())) continue;
+
+        if (data.targetId) data.target = this.getObjectById(data.targetId);
+        const { preventListenerRemove } = event.emit(handler, data) || {};
+        if (!preventListenerRemove) this.removeEventListener({ handler, sourceId: event.sourceId });
+      }
+    }
+    clearEvents() {
+      for (const handler of Object.keys(this.eventListeners)) {
+        this.set({ eventListeners: { [handler]: [] } });
+      }
     }
 
     logs(data, { consoleMsg } = {}) {
@@ -160,7 +220,8 @@
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
-        const viewer = new lib.game.objects.Viewer({ userId }, { parent: this });
+        const { Viewer: viewerClass } = this.defaultClasses();
+        const viewer = new viewerClass({ userId }, { parent: this });
         viewer.set({ userId, userName });
         this.logs({ msg: `Наблюдатель присоединился к игре.` });
 
@@ -218,7 +279,7 @@
 
       this.set({ status: 'FINISHED', playerEndGameStatus });
 
-      if (customFinalize) return; // для кастомных endGame-обработчиков 
+      if (customFinalize) return; // для кастомных endGame-обработчиков
 
       this.broadcastAction('gameFinished', {
         gameId: this.id(),

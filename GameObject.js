@@ -7,7 +7,6 @@
   #_objects = {};
   #fakeParent = null;
   #broadcastableFields = null;
-  #events;
 
   constructor(data, { col: _col, parent } = {}) {
     const newObject = data._id ? false : true;
@@ -132,10 +131,15 @@
   getCodeTemplate(_code) {
     return '' + this.getCodePrefix() + _code + this.getCodeSuffix();
   }
-  getObjects({ className, directParent } = {}) {
+  getObjects({ className, attr, directParent } = {}) {
     let result = Object.values(this.#_objects);
     if (className) result = result.filter((obj) => obj.constructor.name === className);
     if (directParent) result = result.filter((obj) => obj.getParent() === directParent);
+    if (attr) {
+      for (const [key, val] of Object.entries(attr)) {
+        result = result.filter((obj) => obj[key] === val);
+      }
+    }
     return result;
   }
   setParent(parent) {
@@ -206,18 +210,26 @@
     }
     return { visibleId, preparedData };
   }
-  events(data) {
-    if (!data) return this.#events;
-    this.#events = data;
+  getEvent(eventName) {
+    const event = domain.game.events?.[eventName] || lib.game.events?.[eventName];
+    if (!event) return null;
+    return event();
   }
-  emit(event, data = {}, config = {}) {
-    const { softCall = false } = config;
-    if (!this.#events?.handlers?.[event])
-      if (softCall) return;
-      else throw new Error(`event not found (event=${event})`);
+  initEvent(eventName, { player } = {}) {
+    const event = this.getEvent(eventName);
+    if (!event) throw new Error(`event not found (event=${eventName})`);
+
     const game = this.game();
-    const player = game.getActivePlayer();
-    if (data.targetId) data.target = game.getObjectById(data.targetId);
-    return this.#events.handlers[event].call(this, { game, player, ...data });
+    event.source(this);
+    event.game(game);
+    event.player(player);
+    event.name = eventName;
+
+    event.init();
+    for (const handler of event.handlers()) {
+      game.addEventListener({ handler, event });
+    }
+
+    return event;
   }
 });

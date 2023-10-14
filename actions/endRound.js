@@ -6,7 +6,7 @@
 
   const {
     round,
-    activeEvent, // нельзя тут объявлять, потому что он динамически обновиться в emitCardEvents
+    activeEvent, // нельзя тут объявлять, потому что он динамически обновиться в toggleEventHandlers
     settings: {
       // конфиги
       autoFinishAfterRoundsOverdue,
@@ -41,18 +41,17 @@
 
   if (timerOverdue || this.activeEvent) {
     // таймер закончился или нажата кнопка окончания раунда при не завершенном активном событии
-
+    
     if (this.activeEvent) {
       const source = this.getObjectById(this.activeEvent.sourceId);
       this.logs(`Так как раунд был завершен, активное событие "${source.title}" сработало автоматически.`);
     }
-    this.emitCardEvents('timerOverdue');
   }
 
   // ЛОГИКА ОКОНЧАНИЯ ТЕКУЩЕГО РАУНДА
 
-  this.emitCardEvents('endRound');
-  this.clearCardEvents();
+  this.toggleEventHandlers('endRound');
+  this.clearEvents();
 
   // ЛОГИКА НАЧАЛА НОВОГО РАУНДА
 
