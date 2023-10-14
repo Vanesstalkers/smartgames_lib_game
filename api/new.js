@@ -17,14 +17,9 @@ async (context, { deckType, gameType, gameConfig, gameTimer }) => {
     gameTimer,
   });
 
-  const processOwner = { f: `game.api.new` };
-  await lib.store.broadcaster.publishData(
-    `user-${userId}`,
-    {
-      lobbyGameConfigs: { active: { deckType, gameType, gameConfig, gameTimer } },
-    },
-    processOwner
-  );
+  await lib.store.broadcaster.publishData(`user-${userId}`, {
+    lobbyGameConfigs: { active: { deckType, gameType, gameConfig, gameTimer } },
+  });
 
   return { status: 'ok', gameId: game.id() };
 };

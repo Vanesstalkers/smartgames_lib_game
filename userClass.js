@@ -10,11 +10,10 @@
       this.set(data);
       await this.broadcastData(data);
     }
-    async saveChanges(processOwner = '?') {
+    async saveChanges() {
       const changes = this.getChanges();
 
-      processOwner = { f: `saveChanges(${JSON.stringify(processOwner)})`, col: this.col(), id: this.id() };
-      await lib.store.broadcaster.publishData(`user-${this.id()}`, changes, processOwner);
+      await lib.store.broadcaster.publishData(`user-${this.id()}`, changes);
 
       this.clearChanges();
     }
@@ -27,8 +26,8 @@
 
       for (const session of this.sessions()) {
         session.set({ gameId, playerId, viewerId });
-        await session.saveChanges('userClass.joinGame');
-        session.emit('joinGame', { deckType, gameId, playerId, viewerId }, 'userClass.joinGame');
+        await session.saveChanges();
+        session.emit('joinGame', { deckType, gameId, playerId, viewerId });
       }
 
       this.set({
@@ -61,7 +60,7 @@
       };
 
       this.set({ currentTutorial, helper, helperLinks });
-      await this.saveChanges('joinGame');
+      await this.saveChanges();
     }
     async leaveGame() {
       const { gameId } = this;
@@ -70,14 +69,14 @@
       if (this.currentTutorial?.active) {
         this.set({ currentTutorial: null, helper: null });
       }
-      await this.saveChanges('leaveGame');
+      await this.saveChanges();
 
       this.unsubscribe(`game-${gameId}`);
       for (const session of this.sessions()) {
         session.unsubscribe(`game-${gameId}`);
         session.set({ gameId: null, playerId: null, viewerId: null });
-        await session.saveChanges('userClass.leaveGame');
-        session.emit('leaveGame', {}, 'userClass.leaveGame');
+        await session.saveChanges();
+        session.emit('leaveGame');
       }
     }
 
@@ -100,7 +99,7 @@
             },
           },
         });
-        await this.saveChanges('gameFinished');
+        await this.saveChanges();
         return;
       }
 
@@ -132,6 +131,6 @@
         incomeText += ` (с учетом штрафа ${penaltySum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}₽)`;
       tutorial[endGameStatus].text = tutorial[endGameStatus].text.replace('[[win-money]]', incomeText);
       this.set({ money: (this.money || 0) + income, helper: tutorial[endGameStatus], rankings });
-      await this.saveChanges('gameFinished');
+      await this.saveChanges();
     }
   };

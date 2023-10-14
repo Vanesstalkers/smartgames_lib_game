@@ -7,7 +7,7 @@ async (context, { gameId }) => {
   const gameLoaded = await db.redis.hget('games', gameId);
   if (!gameLoaded) {
     user.set({ gameId: null, playerId: null, viewerId: null });
-    await user.saveChanges('game.api.enter');
+    await user.saveChanges();
     throw new Error('Игра была отменена');
   }
 
