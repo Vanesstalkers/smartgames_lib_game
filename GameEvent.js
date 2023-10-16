@@ -4,9 +4,10 @@
   #player;
   #init;
   #handlers;
-  constructor({ init, handlers }) {
+  constructor({ init, handlers, ...data }) {
     this.#init = init;
     this.#handlers = handlers || {};
+    Object.assign(this, data); // можно без set(), потому что в initEvent делается source.set({activeEvent: event}) уже после создания event
   }
   source(data) {
     if (data) this.#source = data;
@@ -24,10 +25,11 @@
     return this.#player;
   }
   set(val, config = {}) {
-    if (!this._col) {
-      throw new Error(`${key}=${value} not saved to changes ('_col' is no defined)`);
+    const source = this.source();
+    if (!source._col) {
+      throw new Error(`set error ('_col' is no defined)`);
     } else {
-      this.#game.setChanges({ store: { [this._col]: { [this._id]: val } } }, config);
+      this.#game.setChanges({ store: { [source._col]: { [source._id]: { activeEvent: val } } } }, config);
     }
     lib.utils.mergeDeep({
       masterObj: this,

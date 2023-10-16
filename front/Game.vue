@@ -2,6 +2,7 @@
   <div
     v-if="gameDataLoaded"
     id="game"
+    :type = "game.gameType"
     :class="[
       state.isMobile ? 'mobile-view' : '',
       state.isLandscape ? 'landscape-view' : 'portrait-view',

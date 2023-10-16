@@ -14,7 +14,12 @@
   >
     <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
     <div
-      v-if="myCard && ((!card.played && canPlay) || card.activeEvent) && sessionPlayerIsActive() && !actionsDisabled()"
+      v-if="
+        myCard &&
+        ((!card.played && canPlay) || card.activeEvent?.canPlay) &&
+        sessionPlayerIsActive() &&
+        !actionsDisabled()
+      "
       v-on:click.stop="playCard"
       class="play-btn"
     >
@@ -32,6 +37,10 @@ export default {
     cardId: String,
     canPlay: Boolean,
     myCard: Boolean,
+    playerActive: {
+      type: Boolean,
+      default: true,
+    },
     cardData: Object,
     cardGroup: String,
     isSelected: Boolean,

@@ -25,7 +25,7 @@
   }
 
   getEvent(eventName) {
-    if(!eventName) eventName = this.name;
+    if (!eventName) eventName = this.name;
     const event = domain.game.events?.card?.[eventName] || lib.game.events?.card?.[eventName];
     if (!event) return null;
     return event();
@@ -45,5 +45,10 @@
     const event = this.initEvent(this.name, { player });
     if (event.hasInitAction()) this.game().logs(`Разыграна карта "${this.title}"`);
     this.set({ played: Date.now() });
+
+    {
+      player.set({ activeEvent: event });
+      player.activeEvent = event; // пока что нет возможности сохранить ссылку на объект GameEvent (из-за mergeDeep + structuredClone)
+    }
   }
 });

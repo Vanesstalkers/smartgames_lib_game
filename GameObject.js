@@ -54,7 +54,7 @@
   }
   set(val, config = {}) {
     if (!this._col) {
-      throw new Error(`${key}=${value} not saved to changes ('_col' is no defined)`);
+      throw new Error(`set error ('_col' is no defined)`);
     } else {
       this.#game.setChanges({ store: { [this._col]: { [this._id]: val } } }, config);
     }
@@ -228,6 +228,12 @@
     event.init();
     for (const handler of event.handlers()) {
       game.addEventListener({ handler, event });
+    }
+
+    {
+      // ! тут возникнет проблема, когда понадобится временная замена активного события (придумать как хранить несколько событий и переключать между ними активное)
+      this.set({ activeEvent: event });
+      this.activeEvent = event; // пока что нет возможности сохранить ссылку на объект GameEvent (из-за mergeDeep + structuredClone)
     }
 
     return event;

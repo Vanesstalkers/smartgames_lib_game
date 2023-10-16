@@ -27,4 +27,11 @@
       timerEndTime: data.timerEndTime,
     });
   }
+  returnTableCardsToHand() {
+    for (const deck of this.getObjects({ className: 'Deck', attr: { placement: 'table' } })) {
+      for (const card of deck.getObjects({ className: 'Card' })) {
+        card.activeEvent.emit('TRIGGER', { target: card });
+      }
+    }
+  }
 });
