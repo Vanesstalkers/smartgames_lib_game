@@ -13,16 +13,7 @@
     v-on:click.stop="toggleSelect"
   >
     <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
-    <div
-      v-if="
-        myCard &&
-        ((!card.played && canPlay) || card.activeEvent?.canPlay) &&
-        sessionPlayerIsActive() &&
-        !actionsDisabled()
-      "
-      v-on:click.stop="playCard"
-      class="play-btn"
-    >
+    <div v-if="canPlay && !card.activeEvent?.playDisabled" v-on:click.stop="playCard" class="play-btn">
       {{ card.activeEvent?.buttonText || 'Разыграть' }}
     </div>
   </div>
@@ -36,7 +27,6 @@ export default {
   props: {
     cardId: String,
     canPlay: Boolean,
-    myCard: Boolean,
     playerActive: {
       type: Boolean,
       default: true,

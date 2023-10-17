@@ -2,6 +2,7 @@
   constructor(data, { parent }) {
     super(data, { col: 'card', parent });
     this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData', 'activeEvent']);
+    this.publicStaticFields(['group']);
 
     this.set({
       title: data.title,

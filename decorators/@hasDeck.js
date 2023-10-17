@@ -7,19 +7,19 @@
      * @param {string} config.deckListName
      * @returns {(import('application/lib/game/types.js').objects.Deck)}
      */
-    addDeck(data, { deckListName = 'deckMap', deckClass, deckItemClass } = {}) {
+    addDeck(data, { deckMapName = 'deckMap', deckClass, deckItemClass } = {}) {
       const { Deck: defaultDeckClass, Card: defaultCardClass } = this.game().defaultClasses();
       if (!deckClass) deckClass = defaultDeckClass;
       if (!deckItemClass) deckItemClass = defaultCardClass;
 
       if (!data.settings) data.settings = {};
       if (!data.access) data.access = {};
-      data.settings.parentDeckContainer = deckListName;
+      data.settings.parentDeckContainer = deckMapName;
 
       /** @type {(import('application/lib/game/types.js').objects.Deck)} */
       const deck = new deckClass(data, { parent: this });
 
-      this.set({ [deckListName]: { [deck._id]: {} } });
+      this.set({ [deckMapName]: { [deck._id]: {} } });
       deck.setItemClass(deckItemClass);
 
       if (data.itemMap) {

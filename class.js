@@ -44,7 +44,8 @@
         addTime: Date.now(),
         ...{ deckType, gameType, gameConfig, gameTimer },
       };
-      if (gameTimer) gameData.settings.timer = gameTimer;
+      if (gameTimer)
+        gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
 
       this.fillData(gameData, { newGame: true });
       delete this._id; // удаляем _id от gameObject, чтобы он не попал в БД

@@ -27,6 +27,11 @@
       timerEndTime: data.timerEndTime,
     });
   }
+  nextPlayer() {
+    const players = this.game().getPlayerList();
+    const idx = players.indexOf(this);
+    return players[(idx + 1) % players.length];
+  }
   returnTableCardsToHand() {
     for (const deck of this.getObjects({ className: 'Deck', attr: { placement: 'table' } })) {
       for (const card of deck.getObjects({ className: 'Card' })) {

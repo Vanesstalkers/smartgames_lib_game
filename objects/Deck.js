@@ -136,7 +136,12 @@
     const itemClass = this.getItemClass();
     if (item.constructor != itemClass) item = new itemClass(item, { parent: this });
 
-    this.set({ itemMap: { [item._id]: {} } });
+    const linkVal = {};
+    const fields = item.publicStaticFields();
+    if (fields?.length) {
+      for (const key of fields) linkVal[key] = item[key];
+    }
+    this.set({ itemMap: { [item._id]: linkVal } });
     this.addToObjectStorage(item);
 
     const game = this.game();
@@ -164,9 +169,11 @@
     }
   }
   setItemVisible(item) {
+    const itemId = item.id();
     // чтобы попал в prepareBroadcastData
-    this.set({ itemMap: { [item.id()]: null } });
-    this.set({ itemMap: { [item.id()]: {} } });
+    const linkVal = this.itemMap[itemId];
+    this.set({ itemMap: { [itemId]: null } });
+    this.set({ itemMap: { [itemId]: linkVal } });
     // чтобы попал в for (const [fakeId, action] of updatedItemsEntries) {...}
     this.markItemUpdated({ item });
     // чтобы попал в ветку if (item.visible) {...}
