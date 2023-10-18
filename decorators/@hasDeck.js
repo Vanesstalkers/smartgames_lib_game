@@ -7,7 +7,7 @@
      * @param {string} config.deckListName
      * @returns {(import('application/lib/game/types.js').objects.Deck)}
      */
-    addDeck(data, { deckMapName = 'deckMap', deckClass, deckItemClass } = {}) {
+    addDeck(data, { deckMapName = 'deckMap', deckClass, deckItemClass, parentDirectLink = true } = {}) {
       const { Deck: defaultDeckClass, Card: defaultCardClass } = this.game().defaultClasses();
       if (!deckClass) deckClass = defaultDeckClass;
       if (!deckItemClass) deckItemClass = defaultCardClass;
@@ -19,7 +19,11 @@
       /** @type {(import('application/lib/game/types.js').objects.Deck)} */
       const deck = new deckClass(data, { parent: this });
 
-      this.set({ [deckMapName]: { [deck._id]: {} } });
+      this.set({ [deckMapName]: { [deck._id]: {} }, decks: {} });
+      if (parentDirectLink && deck.subtype) {
+        if (!this.decks) this.decks = {};
+        this.decks[deck.subtype] = deck;
+      }
       deck.setItemClass(deckItemClass);
 
       if (data.itemMap) {
@@ -34,6 +38,7 @@
       deckToDelete.deleteFromParentsObjectStorage();
       const { parentDeckContainer } = deckToDelete.settings;
       this.set({ [parentDeckContainer]: { [deckToDelete._id]: null } });
+      if (deck.subtype) delete this.decks[deck.subtype];
     },
   }),
 });

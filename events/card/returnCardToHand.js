@@ -3,7 +3,6 @@
     init: function () {
       const { game, player, source: card } = this.eventContext();
       this.set({
-        canPlay: true,
         cardClass: 'highlight-off',
         buttonText: 'Вернуть', // текст кнопки на карте
       });
@@ -18,16 +17,11 @@
       },
       TRIGGER: function ({ target }) {
         const { game, player, source: card } = this.eventContext();
-        if (target !== card) return { preventListenerRemove: true }; // у game много TRIGGER-событий, проверка нужна, чтобы не инициировать лишние
+        // у game много TRIGGER-событий, проверка нужна, чтобы не инициировать лишние
+        if (target !== card) return { preventListenerRemove: true };
 
-        if (card.group === 'car') {
-          const targetDeck = player.getObjectByCode('Deck[card_car]');
-          card.moveToTarget(targetDeck);
-        }
-        if (card.group === 'service') {
-          const targetDeck = player.getObjectByCode(`Deck[card_service]`);
-          card.moveToTarget(targetDeck);
-        }
+        if (card.group === 'car') card.moveToTarget(player.decks.car);
+        if (card.group === 'service') card.moveToTarget(player.decks.service);
 
         this.emit('RESET');
       },

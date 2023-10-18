@@ -6,8 +6,7 @@
 
   const card = this.getObjectById(cardId);
   card.play({ player });
-  const cardDeckDrop = this.getObjectByCode('Deck[card_active]');
-  card.moveToTarget(cardDeckDrop);
+  card.moveToTarget(this.decks.active);
 
   this.logs(`Пользователь {{player}} активировал событие "${card.title}".`);
 });

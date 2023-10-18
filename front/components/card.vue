@@ -8,6 +8,7 @@
       this.isSelected ? 'selected' : '',
       activeEvent ? 'active-event' : '',
       card.activeEvent?.cardClass || '',
+      card.activeEvent?.playDisabled ? 'play-disabled' : '',
     ]"
     :style="customStyle"
     v-on:click.stop="toggleSelect"
@@ -177,7 +178,8 @@ export default {
   border: 4px solid green;
 }
 
-.card-event.active-event.highlight-off {
+.card-event.active-event.highlight-off,
+.card-event.active-event.play-disabled {
   box-shadow: none !important;
 }
 .card-event.active-event {

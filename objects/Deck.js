@@ -5,7 +5,7 @@
 
   constructor(data, { parent }) {
     super(data, { col: 'deck', parent });
-    this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap']);
+    this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData', 'activeEvent']);
 
     this.set({
       type: data.type,
@@ -219,7 +219,7 @@
     return card;
   }
   restoreCardsFromDrop({ deckDrop } = {}) {
-    if (!deckDrop) deckDrop = this.game().getObjectByCode('Deck[card_drop]');
+    if (!deckDrop) deckDrop = this.game().decks.drop;
     const cards = deckDrop
       .getObjects({
         className: 'Card',
