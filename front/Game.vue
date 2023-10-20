@@ -85,7 +85,7 @@
       <slot name="gameplane" :game="game" :gamePlaneScale="gamePlaneScale" />
     </div>
 
-    <GUIWrapper class="game-info" :pos="['top', 'right']" :offset="{}">
+    <GUIWrapper id="gameInfo" :pos="['top', 'right']" :offset="{}">
       <slot name="gameinfo" />
     </GUIWrapper>
 

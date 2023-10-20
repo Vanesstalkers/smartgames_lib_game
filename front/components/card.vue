@@ -34,7 +34,6 @@ export default {
     },
     cardData: Object,
     cardGroup: String,
-    isSelected: Boolean,
     imgExt: String,
     imgFullPath: String, // формат: `${this.state.lobbyOrigin}/img/cards/${this.game.deckType}/${this.card.name}.jpg`
   },
@@ -58,6 +57,9 @@ export default {
       if (this.cardData) return this.cardData;
       const card = this.store.card?.[this.cardId];
       return card?._id ? card : { _id: this.cardId };
+    },
+    isSelected() {
+      return this.cardId === this.gameCustom.selectedCard;
     },
     activeEvent() {
       return this.sessionPlayerIsActive() && this.card.activeEvent;

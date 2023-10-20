@@ -57,7 +57,14 @@
     if (!this._col) {
       throw new Error(`set error ('_col' is no defined)`);
     } else {
-      this.#game.setChanges({ store: { [this._col]: { [this._id]: val } } }, config);
+      const clonedConfig = lib.utils.structuredClone(config);
+      if (clonedConfig.reset) clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
+      this.#game.setChanges(
+        {
+          store: { [this._col]: { [this._id]: val } },
+        },
+        clonedConfig
+      );
     }
     lib.utils.mergeDeep({
       masterObj: this,

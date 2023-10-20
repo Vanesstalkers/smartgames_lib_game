@@ -136,7 +136,7 @@
     const itemClass = this.getItemClass();
     if (item.constructor != itemClass) item = new itemClass(item, { parent: this });
 
-    const linkVal = {};
+    const linkVal = { /* addTime: Date.now() */ }; // addTime может понадобиться в будущем, если nodejs начнет сортировать ключи в объектах по названию (например, тогда перестанет работать порядок переноса item-ов из одной deck в другую)
     const fields = item.publicStaticFields();
     if (fields?.length) {
       for (const key of fields) linkVal[key] = item[key];
