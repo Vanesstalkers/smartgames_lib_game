@@ -136,7 +136,9 @@
     const itemClass = this.getItemClass();
     if (item.constructor != itemClass) item = new itemClass(item, { parent: this });
 
-    const linkVal = { /* addTime: Date.now() */ }; // addTime может понадобиться в будущем, если nodejs начнет сортировать ключи в объектах по названию (например, тогда перестанет работать порядок переноса item-ов из одной deck в другую)
+    const linkVal = {
+      /* addTime: Date.now() */
+    }; // addTime может понадобиться в будущем, если nodejs начнет сортировать ключи в объектах по названию (например, тогда перестанет работать порядок переноса item-ов из одной deck в другую)
     const fields = item.publicStaticFields();
     if (fields?.length) {
       for (const key of fields) linkVal[key] = item[key];
@@ -186,12 +188,15 @@
     if (!this.#updatedItems[item._id]) this.#updatedItems[item._id] = {};
     this.#updatedItems[item._id][item.fakeId[this.id()]] = action;
   }
-  moveAllItems({ target }, updateData) {
+  moveAllItems({ target, setData, emitEvent }) {
     const store = this.getFlattenStore();
     const itemIds = Object.keys(this.itemMap);
     for (const id of itemIds) {
       const item = store[id];
-      if (updateData) item.set(updateData);
+      if (emitEvent) {
+        for (const event of item.eventData.activeEvents) event.emit(emitEvent);
+      }
+      if (setData) item.set(setData);
       item.moveToTarget(target);
     }
   }

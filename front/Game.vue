@@ -129,8 +129,8 @@ export default {
 
       gamePlaneCustomStyleData: {},
       gamePlaneScale: 1,
-      gamePlaneScaleMin: 0.3,
-      gamePlaneScaleMax: 1,
+      gamePlaneScaleMin: 0.5,
+      gamePlaneScaleMax: 1.5,
       gamePlaneTranslateX: 0,
       gamePlaneTranslateY: 0,
       gamePlaneRotation: 0,

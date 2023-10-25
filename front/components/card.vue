@@ -6,16 +6,16 @@
       'card-event',
       card.played ? 'played' : '',
       this.isSelected ? 'selected' : '',
-      activeEvent ? 'active-event' : '',
-      card.activeEvent?.cardClass || '',
-      card.activeEvent?.playDisabled ? 'play-disabled' : '',
+      hasActiveEvent ? 'active-event' : '',
+      card.eventData.cardClass || '',
+      card.eventData.playDisabled ? 'play-disabled' : '',
     ]"
     :style="customStyle"
     v-on:click.stop="toggleSelect"
   >
     <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
-    <div v-if="canPlay && !card.activeEvent?.playDisabled" v-on:click.stop="playCard" class="play-btn">
-      {{ card.activeEvent?.buttonText || 'Разыграть' }}
+    <div v-if="canPlay && !card.eventData.playDisabled" v-on:click.stop="playCard" class="play-btn">
+      {{ card.eventData.buttonText || 'Разыграть' }}
     </div>
   </div>
 </template>
@@ -56,13 +56,13 @@ export default {
     card() {
       if (this.cardData) return this.cardData;
       const card = this.store.card?.[this.cardId];
-      return card?._id ? card : { _id: this.cardId };
+      return card?._id ? card : { _id: this.cardId, eventData: {} };
     },
     isSelected() {
       return this.cardId === this.gameCustom.selectedCard;
     },
-    activeEvent() {
-      return this.sessionPlayerIsActive() && this.card.activeEvent;
+    hasActiveEvent() {
+      return this.sessionPlayerIsActive() && this.card.eventData.activeEvents?.length;
     },
     customStyle() {
       const {
@@ -86,19 +86,14 @@ export default {
   },
   methods: {
     async playCard() {
-      if (this.activeEvent) {
-        return await this.handleGameApi({
-          name: 'eventTrigger',
-          data: {
-            eventData: {
-              targetId: this.cardId,
-              targetPlayerId: this.$parent.playerId,
-            },
-          },
-        });
-      }
       if (this.card.played) return;
-      await this.handleGameApi({ name: 'playCard', data: { cardId: this.cardId } });
+      await this.handleGameApi({
+        name: 'playCard',
+        data: {
+          cardId: this.cardId,
+          targetPlayerId: this.$parent.playerId,
+        },
+      });
     },
     toggleSelect() {
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;

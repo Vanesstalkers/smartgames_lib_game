@@ -42,14 +42,12 @@
     }
   }
 
-  play({ player }) {
+  play({ player } = {}) {
+    if (this.played) return;
     const event = this.initEvent(this.name, { player });
     if (event.hasInitAction()) this.game().logs(`Разыграна карта "${this.title}"`);
     this.set({ played: Date.now() });
 
-    {
-      player.set({ activeEvent: event });
-      player.activeEvent = event; // пока что нет возможности сохранить ссылку на объект GameEvent (из-за mergeDeep + structuredClone)
-    }
+    if(player) player.addEvent(event);
   }
 });

@@ -32,10 +32,20 @@
     const idx = players.indexOf(this);
     return players[(idx + 1) % players.length];
   }
+  skipRoundCheck() {
+    const endRoundEvent = this.findEvent({ skipRound: true });
+    if (endRoundEvent) {
+      this.game().logs(`Игрок ${this.userName} пропускает ход`);
+      this.removeEvent(endRoundEvent);
+      return true;
+    }
+    return false;
+  }
   returnTableCardsToHand() {
     for (const deck of this.getObjects({ className: 'Deck', attr: { placement: 'table' } })) {
       for (const card of deck.getObjects({ className: 'Card' })) {
-        card.activeEvent.emit('TRIGGER', { target: card });
+        const event = this.findEvent({ name: 'returnCardToHand' });
+        if (event) event.emit('TRIGGER', { target: card });
       }
     }
   }

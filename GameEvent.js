@@ -7,7 +7,7 @@
   constructor({ init, handlers, ...data }) {
     this.#init = init;
     this.#handlers = handlers || {};
-    Object.assign(this, data); // можно без set(), потому что в initEvent делается source.set({activeEvent: event}) уже после создания event
+    Object.assign(this, data);
   }
   source(data) {
     if (data) this.#source = data;
@@ -25,12 +25,6 @@
     return this.#player;
   }
   set(val, config = {}) {
-    const source = this.source();
-    if (!source._col) {
-      throw new Error(`set error ('_col' is no defined)`);
-    } else {
-      this.#game.setChanges({ store: { [source._col]: { [source._id]: { activeEvent: val } } } }, config);
-    }
     lib.utils.mergeDeep({
       masterObj: this,
       target: this,

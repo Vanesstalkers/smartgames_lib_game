@@ -18,7 +18,7 @@
     // индикатор наличия активного события (может быть с вложенными данными)
     if (data.activeEvent) this.activeEvent = data.activeEvent;
     // статичный объект для любых временных данных событий
-    this.eventData = data.eventData || {};
+    this.eventData = data.eventData || { activeEvents: [] };
 
     this.setParent(parent);
     this.addToParentsObjectStorage();
@@ -57,14 +57,7 @@
     if (!this._col) {
       throw new Error(`set error ('_col' is no defined)`);
     } else {
-      const clonedConfig = lib.utils.structuredClone(config);
-      if (clonedConfig.reset) clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
-      this.#game.setChanges(
-        {
-          store: { [this._col]: { [this._id]: val } },
-        },
-        clonedConfig
-      );
+      this.setChanges(val, config);
     }
     lib.utils.mergeDeep({
       masterObj: this,
@@ -74,22 +67,31 @@
     });
   }
 
+  setChanges(val, config = {}) {
+    const clonedConfig = lib.utils.structuredClone(config);
+    if (clonedConfig.reset) clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
+    this.#game.setChanges(
+      {
+        store: { [this._col]: { [this._id]: val } },
+      },
+      clonedConfig
+    );
+  }
+
   markNew({ saveToDB = false } = {}) {
-    const game = this.game();
     const { _col: col, _id: id } = this;
     if (saveToDB) {
-      game.setChanges({ store: { [col]: { [id]: this } } });
+      this.#game.setChanges({ store: { [col]: { [id]: this } } });
     } else {
-      game.addBroadcastObject({ col, id });
+      this.#game.addBroadcastObject({ col, id });
     }
   }
   markDelete({ saveToDB = false } = {}) {
-    const game = this.game();
     const { _col: col, _id: id } = this;
     if (saveToDB) {
-      this.setChanges({ store: { [col]: { [id]: null } } });
+      this.#game.setChanges({ store: { [col]: { [id]: null } } });
     } else {
-      game.deleteBroadcastObject({ col, id });
+      this.#game.deleteBroadcastObject({ col, id });
     }
   }
 
@@ -238,17 +240,30 @@
     event.player(player);
     event.name = eventName;
 
-    event.init();
+    if (event.init) event.init();
+    this.addEvent(event);
+    
     for (const handler of event.handlers()) {
       game.addEventListener({ handler, event });
     }
 
-    {
-      // ! тут возникнет проблема, когда понадобится временная замена активного события (придумать как хранить несколько событий и переключать между ними активное)
-      this.set({ activeEvent: event });
-      this.activeEvent = event; // пока что нет возможности сохранить ссылку на объект GameEvent (из-за mergeDeep + structuredClone)
-    }
-
     return event;
+  }
+  findEvent(attr = {}) {
+    return this.eventData.activeEvents.find((event) => {
+      const attrEntries = Object.entries(attr);
+      const checkResult = attrEntries.filter(([key, val]) => event[key] === val);
+      return checkResult.length == attrEntries.length;
+    });
+  }
+  addEvent(event) {
+    const activeEvents = this.eventData.activeEvents || [];
+    activeEvents.push(event);
+    this.set({ eventData: { activeEvents } });
+  }
+  removeEvent(event) {
+    this.eventData.activeEvents = this.eventData.activeEvents.filter((activeEvent) => {
+      return activeEvent !== event;
+    });
   }
 });

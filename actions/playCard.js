@@ -8,5 +8,5 @@
   card.play({ player });
   card.moveToTarget(this.decks.active);
 
-  this.logs(`Пользователь {{player}} активировал событие "${card.title}".`);
+  this.logs(`Пользователь {{player}} разыграл карту "${card.title}".`);
 });
