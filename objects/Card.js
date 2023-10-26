@@ -42,12 +42,15 @@
     }
   }
 
+  canPlay() {
+    return this.getEvent(this.name) ? true : false;
+  }
   play({ player } = {}) {
     if (this.played) return;
     const event = this.initEvent(this.name, { player });
     if (event.hasInitAction()) this.game().logs(`Разыграна карта "${this.title}"`);
     this.set({ played: Date.now() });
 
-    if(player) player.addEvent(event);
+    if (player) player.addEvent(event);
   }
 });

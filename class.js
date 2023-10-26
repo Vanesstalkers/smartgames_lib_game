@@ -278,7 +278,11 @@
         playerEndGameStatus[userId] = endGameStatus;
       }
 
-      this.set({ status: 'FINISHED', playerEndGameStatus });
+      this.set({
+        statusLabel: 'Игра закончена',
+        status: 'FINISHED',
+        playerEndGameStatus,
+      });
 
       if (customFinalize) return; // для кастомных endGame-обработчиков
 

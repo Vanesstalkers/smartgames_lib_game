@@ -43,9 +43,9 @@
   }
   returnTableCardsToHand() {
     for (const deck of this.getObjects({ className: 'Deck', attr: { placement: 'table' } })) {
-      for (const card of deck.getObjects({ className: 'Card' })) {
-        const event = this.findEvent({ name: 'returnCardToHand' });
-        if (event) event.emit('TRIGGER', { target: card });
+      const cards = deck.getObjects({ className: 'Card' });
+      for (const card of cards) {
+        for (const event of card.eventData.activeEvents) event.emit('TRIGGER');
       }
     }
   }

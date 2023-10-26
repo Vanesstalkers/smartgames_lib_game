@@ -242,7 +242,7 @@
 
     if (event.init) event.init();
     this.addEvent(event);
-    
+
     for (const handler of event.handlers()) {
       game.addEventListener({ handler, event });
     }
@@ -262,8 +262,9 @@
     this.set({ eventData: { activeEvents } });
   }
   removeEvent(event) {
-    this.eventData.activeEvents = this.eventData.activeEvents.filter((activeEvent) => {
+    const activeEvents = this.eventData.activeEvents.filter((activeEvent) => {
       return activeEvent !== event;
     });
+    this.set({ eventData: { activeEvents } });
   }
 });
