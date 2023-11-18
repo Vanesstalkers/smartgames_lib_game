@@ -87,7 +87,7 @@
 
     <div
       id="gamePlane"
-      :style="{ ...gamePlaneCustomStyleData, opacity: 1, transformOrigin: 'left top', ...gamePlaneControlStyle }"
+      :style="{ ...gamePlaneCustomStyleData, ...gamePlaneControlStyle }"
     >
       <slot name="gameplane" :game="game" :gamePlaneScale="gamePlaneScale" />
     </div>
@@ -353,6 +353,8 @@ export default {
   position: relative;
   width: 100%;
   height: 100%;
+  opacity: 1;
+  transform-origin: center;
 }
 #game.mobile-view #gamePlane {
   margin-left: -50px;

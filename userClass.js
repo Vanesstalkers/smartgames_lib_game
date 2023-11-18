@@ -76,7 +76,7 @@
         session.unsubscribe(`game-${gameId}`);
         session.set({ gameId: null, playerId: null, viewerId: null });
         await session.saveChanges();
-        session.emit('leaveGame', {});
+        session.emit('leaveGame');
       }
 
       lib.store.broadcaster.publishAction(`gameuser-${this.id()}`, 'leaveGame');

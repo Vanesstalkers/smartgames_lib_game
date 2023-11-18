@@ -26,7 +26,6 @@ export default {
     cardId: String,
     canPlay: Boolean,
     cardData: Object,
-    isSelected: Boolean,
   },
   data() {
     return {};
@@ -48,6 +47,9 @@ export default {
       if (this.cardData) return this.cardData;
       const card = this.store.card?.[this.cardId];
       return card?._id ? card : { _id: this.cardId };
+    },
+    isSelected() {
+      return this.cardId === this.gameCustom.selectedCard;
     },
     customStyle() {
       const style = {

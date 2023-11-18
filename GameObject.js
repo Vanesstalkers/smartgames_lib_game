@@ -55,9 +55,9 @@
   }
   set(val, config = {}) {
     if (!this._col) {
-      throw new Error(`${key}=${value} not saved to changes ('_col' is no defined)`);
+      throw new Error(`set error ('_col' is no defined)`);
     } else {
-      this.#game.setChanges({ store: { [this._col]: { [this._id]: val } } }, config);
+      this.setChanges(val, config);
     }
     lib.utils.mergeDeep({
       masterObj: this,
@@ -66,23 +66,24 @@
       config: { deleteNull: true, ...config }, // удаляем ключи с null-значением
     });
   }
+  setChanges(val, config = {}) {
+    this.#game.setChanges({ store: { [this._col]: { [this._id]: val } } }, config);
+  }
 
   markNew({ saveToDB = false } = {}) {
-    const game = this.game();
     const { _col: col, _id: id } = this;
     if (saveToDB) {
-      game.setChanges({ store: { [col]: { [id]: this } } });
+      this.#game.setChanges({ store: { [col]: { [id]: this } } });
     } else {
-      game.addBroadcastObject({ col, id });
+      this.#game.addBroadcastObject({ col, id });
     }
   }
   markDelete({ saveToDB = false } = {}) {
-    const game = this.game();
     const { _col: col, _id: id } = this;
     if (saveToDB) {
-      this.setChanges({ store: { [col]: { [id]: null } } });
+      this.#game.setChanges({ store: { [col]: { [id]: null } } });
     } else {
-      game.deleteBroadcastObject({ col, id });
+      this.#game.deleteBroadcastObject({ col, id });
     }
   }
 
