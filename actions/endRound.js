@@ -81,5 +81,9 @@
   // обновляем логи
   for (const logEvent of newRoundLogEvents) this.logs(logEvent);
 
-  this.set({ round: newRoundNumber, timerOverdueCounter });
+  this.set({
+    statusLabel: `Раунд ${newRoundNumber}`,
+    round: newRoundNumber,
+    timerOverdueCounter,
+  });
 });
