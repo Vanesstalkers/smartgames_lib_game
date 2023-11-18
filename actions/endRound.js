@@ -6,7 +6,7 @@
 
   const {
     round,
-    activeEvent, // нельзя тут объявлять, потому что он динамически обновиться в emitCardEvents
+    activeEvent, // нельзя тут объявлять, потому что он динамически обновиться в toggleEventHandlers
     settings: {
       // конфиги
       autoFinishAfterRoundsOverdue,
@@ -46,25 +46,23 @@
       const source = this.getObjectById(this.activeEvent.sourceId);
       this.logs(`Так как раунд был завершен, активное событие "${source.title}" сработало автоматически.`);
     }
-    this.emitCardEvents('timerOverdue');
   }
 
   // ЛОГИКА ОКОНЧАНИЯ ТЕКУЩЕГО РАУНДА
 
-  this.emitCardEvents('endRound');
-  this.clearCardEvents();
+  this.toggleEventHandlers('endRound');
+  this.clearEvents();
 
   // ЛОГИКА НАЧАЛА НОВОГО РАУНДА
 
   // player которому передают ход
   const activePlayer = this.changeActivePlayer({ player: forceActivePlayer });
   const playerCardHand = activePlayer.getObjectByCode('Deck[card]');
-  const cardDeckDrop = this.getObjectByCode('Deck[card_drop]');
-  const cardDeckActive = this.getObjectByCode('Deck[card_active]');
 
-  for (const card of cardDeckActive.getObjects({ className: 'Card' })) {
+  const playedCards = this.decks.active.getObjects({ className: 'Card' });
+  for (const card of playedCards) {
     if (!card.isPlayOneTime()) card.set({ played: null });
-    card.moveToTarget(cardDeckDrop);
+    card.moveToTarget(this.decks.drop);
   }
 
   const newRoundNumber = round + 1;

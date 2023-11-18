@@ -5,11 +5,13 @@
 
   constructor(data, { parent }) {
     super(data, { col: 'deck', parent });
-    this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'itemMap']);
+    this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData', 'activeEvent']);
 
     this.set({
       type: data.type,
       subtype: data.subtype,
+      cardGroups: data.cardGroups,
+      placement: data.placement,
       itemType: data.itemType,
       settings: data.settings,
       access: data.access,
@@ -26,18 +28,32 @@
         if (key === 'itemMap' && !this.access[player?._id] && !viewerMode) {
           const ids = {};
           for (const [idx, [id, val]] of Object.entries(value).entries()) {
+            const item = game.getObjectById(id); // ищем в game, потому что item мог быть перемещен
             const updatedItemsEntries = Object.entries(this.#updatedItems[id] || {});
             if (updatedItemsEntries.length) {
               for (const [fakeId, action] of updatedItemsEntries) {
-                // ! если будут ошибки, то можно повторить логику из блока for-of updatedItemsEntries ниже (className: 'Player')
-                ids[fakeId] = action === 'remove' ? null : val;
+                if (action === 'remove') {
+                  ids[id] = null;
+                  ids[fakeId] = null;
+                } else if (action === 'removeVisible') {
+                  ids[id] = null;
+                  ids[fakeId] = null; // item могли сначала сделать visible, а потом удалить
+                } else if (item.visible) {
+                  ids[id] = val;
+                  ids[fakeId] = null; // если не удалить, то будет задвоение внутри itemMap на фронте
+                } else {
+                  ids[fakeId] = val;
+                }
               }
             } else {
               // первичная рассылка из addSubscriber
-              const item = game.getObjectById(id); // ищем в game, потому что item мог быть перемещен
-              const fakeId = item.fakeId[fakeIdParent];
-              if (!fakeId) throw '!fakeId';
-              ids[fakeId] = val;
+              if (item.visible) {
+                ids[id] = val;
+              } else {
+                const fakeId = item.fakeId[fakeIdParent];
+                if (!fakeId) throw '!fakeId';
+                ids[fakeId] = val;
+              }
             }
           }
           preparedData.itemMap = ids;
@@ -58,9 +74,11 @@
               if (updatedItemsEntries.length) {
                 for (const [fakeId, action] of updatedItemsEntries) {
                   if (action === 'remove') {
+                    ids[id] = null;
                     ids[fakeId] = null;
                   } else if (action === 'removeVisible') {
                     ids[id] = null;
+                    ids[fakeId] = null; // item могли сначала сделать visible, а потом удалить
                   } else if (item.visible || viewerMode) {
                     ids[id] = val;
                     ids[fakeId] = null; // если не удалить, то будет задвоение внутри itemMap на фронте
@@ -118,7 +136,14 @@
     const itemClass = this.getItemClass();
     if (item.constructor != itemClass) item = new itemClass(item, { parent: this });
 
-    this.set({ itemMap: { [item._id]: {} } });
+    const linkVal = {
+      /* addTime: Date.now() */
+    }; // addTime может понадобиться в будущем, если nodejs начнет сортировать ключи в объектах по названию (например, тогда перестанет работать порядок переноса item-ов из одной deck в другую)
+    const fields = item.publicStaticFields();
+    if (fields?.length) {
+      for (const key of fields) linkVal[key] = item[key];
+    }
+    this.set({ itemMap: { [item._id]: linkVal } });
     this.addToObjectStorage(item);
 
     const game = this.game();
@@ -145,6 +170,17 @@
       });
     }
   }
+  setItemVisible(item) {
+    const itemId = item.id();
+    // чтобы попал в prepareBroadcastData
+    const linkVal = this.itemMap[itemId];
+    this.set({ itemMap: { [itemId]: null } });
+    this.set({ itemMap: { [itemId]: linkVal } });
+    // чтобы попал в for (const [fakeId, action] of updatedItemsEntries) {...}
+    this.markItemUpdated({ item });
+    // чтобы попал в ветку if (item.visible) {...}
+    item.set({ visible: true });
+  }
   /**
    * Наполняем данные для рассылки фронту (о fakeId, которые нужно удалить из deck)
    */
@@ -152,10 +188,17 @@
     if (!this.#updatedItems[item._id]) this.#updatedItems[item._id] = {};
     this.#updatedItems[item._id][item.fakeId[this.id()]] = action;
   }
-  moveAllItems({ target }) {
+  moveAllItems({ target, setData, emitEvent }) {
     const store = this.getFlattenStore();
     const itemIds = Object.keys(this.itemMap);
-    for (const id of itemIds) store[id].moveToTarget(target);
+    for (const id of itemIds) {
+      const item = store[id];
+      if (emitEvent) {
+        for (const event of item.eventData.activeEvents) event.emit(emitEvent);
+      }
+      if (setData) item.set(setData);
+      item.moveToTarget(target);
+    }
   }
   moveRandomItems({ count, target }) {
     for (let i = 0; i < count; i++) {
@@ -169,5 +212,34 @@
     const id = itemIds[Math.floor(Math.random() * itemIds.length)];
     const store = this.getFlattenStore();
     return store[id];
+  }
+  smartMoveRandomCard({ target }) {
+    let card = this.getRandomItem();
+    if (card) card.moveToTarget(target);
+    else {
+      this.restoreCardsFromDrop();
+      card = this.getRandomItem();
+      if (card) card.moveToTarget(target);
+    }
+    return card;
+  }
+  restoreCardsFromDrop({ deckDrop } = {}) {
+    if (!deckDrop) deckDrop = this.game().decks.drop;
+    const cards = deckDrop
+      .getObjects({
+        className: 'Card',
+      })
+      .filter(({ group }) => this.cardGroups.includes(group));
+    for (const card of cards) {
+      if (card.restoreAvailable()) card.moveToTarget(this);
+    }
+  }
+  updateAllItems(updateData) {
+    const store = this.getFlattenStore();
+    const itemIds = Object.keys(this.itemMap);
+    for (const id of itemIds) {
+      const item = store[id];
+      item.set(updateData);
+    }
   }
 });

@@ -2,6 +2,7 @@
   <div
     v-if="gameDataLoaded"
     id="game"
+    :type = "game.gameType"
     :class="[
       state.isMobile ? 'mobile-view' : '',
       state.isLandscape ? 'landscape-view' : 'portrait-view',
@@ -77,28 +78,14 @@
 
     <div v-if="state.shownCard" class="shown-card scroll-off" v-on:click.stop="closeCardInfo">
       <div class="close" v-on:click.stop="closeCardInfo" />
-      <div
-        class="img"
-        :style="{
-          backgroundImage: `url(${this.state.lobbyOrigin}/img/cards/release/${state.shownCard}.jpg), url(empty-card.jpg)`,
-        }"
-      />
+      <div class="img" :style="state.shownCard" />
     </div>
 
-    <div
-      id="gamePlane"
-      :style="{ ...gamePlaneCustomStyleData, ...gamePlaneControlStyle }"
-    >
+    <div id="gamePlane" :style="{ ...gamePlaneCustomStyleData, ...gamePlaneControlStyle }">
       <slot name="gameplane" :game="game" :gamePlaneScale="gamePlaneScale" />
     </div>
 
-    <GUIWrapper
-      class="game-info"
-      :pos="['top', 'right']"
-      :offset="{
-        right: state.isLandscape ? (state.isMobile ? 80 : [110, 110, 130, 200, 270, 340][state.guiScale]) : 0,
-      }"
-    >
+    <GUIWrapper id="gameInfo" :pos="['top', 'right']" :offset="{}">
       <slot name="gameinfo" />
     </GUIWrapper>
 
@@ -107,12 +94,8 @@
     </GUIWrapper>
     <GUIWrapper
       class="players"
-      :pos="state.isMobile && state.isPortrait ? ['bottom', 'right'] : ['bottom', 'left']"
-      :offset="
-        state.isMobile && state.isPortrait
-          ? { bottom: 10 + 10 + 180 * 0.6 + ((sessionUserCardDeckLength || 1) - 1) * 20 }
-          : {}
-      "
+      :pos="state.isMobile && state.isPortrait ? ['top', 'right'] : ['bottom', 'left']"
+      :offset="state.isMobile && state.isPortrait ? { top: 100 } : {}"
       :contentClass="['gui-small']"
     >
       <slot name="opponents" />
@@ -210,9 +193,6 @@ export default {
         this.updatePlaneScale();
       }, 100);
     },
-    'game.availablePorts': function (newValue, oldValue) {
-      if (newValue?.length > 0 || oldValue?.length > 0) this.updatePlaneScale();
-    },
   },
   methods: {
     updatePlaneScale() {
@@ -248,7 +228,7 @@ export default {
                 isMobile: this.state.isMobile,
               });
               this.gamePlaneCustomStyleData = calcData;
-              
+
               restoreGamePlaneSettings();
             }
           });

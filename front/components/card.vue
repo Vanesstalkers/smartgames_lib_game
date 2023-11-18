@@ -2,17 +2,20 @@
   <div
     v-if="card._id || cardData"
     :name="card.name"
-    :class="['card-event', card.played ? 'played' : '', this.isSelected ? 'selected' : '']"
+    :class="[
+      'card-event',
+      card.played ? 'played' : '',
+      this.isSelected ? 'selected' : '',
+      hasActiveEvent ? 'active-event' : '',
+      card.eventData.cardClass || '',
+      card.eventData.playDisabled ? 'play-disabled' : '',
+    ]"
     :style="customStyle"
     v-on:click.stop="toggleSelect"
   >
-    <div class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
-    <div
-      v-if="canPlay && sessionPlayerIsActive() && !actionsDisabled() && !card.played"
-      v-on:click.stop="playCard"
-      class="play-btn"
-    >
-      Разыграть
+    <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
+    <div v-if="canPlay && !card.eventData.playDisabled" v-on:click.stop="playCard" class="play-btn">
+      {{ card.eventData.buttonText || 'Разыграть' }}
     </div>
   </div>
 </template>
@@ -25,7 +28,14 @@ export default {
   props: {
     cardId: String,
     canPlay: Boolean,
+    playerActive: {
+      type: Boolean,
+      default: true,
+    },
     cardData: Object,
+    cardGroup: String,
+    imgExt: String,
+    imgFullPath: String, // формат: `${this.state.lobbyOrigin}/img/cards/${this.game.deckType}/${this.card.name}.jpg`
   },
   data() {
     return {};
@@ -46,28 +56,53 @@ export default {
     card() {
       if (this.cardData) return this.cardData;
       const card = this.store.card?.[this.cardId];
-      return card?._id ? card : { _id: this.cardId };
+      return card?._id ? card : { _id: this.cardId, eventData: {} };
+    },
+    isSelected() {
+      return this.cardId === this.gameCustom.selectedCard;
+    },
+    hasActiveEvent() {
+      return this.sessionPlayerIsActive() && this.card.eventData.activeEvents?.length;
     },
     isSelected() {
       return this.cardId === this.gameCustom.selectedCard;
     },
     customStyle() {
-      const style = {
-        backgroundImage: `url(${this.state.lobbyOrigin}/img/cards/${this.game.deckType}/${this.card.name}.jpg), url(empty-card.jpg)`,
+      const {
+        state: { lobbyOrigin },
+        card,
+        game,
+        imgFullPath,
+        imgExt = 'jpg',
+      } = this;
+
+      const rootPath = `${lobbyOrigin}/img/cards/${game.deckType}`;
+      const { group, name } = card;
+
+      const cardPath = [this.cardGroup || group, name || 'back-side'].join('/');
+      const path = imgFullPath || `${rootPath}/${cardPath}.${imgExt}` || `empty-card.${imgExt}`;
+
+      return {
+        backgroundImage: `url(${path})`,
       };
-      return style;
     },
   },
   methods: {
     async playCard() {
       if (this.card.played) return;
-      await this.handleGameApi({ name: 'playCard', data: { cardId: this.cardId } });
+      await this.handleGameApi({
+        name: 'playCard',
+        data: {
+          cardId: this.cardId,
+          targetPlayerId: this.$parent.playerId,
+        },
+      });
     },
     toggleSelect() {
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;
     },
     showInfo(name) {
-      this.$set(this.$root.state, 'shownCard', name);
+      this.$set(this.$root.state, 'shownCard', this.customStyle);
     },
   },
   mounted() {},
@@ -86,8 +121,6 @@ export default {
   flex-wrap: wrap;
   border-radius: 10px;
   margin: 0px 0px 0px 5px;
-  box-shadow: inset 0px 20px 20px 0px black;
-  background-image: url(../assets/back-side.jpg);
   background-color: grey;
 
   &.tutorial-active {
@@ -123,18 +156,58 @@ export default {
   cursor: pointer;
   position: absolute;
   bottom: 0px;
-  width: 100px;
   font-size: 0.5em;
   border: 1px solid black;
   text-align: center;
   cursor: pointer;
-  margin: 6px 10px;
-  background: #3f51b5;
+  background: #3f51b5de;
   color: white;
   font-size: 16px;
   padding: 8px 0px;
+  width: 100%;
+  margin: 0px;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+
+  &:hover {
+    background: #3f51b5;
+  }
 }
+
 .card-event.active {
   border: 4px solid green;
 }
+
+.card-event.active-event.highlight-off,
+.card-event.active-event.play-disabled {
+  box-shadow: none !important;
+}
+.card-event.active-event {
+  box-shadow: inset 0 0 20px 8px lightgreen !important;
+}
+
+.card-event.alert {
+  box-shadow: inset 0 0 10px 4px #b53f3f !important;
+
+  .play-btn {
+    background: #b53f3fde;
+
+    &:hover {
+      background: #b53f3f;
+    }
+  }
+}
+.card-event.danger {
+  box-shadow: inset 0 0 10px 4px #b53f3f !important;
+
+  .play-btn {
+    background: #b53f3fde;
+
+    &:hover {
+      background: #b53f3f;
+    }
+  }
+}
+
+//
 </style>

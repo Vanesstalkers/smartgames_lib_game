@@ -1,13 +1,12 @@
-(function ({ cardId }) {
+(function ({ cardId }, player) {
   if (this.activeEvent)
     throw new Error(
       this.activeEvent.errorMsg || 'Игрок не может совершить это действие, пока не завершит активное событие.'
     );
 
   const card = this.getObjectById(cardId);
-  card.play();
-  const cardDeckDrop = this.getObjectByCode('Deck[card_active]');
-  card.moveToTarget(cardDeckDrop);
+  card.play({ player });
+  card.moveToTarget(this.decks.active);
 
-  this.logs(`Пользователь {{player}} активировал событие "${card.title}".`);
+  this.logs(`Пользователь {{player}} разыграл карту "${card.title}".`);
 });

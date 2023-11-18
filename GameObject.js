@@ -7,7 +7,7 @@
   #_objects = {};
   #fakeParent = null;
   #broadcastableFields = null;
-  #events;
+  #publicStaticFields = null; // отправляется в том числе и для фейковых данных, обновлять нельзя (хранятся в объекте-связи родителя-колоды)
 
   constructor(data, { col: _col, parent } = {}) {
     const newObject = data._id ? false : true;
@@ -18,7 +18,7 @@
     // индикатор наличия активного события (может быть с вложенными данными)
     if (data.activeEvent) this.activeEvent = data.activeEvent;
     // статичный объект для любых временных данных событий
-    this.eventData = data.eventData || {};
+    this.eventData = data.eventData || { activeEvents: [] };
 
     this.setParent(parent);
     this.addToParentsObjectStorage();
@@ -68,6 +68,17 @@
   }
   setChanges(val, config = {}) {
     this.#game.setChanges({ store: { [this._col]: { [this._id]: val } } }, config);
+  }
+
+  setChanges(val, config = {}) {
+    const clonedConfig = lib.utils.structuredClone(config);
+    if (clonedConfig.reset) clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
+    this.#game.setChanges(
+      {
+        store: { [this._col]: { [this._id]: val } },
+      },
+      clonedConfig
+    );
   }
 
   markNew({ saveToDB = false } = {}) {
@@ -133,10 +144,15 @@
   getCodeTemplate(_code) {
     return '' + this.getCodePrefix() + _code + this.getCodeSuffix();
   }
-  getObjects({ className, directParent } = {}) {
+  getObjects({ className, attr, directParent } = {}) {
     let result = Object.values(this.#_objects);
     if (className) result = result.filter((obj) => obj.constructor.name === className);
     if (directParent) result = result.filter((obj) => obj.getParent() === directParent);
+    if (attr) {
+      for (const [key, val] of Object.entries(attr)) {
+        result = result.filter((obj) => obj[key] === val);
+      }
+    }
     return result;
   }
   setParent(parent) {
@@ -194,6 +210,11 @@
     if (!data) return this.#broadcastableFields;
     this.#broadcastableFields = data;
   }
+  publicStaticFields(data) {
+    if (data) this.#publicStaticFields = data;
+    return this.#publicStaticFields;
+  }
+
   prepareBroadcastData({ data, player, viewerMode }) {
     let visibleId = this._id;
     let preparedData;
@@ -207,18 +228,46 @@
     }
     return { visibleId, preparedData };
   }
-  events(data) {
-    if (!data) return this.#events;
-    this.#events = data;
+  getEvent(eventName) {
+    const event = domain.game.events?.[eventName] || lib.game.events?.[eventName];
+    if (!event) return null;
+    return event();
   }
-  emit(event, data = {}, config = {}) {
-    const { softCall = false } = config;
-    if (!this.#events?.handlers?.[event])
-      if (softCall) return;
-      else throw new Error(`event not found (event=${event})`);
+  initEvent(eventName, { player } = {}) {
+    const event = this.getEvent(eventName);
+    if (!event) throw new Error(`event not found (event=${eventName})`);
+
     const game = this.game();
-    const player = game.getActivePlayer();
-    if (data.targetId) data.target = game.getObjectById(data.targetId);
-    return this.#events.handlers[event].call(this, { game, player, ...data });
+    event.source(this);
+    event.game(game);
+    event.player(player);
+    event.name = eventName;
+
+    if (event.init) event.init();
+    this.addEvent(event);
+
+    for (const handler of event.handlers()) {
+      game.addEventListener({ handler, event });
+    }
+
+    return event;
+  }
+  findEvent(attr = {}) {
+    return this.eventData.activeEvents.find((event) => {
+      const attrEntries = Object.entries(attr);
+      const checkResult = attrEntries.filter(([key, val]) => event[key] === val);
+      return checkResult.length == attrEntries.length;
+    });
+  }
+  addEvent(event) {
+    const activeEvents = this.eventData.activeEvents || [];
+    activeEvents.push(event);
+    this.set({ eventData: { activeEvents } });
+  }
+  removeEvent(event) {
+    const activeEvents = this.eventData.activeEvents.filter((activeEvent) => {
+      return activeEvent !== event;
+    });
+    this.set({ eventData: { activeEvents } });
   }
 });

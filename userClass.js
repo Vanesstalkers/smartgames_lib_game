@@ -78,8 +78,6 @@
         await session.saveChanges();
         session.emit('leaveGame');
       }
-
-      lib.store.broadcaster.publishAction(`gameuser-${this.id()}`, 'leaveGame');
     }
 
     async gameFinished({ gameId, gameType, playerEndGameStatus, fullPrice, roundCount }) {
