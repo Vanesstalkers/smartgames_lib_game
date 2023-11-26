@@ -15,8 +15,6 @@
     if (!this._id) this._id = data._id || db.mongo.ObjectID().toString();
     if (_col) this._col = _col;
     this.fakeId = data.fakeId || {};
-    // индикатор наличия активного события (может быть с вложенными данными)
-    if (data.activeEvent) this.activeEvent = data.activeEvent;
     // статичный объект для любых временных данных событий
     this.eventData = data.eventData || { activeEvents: [] };
 
@@ -122,11 +120,17 @@
   deleteFromObjectStorage(obj) {
     if (this.#_objects[obj.id()]) delete this.#_objects[obj.id()];
   }
-  getObjectById(_id) {
+  getObjectById() {
+    return this.get(...arguments);
+  }
+  get(_id) {
     // _id всегда уникален
     return this.#_objects[_id] || (_id === this.#game.id() ? this.#game : null);
   }
-  getObjectByCode(code) {
+  getObjectByCode() {
+    return this.find(...arguments);
+  }
+  find(code) {
     // внутри одного родителя code может быть не уникален
     return Object.values(this.#_objects).find((obj) => {
       obj.setFakeParent(this);
@@ -144,7 +148,13 @@
   getCodeTemplate(_code) {
     return '' + this.getCodePrefix() + _code + this.getCodeSuffix();
   }
-  getObjects({ className, attr, directParent } = {}) {
+  getObjects() {
+    return this.select(...arguments);
+  }
+  select(query = {}) {
+    if (typeof query === 'string') query = { className: query };
+    const { className, attr, directParent } = query;
+
     let result = Object.values(this.#_objects);
     if (className) result = result.filter((obj) => obj.constructor.name === className);
     if (directParent) result = result.filter((obj) => obj.getParent() === directParent);
@@ -233,19 +243,33 @@
     if (!event) return null;
     return event();
   }
-  initEvent(eventName, { player } = {}) {
-    const event = this.getEvent(eventName);
+  initEvent(event, { player, defaultResetHandler } = {}) {
+    if (typeof event === 'string') {
+      const eventName = event;
+      event = this.getEvent(eventName);
+      event.name = eventName;
+    }
     if (!event) throw new Error(`event not found (event=${eventName})`);
-
     const game = this.game();
+
+    event = new lib.game.GameEvent(event);
     event.source(this);
     event.game(game);
     event.player(player);
-    event.name = eventName;
 
-    if (event.init) event.init();
+    if (event.init) {
+      const { removeEvent } = event.init() || {};
+      if (removeEvent) return null;
+    }
     this.addEvent(event);
 
+    if (defaultResetHandler) {
+      event.addHandler('RESET', function () {
+        const { game, source, sourceId } = this.eventContext();
+        source.removeEvent(this);
+        game.removeAllEventListeners({ sourceId });
+      });
+    }
     for (const handler of event.handlers()) {
       game.addEventListener({ handler, event });
     }

@@ -1,7 +1,7 @@
 (class Card extends lib.game.GameObject {
   constructor(data, { parent }) {
     super(data, { col: 'card', parent });
-    this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData', 'activeEvent']);
+    this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData']);
     this.publicStaticFields(['group', 'owner']);
 
     this.set({
@@ -45,12 +45,11 @@
   canPlay() {
     return this.getEvent(this.name) ? true : false;
   }
-  play({ player } = {}) {
+  play({ player, logMsg } = {}) {
     if (this.played) return;
     const event = this.initEvent(this.name, { player });
-    if (event.hasInitAction()) this.game().logs(`Разыграна карта "${this.title}"`);
+    if (event !== null && player) player.addEvent(event);
     this.set({ played: Date.now() });
-
-    if (player) player.addEvent(event);
+    this.game().logs(logMsg || `Разыграна карта "${this.title}"`);
   }
 });

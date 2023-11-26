@@ -47,7 +47,7 @@
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
 
-      this.fillData(gameData, { newGame: true });
+      this.run('fillGameData', { data: gameData, newGame: true });
       delete this._id; // удаляем _id от gameObject, чтобы он не попал в БД
 
       await super.create({ ...this });
@@ -68,7 +68,7 @@
           if (dbData === null) {
             throw 'not_found';
           } else {
-            this.fillData(dbData);
+            this.run('fillGameData', { data: dbData, newGame: false });
             if (!this.id() && initStore) {
               this.initStore(dbData._id);
               if (!this.channel()) this.initChannel();
@@ -111,6 +111,11 @@
       if (!action) throw new Error(`action "${actionName}" not found`);
       return action.call(this, data, initPlayer);
     }
+    runSuper(actionName, data, initPlayer) {
+      const action = lib.game.actions?.[actionName];
+      if (!action) throw new Error(`action "${actionName}" not found`);
+      return action.call(this, data, initPlayer);
+    }
 
     eventListeners = {};
     addEventListener({ handler, event }) {
@@ -141,19 +146,23 @@
     toggleEventHandlers(handler, data = {}, initPlayers) {
       if (!this.eventListeners[handler]) return;
 
+      if (!initPlayers) initPlayers = [this.game().getActivePlayer()];
       if (!Array.isArray(initPlayers)) initPlayers = [initPlayers];
       for (const event of this.eventListeners[handler]) {
-        if (!initPlayers.includes(event.player())) continue;
+        const playerAccessAllowed = initPlayers.includes(event.player());
+        if (!playerAccessAllowed) continue;
 
-        if (data.targetId) data.target = this.getObjectById(data.targetId);
         const { preventListenerRemove } = event.emit(handler, data) || {};
-        if (!preventListenerRemove) this.removeEventListener({ handler, sourceId: event.sourceId });
+        if (!preventListenerRemove) this.removeEventListener({ handler, sourceId: event.sourceId() });
       }
     }
     clearEvents() {
       for (const handler of Object.keys(this.eventListeners)) {
         this.set({ eventListeners: { [handler]: [] } });
       }
+    }
+    triggerEventEnabled() {
+      return this.eventListeners['TRIGGER']?.length ? true : false;
     }
 
     logs(data, { consoleMsg } = {}) {
@@ -164,7 +173,7 @@
 
       if (data.msg.includes('{{player}}')) {
         const player = data.userId
-          ? this.getObjects({ className: 'Player' }).find(({ userId }) => userId === data.userId)
+          ? this.players().find(({ userId }) => userId === data.userId)
           : this.getActivePlayer();
         if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `"${player.userName}"`);
       }
@@ -185,12 +194,12 @@
       return this.settings.singlePlayer;
     }
 
-    getPlayerList() {
+    players() {
       const store = this.getStore();
       return Object.keys(this.playerMap).map((_id) => store.player[_id]);
     }
     getPlayerByUserId(id) {
-      return this.getPlayerList().find((player) => player.userId === id);
+      return this.players().find((player) => player.userId === id);
     }
     async playerJoin({ userId, userName }) {
       try {
@@ -198,16 +207,18 @@
 
         const player = this.getFreePlayerSlot();
         if (!player) throw new Error('Свободных мест не осталось');
+        const gameId = this.id();
+        const playerId = player.id();
 
         player.set({ ready: true, userId, userName });
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
-        this.checkStatus({ cause: 'PLAYER_JOIN' });
+        this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId });
         await this.saveChanges();
 
         lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
-          gameId: this.id(),
-          playerId: player.id(),
+          gameId,
+          playerId,
           deckType: this.deckType,
           isSinglePlayer: this.isSinglePlayer(),
         });
@@ -244,7 +255,7 @@
       if (this.status !== 'FINISHED' && !viewerId) {
         this.logs({ msg: `Игрок {{player}} вышел из игры.`, userId });
         try {
-          this.endGame({ canceledByUser: userId });
+          this.run('endGame', { canceledByUser: userId });
         } catch (exception) {
           if (exception instanceof lib.game.endGameException) {
             await this.removeGame();
@@ -253,58 +264,15 @@
       }
       lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
     }
-    endGame({ winningPlayer, canceledByUser, customFinalize = false } = {}) {
-      lib.timers.timerDelete(this);
-      this.emitCardEvents('endRound');
-
-      if (this.status !== 'IN_PROCESS') canceledByUser = true; // можно отменить игру, еще она еще не начата (ставим true, чтобы ниже попасть в условие cancel-ветку)
-
-      if (winningPlayer) this.setWinner({ player: winningPlayer });
-
-      const playerList = this.getObjects({ className: 'Player' });
-      const playerEndGameStatus = {};
-      for (const player of playerList) {
-        const { userId } = player;
-        const endGameStatus = canceledByUser
-          ? userId === canceledByUser
-            ? 'lose'
-            : 'cancel'
-          : this.winUserId // у игры есть победитель
-          ? userId === this.winUserId
-            ? 'win'
-            : 'lose'
-          : 'lose'; // игра закончилась автоматически
-        player.set({ endGameStatus });
-        playerEndGameStatus[userId] = endGameStatus;
-      }
-
-      this.set({
-        statusLabel: 'Игра закончена',
-        status: 'FINISHED',
-        playerEndGameStatus,
-      });
-
-      if (customFinalize) return; // для кастомных endGame-обработчиков
-
-      this.broadcastAction('gameFinished', {
-        gameId: this.id(),
-        gameType: this.deckType,
-        playerEndGameStatus,
-        fullPrice: this.getFullPrice(),
-        roundCount: this.round,
-      });
-
-      throw new lib.game.endGameException();
-    }
     setWinner({ player }) {
       this.set({ winUserId: player.userId });
       this.logs({ msg: `Игрок {{player}} победил в игре.`, userId: player.userId });
     }
     getFreePlayerSlot() {
-      return this.getPlayerList().find((player) => !player.ready);
+      return this.players().find((player) => !player.ready);
     }
     getActivePlayer() {
-      return this.getPlayerList().find((player) => player.active);
+      return this.players().find((player) => player.active);
     }
     changeActivePlayer({ player } = {}) {
       const activePlayer = this.getActivePlayer();
@@ -322,7 +290,7 @@
         }
       }
 
-      const playerList = this.getPlayerList();
+      const playerList = this.players();
       let activePlayerIndex = playerList.findIndex((player) => player === activePlayer);
       let newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
       if (player) {
@@ -364,7 +332,7 @@
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
-        const player = this.getPlayerList().find((player) => player.userId === userId);
+        const player = this.players().find((player) => player.userId === userId);
         if (!player) throw new Error('player not found');
 
         const activePlayer = this.getActivePlayer();
@@ -374,7 +342,7 @@
           throw new Error('Игрок не может совершать действия в этот ход.');
 
         // !!! защитить методы, которые не должны вызываться с фронта
-        const result = this.run(eventName, eventData);
+        const result = this.run(eventName, eventData, activePlayer);
 
         await this.saveChanges();
 
@@ -410,7 +378,7 @@
           } else if (col === 'game' || changes.fake) {
             result[col][id] = changes;
           } else {
-            const obj = this.getObjectById(id);
+            const obj = this.get(id);
             if (obj && typeof obj.prepareBroadcastData === 'function') {
               const { visibleId, preparedData } = obj.prepareBroadcastData({
                 data: changes,
@@ -496,19 +464,17 @@
     }
     async onTimerTick({ timerId, data: { time = null } = {} }) {
       try {
-        const player = this.getActivePlayer();
-        if (!player.timerEndTime) {
-          if (this.status === 'FINISHED') {
-            // тут некорректное завершение таймера игры
-            // остановка таймера должна была отработать в endGame
-            // бросать endGameException нельзя, потому что в removeGame будет вызов saveChanges, который попытается сделать broadcastData, но channel к этому моменту будет уже удален
-            lib.timers.timerDelete(this);
-            return;
-          } else throw 'player.timerEndTime === NaN';
+        if (this.status === 'FINISHED') {
+          console.debug("!!! lib.timers.timerDelete on this.status === 'FINISHED'");
+          return lib.timers.timerDelete(this);
         }
-        // console.log('setInterval', player.timerEndTime - Date.now()); // временно оставил для отладки (все еще появляются setInterval NaN - отловить не смог)
+
+        const player = this.getActivePlayer();
+        if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
+
         if (player.timerEndTime < Date.now()) {
-          this.checkStatus({ cause: 'PLAYER_TIMER_END' });
+          this.eventListeners['PLAYER_TIMER_END'].reverse(); // глобальные события игры, добавленные при ее создании, должны отработать последними
+          this.toggleEventHandlers('PLAYER_TIMER_END');
           await this.saveChanges();
         }
       } catch (exception) {

@@ -2,7 +2,7 @@
   <div
     v-if="gameDataLoaded"
     id="game"
-    :type = "game.gameType"
+    :type="game.gameType"
     :class="[
       state.isMobile ? 'mobile-view' : '',
       state.isLandscape ? 'landscape-view' : 'portrait-view',
@@ -324,7 +324,8 @@ export default {
 #game.mobile-view {
   touch-action: none;
 }
-#game .active-event {
+
+#game .selectable {
   cursor: pointer;
   box-shadow: inset 0 0 20px 8px yellow;
 }

@@ -5,7 +5,7 @@
 
   constructor(data, { parent }) {
     super(data, { col: 'deck', parent });
-    this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData', 'activeEvent']);
+    this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData']);
 
     this.set({
       type: data.type,
@@ -28,7 +28,7 @@
         if (key === 'itemMap' && !this.access[player?._id] && !viewerMode) {
           const ids = {};
           for (const [idx, [id, val]] of Object.entries(value).entries()) {
-            const item = game.getObjectById(id); // ищем в game, потому что item мог быть перемещен
+            const item = game.get(id); // ищем в game, потому что item мог быть перемещен
             const updatedItemsEntries = Object.entries(this.#updatedItems[id] || {});
             if (updatedItemsEntries.length) {
               for (const [fakeId, action] of updatedItemsEntries) {
@@ -69,7 +69,7 @@
             if (parent === player || viewerMode) {
               ids[id] = val;
             } else {
-              const item = game.getObjectById(id); // ищем в game, потому что item мог быть перемещен
+              const item = game.get(id); // ищем в game, потому что item мог быть перемещен
               const updatedItemsEntries = Object.entries(this.#updatedItems[id] || {});
               if (updatedItemsEntries.length) {
                 for (const [fakeId, action] of updatedItemsEntries) {
@@ -225,11 +225,7 @@
   }
   restoreCardsFromDrop({ deckDrop } = {}) {
     if (!deckDrop) deckDrop = this.game().decks.drop;
-    const cards = deckDrop
-      .getObjects({
-        className: 'Card',
-      })
-      .filter(({ group }) => this.cardGroups.includes(group));
+    const cards = deckDrop.select('Card').filter(({ group }) => this.cardGroups.includes(group));
     for (const card of cards) {
       if (card.restoreAvailable()) card.moveToTarget(this);
     }

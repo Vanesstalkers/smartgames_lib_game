@@ -15,7 +15,6 @@
       'timerEndTime',
       'timerUpdateTime',
       'eventData',
-      'activeEvent',
       'deckMap',
     ]);
 
@@ -28,7 +27,7 @@
     });
   }
   nextPlayer() {
-    const players = this.game().getPlayerList();
+    const players = this.game().players();
     const idx = players.indexOf(this);
     return players[(idx + 1) % players.length];
   }
@@ -43,10 +42,13 @@
   }
   returnTableCardsToHand() {
     for (const deck of this.getObjects({ className: 'Deck', attr: { placement: 'table' } })) {
-      const cards = deck.getObjects({ className: 'Card' });
+      const cards = deck.select('Card');
       for (const card of cards) {
         for (const event of card.eventData.activeEvents) event.emit('TRIGGER');
       }
     }
+  }
+  triggerEventEnabled() {
+    return this.eventData.activeEvents.find((event) => event.hasHandler('TRIGGER')) ? true : false;
   }
 });

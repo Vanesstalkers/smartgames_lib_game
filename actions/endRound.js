@@ -1,65 +1,33 @@
-(function ({ timerOverdue, forceActivePlayer } = {}) {
-  if (this.status !== 'IN_PROCESS') {
-    console.log('game', { status: this.status, id: this.id() });
-    throw new Error('Действие запрещено.');
-  }
-
+(function ({ forceActivePlayer } = {}) {
   const {
     round,
-    activeEvent, // нельзя тут объявлять, потому что он динамически обновиться в toggleEventHandlers
     settings: {
       // конфиги
-      autoFinishAfterRoundsOverdue,
+      playerHandLimit,
     },
   } = this;
 
-  const timerOverdueCounter = timerOverdue ? (this.timerOverdueCounter || 0) + 1 : 0;
-  // если много ходов было завершено по таймауту, то скорее всего все игроки вышли и ее нужно завершать
-  if (timerOverdueCounter > autoFinishAfterRoundsOverdue) {
-    this.endGame();
-  }
-
   // player чей ход только что закончился (получаем принципиально до вызова changeActivePlayer)
   const prevPlayer = this.getActivePlayer();
+  const prevPlayerHand = prevPlayer.find('Deck[domino]');
 
   if (round > 0) {
-    if (timerOverdue) {
-      this.logs({
-        msg: `Игрок {{player}} не успел завершить все действия за отведенное время, и раунд №${round} завершился автоматически.`,
+    this.logs(
+      {
+        msg: `Игрок {{player}} закончил раунд №${round}.`,
         userId: prevPlayer.userId,
-      });
-    } else {
-      this.logs(
-        {
-          msg: `Игрок {{player}} закончил раунд №${round}.`,
-          userId: prevPlayer.userId,
-        },
-        { consoleMsg: true }
-      );
-    }
+      },
+      { consoleMsg: true }
+    );
   }
 
-  if (timerOverdue || this.activeEvent) {
-    // таймер закончился или нажата кнопка окончания раунда при не завершенном активном событии
-
-    if (this.activeEvent) {
-      const source = this.getObjectById(this.activeEvent.sourceId);
-      this.logs(`Так как раунд был завершен, активное событие "${source.title}" сработало автоматически.`);
-    }
-  }
-
-  // ЛОГИКА ОКОНЧАНИЯ ТЕКУЩЕГО РАУНДА
-
-  this.toggleEventHandlers('endRound');
-  this.clearEvents();
-
-  // ЛОГИКА НАЧАЛА НОВОГО РАУНДА
+  this.toggleEventHandlers('END_ROUND');
 
   // player которому передают ход
   const activePlayer = this.changeActivePlayer({ player: forceActivePlayer });
-  const playerCardHand = activePlayer.getObjectByCode('Deck[card]');
+  const playerCardHand = activePlayer.find('Deck[card]');
 
-  const playedCards = this.decks.active.getObjects({ className: 'Card' });
+  const playedCards = this.decks.active.select('Card');
   for (const card of playedCards) {
     if (!card.isPlayOneTime()) card.set({ played: null });
     card.moveToTarget(this.decks.drop);

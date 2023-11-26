@@ -1,12 +1,11 @@
 (function ({ cardId }, player) {
-  if (this.activeEvent)
-    throw new Error(
-      this.activeEvent.errorMsg || 'Игрок не может совершить это действие, пока не завершит активное событие.'
-    );
+  if (this.triggerEventEnabled() || player.triggerEventEnabled())
+    throw new Error('Игрок не может совершить это действие, пока не завершит активное событие.');
 
-  const card = this.getObjectById(cardId);
-  card.play({ player });
+  const card = this.get(cardId);
+  card.play({
+    player,
+    logMsg: `Пользователь {{player}} разыграл карту "${card.title}".`,
+  });
   card.moveToTarget(this.decks.active);
-
-  this.logs(`Пользователь {{player}} разыграл карту "${card.title}".`);
 });

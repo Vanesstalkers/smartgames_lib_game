@@ -6,7 +6,7 @@
       'card-event',
       card.played ? 'played' : '',
       this.isSelected ? 'selected' : '',
-      hasActiveEvent ? 'active-event' : '',
+      selectable ? 'selectable' : '',
       card.eventData.cardClass || '',
       card.eventData.playDisabled ? 'play-disabled' : '',
     ]"
@@ -58,11 +58,11 @@ export default {
       const card = this.store.card?.[this.cardId];
       return card?._id ? card : { _id: this.cardId, eventData: {} };
     },
-    isSelected() {
-      return this.cardId === this.gameCustom.selectedCard;
-    },
     hasActiveEvent() {
       return this.sessionPlayerIsActive() && this.card.eventData.activeEvents?.length;
+    },
+    selectable() {
+      return this.sessionPlayerIsActive() && this.card.eventData.selectable?.length;
     },
     isSelected() {
       return this.cardId === this.gameCustom.selectedCard;
@@ -178,11 +178,11 @@ export default {
   border: 4px solid green;
 }
 
-.card-event.active-event.highlight-off,
-.card-event.active-event.play-disabled {
+.card-event.selectable.highlight-off,
+.card-event.selectable.play-disabled {
   box-shadow: none !important;
 }
-.card-event.active-event {
+.card-event.selectable {
   box-shadow: inset 0 0 20px 8px lightgreen !important;
 }
 

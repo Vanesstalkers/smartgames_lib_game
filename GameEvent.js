@@ -32,6 +32,9 @@
       config: { deleteNull: true, ...config }, // удаляем ключи с null-значением
     });
   }
+  getTitle() {
+    return this.#source.title || this.#source.name || this.#source.code;
+  }
 
   eventContext() {
     return {
@@ -44,14 +47,20 @@
   hasInitAction() {
     return this.#init ? true : false;
   }
+  hasHandler(handler) {
+    return this.#handlers[handler] ? true : false;
+  }
   init() {
     if (this.hasInitAction()) return this.#init();
   }
   handlers() {
     return Object.keys(this.#handlers);
   }
+  addHandler(code, handler) {
+    this.#handlers[code] = handler;
+  }
   emit(handler, data = {}) {
-    if (data.targetId) data.target = this.#game.getObjectById(data.targetId);
+    if (data.targetId) data.target = this.#game.get(data.targetId);
     handler = this.#handlers[handler];
     if (handler) return handler.call(this, data);
   }
