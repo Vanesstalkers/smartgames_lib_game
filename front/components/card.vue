@@ -35,7 +35,7 @@ export default {
     cardData: Object,
     cardGroup: String,
     imgExt: String,
-    imgFullPath: String, // формат: `${this.state.lobbyOrigin}/img/cards/${this.game.deckType}/${this.card.name}.jpg`
+    imgFullPath: String, // формат: `${this.state.serverOrigin}/img/cards/${this.card.name}.jpg`
   },
   data() {
     return {};
@@ -69,14 +69,14 @@ export default {
     },
     customStyle() {
       const {
-        state: { lobbyOrigin },
+        state: { serverOrigin },
         card,
         game,
         imgFullPath,
         imgExt = 'jpg',
       } = this;
 
-      const rootPath = `${lobbyOrigin}/img/cards/${game.deckType}`;
+      const rootPath = `${serverOrigin}/img/cards`;
       const { group, name } = card;
 
       const cardPath = [this.cardGroup || group, name || 'back-side'].join('/');
