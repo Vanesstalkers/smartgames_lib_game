@@ -79,7 +79,7 @@ export default {
       const rootPath = `${serverOrigin}/img/cards`;
       const { group, name } = card;
 
-      const cardPath = [this.cardGroup || group, name || 'back-side'].join('/');
+      const cardPath = [this.cardGroup || group, name || 'back-side'].filter((s) => s).join('/');
       const path = imgFullPath || `${rootPath}/${cardPath}.${imgExt}` || `empty-card.${imgExt}`;
 
       return {

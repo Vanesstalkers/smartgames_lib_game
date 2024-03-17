@@ -223,9 +223,11 @@
           isSinglePlayer: this.isSinglePlayer(),
         });
       } catch (exception) {
+        console.error(exception);
         lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
         });
+        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'logout'); // инициирует hideGameIframe
       }
     }
     async viewerJoin({ userId, userName }) {
@@ -246,6 +248,7 @@
           isSinglePlayer: this.isSinglePlayer(),
         });
       } catch (exception) {
+        console.error(exception);
         lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
         });
@@ -264,6 +267,11 @@
       }
       lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
     }
+    checkWinnerAndFinishGame() {
+      let winningPlayer = this.players().sort((a, b) => (a.money > b.money ? -1 : 1))[0];
+      if (winningPlayer.money <= 0) winningPlayer = null;
+      return this.run('endGame', { winningPlayer });
+    }
     setWinner({ player }) {
       this.set({ winUserId: player.userId });
       this.logs({ msg: `Игрок {{player}} победил в игре.`, userId: player.userId });
@@ -273,6 +281,9 @@
     }
     getActivePlayer() {
       return this.players().find((player) => player.active);
+    }
+    getActivePlayers() {
+      return this.players().filter((player) => player.active);
     }
     changeActivePlayer({ player } = {}) {
       const activePlayer = this.getActivePlayer();
@@ -329,20 +340,32 @@
 
       return newActivePlayer;
     }
+    activatePlayers({ publishText, setData, disableSkipRoundCheck = false }) {
+      for (const player of this.players()) {
+        if (!disableSkipRoundCheck && player.skipRoundCheck()) continue;
+        player.activate({ setData, publishText });
+      }
+    }
+    checkPlayersReady() {
+      for (const player of this.getActivePlayers()) {
+        if (!player.activeReady) return false;
+      }
+      return true;
+    }
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
         const player = this.players().find((player) => player.userId === userId);
         if (!player) throw new Error('player not found');
 
-        const activePlayer = this.getActivePlayer();
-        if (player._id !== activePlayer._id && eventName !== 'leaveGame')
+        const activePlayers = this.getActivePlayers();
+        if (!activePlayers.includes(player) && eventName !== 'leaveGame')
           throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
-        else if (activePlayer.eventData.actionsDisabled && eventName !== 'endRound' && eventName !== 'leaveGame')
+        else if (player.eventData.actionsDisabled && eventName !== 'endRound' && eventName !== 'leaveGame')
           throw new Error('Игрок не может совершать действия в этот ход.');
 
         // !!! защитить методы, которые не должны вызываться с фронта
-        const result = this.run(eventName, eventData, activePlayer);
+        const result = this.run(eventName, eventData, player);
 
         await this.saveChanges();
 
@@ -358,6 +381,7 @@
         if (exception instanceof lib.game.endGameException) {
           await this.removeGame();
         } else {
+          console.error(exception);
           lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'broadcastToSessions', {
             data: { message: exception.message, stack: exception.stack },
           });
@@ -452,15 +476,23 @@
       this.remove();
     }
 
-    onTimerRestart({ timerId, data: { time = this.settings.timer, extraTime = 0 } = {} }) {
-      const player = this.getActivePlayer();
-      if (extraTime) {
-        player.set({ timerEndTime: (player.timerEndTime || 0) + extraTime * 1000 });
-      } else {
-        player.set({ timerEndTime: Date.now() + time * 1000 });
+    onTimerRestart({ timerId, data: { time, extraTime = 0 } = {} }) {
+      try {
+        if (!time) time = this.gameTimer || this.settings.timer.DEFAULT;
+        for (const player of this.getActivePlayers()) {
+          if (extraTime) {
+            player.set({ timerEndTime: (player.timerEndTime || 0) + extraTime * 1000 });
+          } else {
+            player.set({ timerEndTime: Date.now() + time * 1000 });
+          }
+          player.set({ timerUpdateTime: Date.now() });
+          if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
+        }
+      } catch (exception) {
+        if (exception instanceof lib.game.endGameException) {
+          this.removeGame();
+        } else throw exception;
       }
-      player.set({ timerUpdateTime: Date.now() });
-      if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
     }
     async onTimerTick({ timerId, data: { time = null } = {} }) {
       try {
@@ -468,14 +500,14 @@
           console.debug("!!! lib.timers.timerDelete on this.status === 'FINISHED'");
           return lib.timers.timerDelete(this);
         }
+        for (const player of this.getActivePlayers()) {
+          if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
 
-        const player = this.getActivePlayer();
-        if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
-
-        if (player.timerEndTime < Date.now()) {
-          this.eventListeners['PLAYER_TIMER_END'].reverse(); // глобальные события игры, добавленные при ее создании, должны отработать последними
-          this.toggleEventHandlers('PLAYER_TIMER_END');
-          await this.saveChanges();
+          if (player.timerEndTime < Date.now()) {
+            this.eventListeners['PLAYER_TIMER_END'].reverse(); // глобальные события игры, добавленные при ее создании, должны отработать последними
+            this.toggleEventHandlers('PLAYER_TIMER_END');
+            await this.saveChanges();
+          }
         }
       } catch (exception) {
         if (exception instanceof lib.game.endGameException) {
@@ -484,10 +516,11 @@
       }
     }
     onTimerDelete({ timerId }) {
-      const player = this.getActivePlayer();
-      player.set({
-        timerEndTime: null,
-        timerUpdateTime: Date.now(),
-      });
+      for (const player of this.getActivePlayers()) {
+        player.set({
+          timerEndTime: null,
+          timerUpdateTime: Date.now(),
+        });
+      }
     }
   };

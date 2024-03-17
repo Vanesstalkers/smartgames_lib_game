@@ -52,6 +52,5 @@
   this.set({
     statusLabel: `Раунд ${newRoundNumber}`,
     round: newRoundNumber,
-    timerOverdueCounter,
   });
 });

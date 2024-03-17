@@ -1,5 +1,5 @@
 (function ({ target }) {
-  const deck = this.getObjectByCode('Deck[card]');
+  const deck = this.find('Deck[card]');
   let card = deck.getRandomItem();
   if (card) card.moveToTarget(target);
   else {

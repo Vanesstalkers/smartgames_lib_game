@@ -16,6 +16,7 @@
       'timerUpdateTime',
       'eventData',
       'deckMap',
+      'staticHelper',
     ]);
 
     this.set({
@@ -50,5 +51,26 @@
   }
   triggerEventEnabled() {
     return this.eventData.activeEvents.find((event) => event.hasHandler('TRIGGER')) ? true : false;
+  }
+
+  activate({ setData, publishText } = {}) {
+    this.set({ active: true, activeReady: false, eventData: { actionsDisabled: null } });
+    if (setData) this.set(setData);
+    if (publishText) this.publishInfo({ text: publishText, hideTime: 5000 });
+  }
+
+  publishInfo(info = {}) {
+    if (!info.text) return;
+
+    lib.store.broadcaster.publishData(`gameuser-${this.userId}`, {
+      helper: {
+        text: info.text,
+        pos: {
+          desktop: 'top-left',
+          mobile: 'top-left',
+        },
+        hideTime: info.hideTime || 3000,
+      },
+    });
   }
 });
