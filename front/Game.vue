@@ -119,18 +119,28 @@ export default {
     tutorial,
     chat,
   },
-  props: {},
+  props: {
+    gamePlaneScaleMin: {
+      type: Number,
+      default() {
+        return 0.3;
+      },
+    },
+    gamePlaneScaleMax: {
+      type: Number,
+      default() {
+        return 1.0;
+      },
+    },
+  },
   data() {
     return {
       showChat: false,
       unreadMessages: 0,
       showLog: false,
       showMoveControls: false,
-
       gamePlaneCustomStyleData: {},
       gamePlaneScale: 1,
-      gamePlaneScaleMin: 0.3,
-      gamePlaneScaleMax: 1,
       gamePlaneTranslateX: 0,
       gamePlaneTranslateY: 0,
       gamePlaneRotation: 0,
