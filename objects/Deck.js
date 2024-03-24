@@ -235,7 +235,7 @@
     const itemIds = Object.keys(this.itemMap);
     for (const id of itemIds) {
       const item = store[id];
-      item.set(updateData);
+      item.set(lib.utils.clone(updateData));
     }
   }
 });
