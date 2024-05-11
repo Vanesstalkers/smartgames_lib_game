@@ -4,6 +4,9 @@
     Object.assign(this, {
       ...lib.game.decorators['@hasDeck'].decorate(),
     });
+
+    this.preventSaveFields(['decks']);
+
     this.broadcastableFields([
       '_id',
       'code',

@@ -4,6 +4,7 @@
     id="game"
     :type="game.gameType"
     :class="[
+      debug ? 'debug' : '',
       state.isMobile ? 'mobile-view' : '',
       state.isLandscape ? 'landscape-view' : 'portrait-view',
       gameState.viewerMode ? 'viewer-mode' : '',
@@ -120,17 +121,11 @@ export default {
     chat,
   },
   props: {
-    gamePlaneScaleMin: {
-      type: Number,
-      default() {
-        return 0.3;
-      },
-    },
-    gamePlaneScaleMax: {
-      type: Number,
-      default() {
-        return 1.0;
-      },
+    planeScaleMin: Number,
+    planeScaleMax: Number,
+    debug: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {
@@ -141,9 +136,12 @@ export default {
       showMoveControls: false,
       gamePlaneCustomStyleData: {},
       gamePlaneScale: 1,
+      gamePlaneScaleMin: this.planeScaleMin || 0.3,
+      gamePlaneScaleMax: this.planeScaleMax || 1.0,
       gamePlaneTranslateX: 0,
       gamePlaneTranslateY: 0,
       gamePlaneRotation: 0,
+      planeScaleNeedUpdated: 0,
     };
   },
   setup: function () {
@@ -203,11 +201,18 @@ export default {
         this.updatePlaneScale();
       }, 100);
     },
+    'state.gamePlaneNeedUpdate': function () {
+      this.updatePlaneScale();
+    },
   },
   methods: {
     updatePlaneScale() {
+      // есть баг-фига с изменением масштаба при повторном нажатии на размещаемый блок
+
+      this.state.gamePlaneNeedUpdate = false;
       if (this.$el instanceof HTMLElement) {
         const { innerWidth, innerHeight } = window;
+        const isMobile = this.state.isMobile;
 
         const gamePlaneRotation = this.gamePlaneRotation;
         const gamePlaneTranslateX = this.gamePlaneTranslateX;
@@ -227,15 +232,16 @@ export default {
         const value = Math.min(innerWidth / width, innerHeight / height);
         if (value > 0) {
           this.gamePlaneScale = value * 0.75;
-          if (this.gamePlaneScaleMin > value) this.gamePlaneScaleMin = value;
-          if (this.gamePlaneScaleMax < value) this.gamePlaneScaleMax = value;
+          if (this.gamePlaneScaleMin > value && value > 0.2) this.gamePlaneScaleMin = value;
+          if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
+          if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;
 
           this.$nextTick(() => {
             const calcFunc = this.calcGamePlaneCustomStyleData;
             if (typeof calcFunc === 'function') {
               const calcData = calcFunc({
                 gamePlaneScale: this.gamePlaneScale,
-                isMobile: this.state.isMobile,
+                isMobile,
               });
               this.gamePlaneCustomStyleData = calcData;
 

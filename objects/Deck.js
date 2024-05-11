@@ -155,7 +155,7 @@
       this.markItemUpdated({ item, action: 'add' });
     }
 
-    return true;
+    return item;
   }
   removeItem(itemToRemove) {
     this.set({ itemMap: { [itemToRemove._id]: null } });
@@ -168,6 +168,11 @@
         item: itemToRemove,
         action: itemToRemove.visible ? 'removeVisible' : 'remove',
       });
+    }
+  }
+  removeAllItems() {
+    for (const item of this.getAllItems()) {
+      this.removeItem(item);
     }
   }
   setItemVisible(item) {
@@ -189,10 +194,7 @@
     this.#updatedItems[item._id][item.fakeId[this.id()]] = action;
   }
   moveAllItems({ target, setData, emitEvent }) {
-    const store = this.getFlattenStore();
-    const itemIds = Object.keys(this.itemMap);
-    for (const id of itemIds) {
-      const item = store[id];
+    for (const item of this.getAllItems()) {
       if (emitEvent) {
         for (const event of item.eventData.activeEvents) event.emit(emitEvent);
       }
@@ -206,12 +208,13 @@
       if (item) item.moveToTarget(target);
     }
   }
+  getAllItems() {
+    return this.select(this.getItemClass().name);
+  }
   getRandomItem({ skipArray = [] } = {}) {
-    const itemIds = Object.keys(this.itemMap).filter((_id) => !skipArray.includes(_id));
-    if (itemIds.length === 0) return null;
-    const id = itemIds[Math.floor(Math.random() * itemIds.length)];
-    const store = this.getFlattenStore();
-    return store[id];
+    const items = this.getAllItems().filter(({ _id }) => !skipArray.includes(_id));
+    const item = items[Math.floor(Math.random() * items.length)];
+    return item;
   }
   smartMoveRandomCard({ target }) {
     let card = this.getRandomItem();
@@ -231,10 +234,7 @@
     }
   }
   updateAllItems(updateData) {
-    const store = this.getFlattenStore();
-    const itemIds = Object.keys(this.itemMap);
-    for (const id of itemIds) {
-      const item = store[id];
+    for (const item of this.getAllItems()) {
       item.set(lib.utils.clone(updateData));
     }
   }

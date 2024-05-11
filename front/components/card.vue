@@ -54,7 +54,10 @@ export default {
       return this.getGame();
     },
     card() {
-      if (this.cardData) return this.cardData;
+      if (this.cardData) {
+        if (!this.cardData.eventData) this.cardData.eventData = {};
+        return this.cardData;
+      }
       const card = this.store.card?.[this.cardId];
       return card?._id ? card : { _id: this.cardId, eventData: {} };
     },

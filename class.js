@@ -25,6 +25,12 @@
       return this.#objectsDefaultClasses;
     }
 
+    select(query = {}) {
+      if (typeof query === 'string') query = { className: query };
+      if (!query.directParent) query.directParent = null; // для game должно искаться по всем объектам
+      return super.select(query);
+    }
+
     async create({ deckType, gameType, gameConfig, gameTimer } = {}) {
       const { structuredClone: clone } = lib.utils;
       const {
@@ -434,6 +440,10 @@
      */
     broadcastDataBeforeHandler(data, config = {}) {
       const { customChannel } = config;
+
+      for (const key of this.preventBroadcastFields()) {
+        if (data[key]) delete data[key];
+      }
 
       const broadcastObject = !customChannel && this.#broadcastObject;
       if (broadcastObject) {

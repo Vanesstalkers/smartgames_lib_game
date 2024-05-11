@@ -6,6 +6,7 @@
   #parentList;
   #_objects = {};
   #fakeParent = null;
+  #preventSaveFields = [];
   #broadcastableFields = null;
   #publicStaticFields = null; // отправляется в том числе и для фейковых данных, обновлять нельзя (хранятся в объекте-связи родителя-колоды)
 
@@ -46,6 +47,10 @@
   }
   id() {
     return this._id;
+  }
+  preventSaveFields(data) {
+    if (!data) return this.#preventSaveFields;
+    this.#preventSaveFields = data;
   }
   updateFakeId({ parentId }) {
     if (!parentId) throw new Error('parentId not found');
@@ -153,7 +158,7 @@
   }
   select(query = {}) {
     if (typeof query === 'string') query = { className: query };
-    const { className, attr, directParent } = query;
+    const { className, attr, directParent = this } = query;
 
     let result = Object.values(this.#_objects);
     if (className) result = result.filter((obj) => obj.constructor.name === className);
@@ -225,16 +230,26 @@
     return this.#publicStaticFields;
   }
 
+  prepareSaveData() {
+    let preparedData;
+    if (!this.#preventSaveFields.length) {
+      preparedData = this;
+    } else {
+      preparedData = Object.fromEntries(
+        Object.entries(this).filter(([key, val]) => !this.#preventSaveFields.includes(key))
+      );
+    }
+    return preparedData;
+  }
   prepareBroadcastData({ data, player, viewerMode }) {
     let visibleId = this._id;
     let preparedData;
     if (!this.#broadcastableFields) {
       preparedData = data;
     } else {
-      preparedData = {};
-      for (const [key, value] of Object.entries(data)) {
-        if (this.#broadcastableFields.includes(key)) preparedData[key] = value;
-      }
+      preparedData = Object.fromEntries(
+        Object.entries(data).filter(([key, val]) => this.#broadcastableFields.includes(key))
+      );
     }
     return { visibleId, preparedData };
   }
