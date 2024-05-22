@@ -7,9 +7,9 @@
     #broadcastDataAfterHandlers = {};
     #objectsDefaultClasses = {};
 
-    constructor() {
-      const storeData = { col: 'game' };
-      const gameObjectData = { col: 'game' };
+    constructor(storeData = {}, gameObjectData = {}) {
+      if (!storeData.col) storeData.col = 'game';
+      if (!gameObjectData.col) gameObjectData.col = 'game';
       super(storeData, gameObjectData);
 
       this.defaultClasses({
@@ -38,7 +38,7 @@
           //
           items: { [gameConfig]: settings },
         } = {},
-      } = domain.game.configs.filledGames;
+      } = domain.game.configs.gamesFilled();
 
       if (!settings)
         throw new Error(
@@ -54,7 +54,6 @@
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
 
       this.run('fillGameData', { data: gameData, newGame: true });
-      delete this._id; // удаляем _id от gameObject, чтобы он не попал в БД
 
       await super.create({ ...this });
 
@@ -219,6 +218,8 @@
         player.set({ ready: true, userId, userName });
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
+
+        // инициатором события был установлен первый player в списке, который совпадает с активным игроком на старте игры
         this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId });
         await this.saveChanges();
 

@@ -36,7 +36,7 @@
 
     if (!parent) {
       this.game(this);
-      delete this.code; // чтобы у дочерних объектов не было префикса "Game[]"
+      this.code = ''; // чтобы у дочерних объектов не было префикса "Game[]"
     } else {
       const game = parent.game();
       this.game(game);
@@ -105,22 +105,28 @@
     return codeTemplate.replace(replacementFragment, data._code);
   }
   addToParentsObjectStorage() {
-    let parent = this.getParent();
+    let parent = this.parent();
     if (parent) {
       do {
         parent.addToObjectStorage(this);
-      } while ((parent = parent.getParent()));
+      } while ((parent = parent.parent()));
     }
   }
   addToObjectStorage(obj) {
-    this.#_objects[obj.id()] = obj;
+    const id = obj.id();
+    const col = obj._col;
+    this.#_objects[id] = obj;
+    if (this.isGame()) {
+      if (!this.store[col]) this.store[col] = {};
+      this.store[col][id] = obj;
+    }
   }
   deleteFromParentsObjectStorage() {
-    let parent = this.getParent();
+    let parent = this.parent();
     if (!parent) return;
     do {
       parent.deleteFromObjectStorage(this);
-    } while ((parent = parent.getParent()));
+    } while ((parent = parent.parent()));
   }
   deleteFromObjectStorage(obj) {
     if (this.#_objects[obj.id()]) delete this.#_objects[obj.id()];
@@ -145,7 +151,7 @@
     });
   }
   getCodePrefix() {
-    return this.getParent()?.code || '';
+    return this.parent()?.code || '';
   }
   getCodeSuffix() {
     return '';
@@ -162,7 +168,7 @@
 
     let result = Object.values(this.#_objects);
     if (className) result = result.filter((obj) => obj.constructor.name === className);
-    if (directParent) result = result.filter((obj) => obj.getParent() === directParent);
+    if (directParent) result = result.filter((obj) => obj.parent() === directParent);
     if (attr) {
       for (const [key, val] of Object.entries(attr)) {
         result = result.filter((obj) => obj[key] === val);
@@ -194,11 +200,11 @@
     return this.#parentList;
   }
   findParent({ className, directParent = false } = {}) {
-    let parent = this.getParent();
+    let parent = this.parent();
     while (parent) {
       if (className && parent.constructor.name === className) return parent;
       if (directParent && parent === directParent) return parent;
-      parent = parent.getParent();
+      parent = parent.parent();
     }
     return null;
   }
@@ -209,6 +215,9 @@
   game(game) {
     if (!game) return this.#game;
     this.#game = game;
+  }
+  isGame() {
+    return this instanceof domain.game.class;
   }
   getStore() {
     return this.game().store;
