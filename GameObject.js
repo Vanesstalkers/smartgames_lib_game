@@ -20,7 +20,6 @@
     this.eventData = data.eventData || { activeEvents: [] };
 
     this.setParent(parent);
-    this.addToParentsObjectStorage();
 
     // строго после setParent, потому что parent может вызваться в getCodeTemplate
     const customObjectCode = Object.getPrototypeOf(this).customObjectCode;
@@ -35,14 +34,11 @@
     }
 
     if (!parent) {
-      this.game(this);
+      this.game(this); // иначе у корневой игры не будет работать getStore (и возможно что-то еще)
       this.code = ''; // чтобы у дочерних объектов не было префикса "Game[]"
     } else {
-      const game = parent.game();
-      this.game(game);
-      if (newObject) this.markNew({ saveToDB: true });
-      if (!game.store[this._col]) game.store[this._col] = {};
-      game.store[this._col][this._id] = this;
+      this.game(parent.isGame() ? parent : parent.game());
+      if (!this.isGame() && newObject) this.markNew({ saveToDB: true });
     }
   }
   id() {
@@ -57,48 +53,28 @@
     this.fakeId[parentId] = (Date.now() + Math.random()).toString();
   }
   set(val, config = {}) {
-    if (!this._col) {
-      throw new Error(`set error ('_col' is no defined)`);
-    } else {
-      this.setChanges(val, config);
+    if (!this._col) throw new Error(`set error ('_col' is no defined)`);
+
+    let clonedConfig = {};
+    if (Object.keys(config).length > 0) {
+      clonedConfig = lib.utils.structuredClone(config);
+      if (clonedConfig.reset) {
+        clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
+      }
     }
+    this.game().setChanges({ store: { [this._col]: { [this._id]: val } } }, clonedConfig);
     lib.utils.mergeDeep({
       masterObj: this,
       target: this,
       source: val,
-      config: { deleteNull: true, ...config }, // удаляем ключи с null-значением
+      config: { deleteNull: true, ...clonedConfig }, // удаляем ключи с null-значением
     });
   }
-  setChanges(val, config = {}) {
-    this.#game.setChanges({ store: { [this._col]: { [this._id]: val } } }, config);
+  markNew(config) {
+    this.game().markNew(this, config);
   }
-
-  setChanges(val, config = {}) {
-    const clonedConfig = lib.utils.structuredClone(config);
-    if (clonedConfig.reset) clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
-    this.#game.setChanges(
-      {
-        store: { [this._col]: { [this._id]: val } },
-      },
-      clonedConfig
-    );
-  }
-
-  markNew({ saveToDB = false } = {}) {
-    const { _col: col, _id: id } = this;
-    if (saveToDB) {
-      this.#game.setChanges({ store: { [col]: { [id]: this } } });
-    } else {
-      this.#game.addBroadcastObject({ col, id });
-    }
-  }
-  markDelete({ saveToDB = false } = {}) {
-    const { _col: col, _id: id } = this;
-    if (saveToDB) {
-      this.#game.setChanges({ store: { [col]: { [id]: null } } });
-    } else {
-      this.#game.deleteBroadcastObject({ col, id });
-    }
+  markDelete(config) {
+    this.game().markDelete(this, config);
   }
 
   default_customObjectCode({ codeTemplate, replacementFragment }, data) {
@@ -113,13 +89,7 @@
     }
   }
   addToObjectStorage(obj) {
-    const id = obj.id();
-    const col = obj._col;
-    this.#_objects[id] = obj;
-    if (this.isGame()) {
-      if (!this.store[col]) this.store[col] = {};
-      this.store[col][id] = obj;
-    }
+    this.#_objects[obj.id()] = obj;
   }
   deleteFromParentsObjectStorage() {
     let parent = this.parent();
@@ -274,7 +244,7 @@
       event.name = eventName;
     }
     if (!event) throw new Error(`event not found (event=${eventName})`);
-    const game = this.game();
+    const game = this.isGame() ? this : this.game();
 
     event = new lib.game.GameEvent(event);
     event.source(this);

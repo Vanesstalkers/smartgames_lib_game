@@ -35,9 +35,8 @@
         <div
           class="reset"
           v-on:click="
-            gamePlaneRotation = 0;
-            gamePlaneTranslateX = 0;
-            gamePlaneTranslateY = 0;
+            resetPlanePosition();
+            clearMouseEvents();
             updatePlaneScale();
           "
         />
@@ -82,8 +81,18 @@
       <div class="img" :style="state.shownCard" />
     </div>
 
-    <div id="gamePlane" :style="{ ...gamePlaneCustomStyleData, ...gamePlaneControlStyle }">
-      <slot name="gameplane" :game="game" :gamePlaneScale="gamePlaneScale" />
+    <div
+      id="gamePlane"
+      :style="{
+        ...gamePlaneCustomStyleData, // например, центровка по координатам блоков в release
+        ...gamePlaneControlStyle, // mouse-events
+      }"
+    >
+      <slot
+        name="gameplane"
+        :gamePlaneScale="gamePlaneScale"
+        :gamePlaneControlStyle="{ ...gamePlaneSlotControlStyle }"
+      />
     </div>
 
     <GUIWrapper id="gameInfo" :pos="['top', 'right']" :offset="{}">
@@ -108,7 +117,7 @@
 import { provide, inject } from 'vue';
 import { prepareGameGlobals } from './gameGlobals.mjs';
 import { addEvents, removeEvents } from './gameEvents.mjs';
-import { addMouseEvents, removeMouseEvents } from './gameMouseEvents.mjs';
+import { addMouseEvents, removeMouseEvents, config as mouseEventsConfig } from './gameMouseEvents.mjs';
 
 import GUIWrapper from '@/components/gui-wrapper.vue';
 import tutorial from '~/lib/helper/front/helper.vue';
@@ -141,6 +150,7 @@ export default {
       gamePlaneTranslateX: 0,
       gamePlaneTranslateY: 0,
       gamePlaneRotation: 0,
+      gamePlaneTransformOrigin: 'center center',
       planeScaleNeedUpdated: 0,
     };
   },
@@ -157,11 +167,18 @@ export default {
     gamePlaneControlStyle() {
       const transform = [];
       transform.push('translate(' + this.gamePlaneTranslateX + 'px, ' + this.gamePlaneTranslateY + 'px)');
-      transform.push(`rotate(${this.gamePlaneRotation}deg)`);
       return { transform: transform.join(' '), scale: this.gamePlaneScale };
+    },
+    gamePlaneSlotControlStyle() {
+      const transform = [];
+      transform.push(`rotate(${this.gamePlaneRotation}deg)`);
+      return { transform: transform.join(' '), transformOrigin: this.gamePlaneTransformOrigin };
     },
     game() {
       return this.getGame();
+    },
+    gamePlaneOffsets() {
+      return this.getGamePlaneOffsets()[this.playerGameId()];
     },
     gameDataLoaded() {
       return this.game.addTime;
@@ -188,6 +205,7 @@ export default {
   watch: {
     gameDataLoaded: function () {
       this.$set(this.$root.state, 'viewLoaded', true);
+      this.resetPlanePosition();
     },
     'game.round': function () {
       this.$set(this.$root.state, 'selectedDiceSideId', '');
@@ -217,9 +235,7 @@ export default {
         const gamePlaneRotation = this.gamePlaneRotation;
         const gamePlaneTranslateX = this.gamePlaneTranslateX;
         const gamePlaneTranslateY = this.gamePlaneTranslateY;
-        this.gamePlaneRotation = 0;
-        this.gamePlaneTranslateX = 0;
-        this.gamePlaneTranslateY = 0;
+
         const restoreGamePlaneSettings = () => {
           this.gamePlaneRotation = gamePlaneRotation;
           this.gamePlaneTranslateX = gamePlaneTranslateX;
@@ -236,14 +252,15 @@ export default {
           if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
           if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;
 
-          this.$nextTick(() => {
+          this.$nextTick(function () {
             const calcFunc = this.calcGamePlaneCustomStyleData;
             if (typeof calcFunc === 'function') {
-              const calcData = calcFunc({
+              const { gamePlaneTransformOrigin, ...calcData } = calcFunc.call(this, {
                 gamePlaneScale: this.gamePlaneScale,
                 isMobile,
               });
               this.gamePlaneCustomStyleData = calcData;
+              this.gamePlaneTransformOrigin = gamePlaneTransformOrigin;
 
               restoreGamePlaneSettings();
             }
@@ -251,12 +268,21 @@ export default {
         }
       }
     },
+    resetPlanePosition() {
+      this.gamePlaneTranslateX = -1 * this.gamePlaneOffsets.x;
+      this.gamePlaneTranslateY = -1 * this.gamePlaneOffsets.y;
+    },
 
     zoomGamePlane(event) {
       this.gamePlaneScale += event.deltaY > 0 ? -0.1 : 0.1;
       if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
       if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;
     },
+    clearMouseEvents() {
+      mouseEventsConfig.xOffset = 0;
+      mouseEventsConfig.yOffset = 0;
+    },
+
     closeCardInfo() {
       this.$set(this.$root.state, 'shownCard', '');
     },
@@ -312,6 +338,8 @@ export default {
   },
   async created() {},
   async mounted() {
+    this.$on('resetPlanePosition', this.resetPlanePosition);
+
     if (this.state.currentLobby && this.state.currentUser) {
       this.callGameEnter();
     } else {

@@ -1,7 +1,6 @@
 import { reactive, provide, inject } from 'vue';
 
 function prepareGameGlobals() {
-
   const gameState = reactive({
     gameId: '',
     sessionPlayerId: '',
@@ -18,8 +17,17 @@ function prepareGameGlobals() {
       .then(onSuccess)
       .catch(onError);
   }
+  function playerGameId() {
+    return gameState.gameId;
+  }
   function getGame() {
     return this.$root.state.store.game?.[gameState.gameId] || {};
+  }
+  function getGamePlaneOffsets() {
+    const deviceOffset = this.$root.state.isMobile ? (this.$root.state.isLandscape ? 200 : 0) : 700;
+    return {
+      [gameState.gameId]: { x: 0 + deviceOffset, y: 0 },
+    };
   }
   function getStore() {
     return this.getGame().store || {};
@@ -33,7 +41,9 @@ function prepareGameGlobals() {
 
   const gameGlobals = {
     handleGameApi,
+    playerGameId,
     getGame,
+    getGamePlaneOffsets,
     getStore,
     gameState,
     currentRound() {

@@ -45,14 +45,15 @@ function addMouseEvents(self) {
         self.gamePlaneRotation = config.rotation;
       }
       if (config.isDragging) {
+        const gamePlaneOffsets = self.getGamePlaneOffsets()[self.playerGameId()];
         config.currentX = event.clientX - config.initialX;
         config.currentY = event.clientY - config.initialY;
 
         config.xOffset = config.currentX;
         config.yOffset = config.currentY;
 
-        self.gamePlaneTranslateX = config.currentX;
-        self.gamePlaneTranslateY = config.currentY;
+        self.gamePlaneTranslateX = config.currentX + -1 * gamePlaneOffsets.x;
+        self.gamePlaneTranslateY = config.currentY + -1 * gamePlaneOffsets.y;
       }
     },
     touchStart(event) {

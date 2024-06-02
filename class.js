@@ -20,6 +20,45 @@
       });
     }
 
+    set(val, config = {}) {
+      if (!this._col) throw new Error(`set error ('_col' is no defined)`);
+
+      const clonedConfig = lib.utils.structuredClone(config);
+      this.setChanges(val, clonedConfig);
+      lib.utils.mergeDeep({
+        ...{ masterObj: this, target: this, source: val },
+        config: { deleteNull: true, ...clonedConfig }, // удаляем ключи с null-значением
+      });
+    }
+    setChanges(val, config) {
+      super.setChanges(val, config);
+    }
+    markNew(obj, { saveToDB = false } = {}) {
+      const { _col: col, _id: id } = obj;
+      if (saveToDB) {
+        // broadcast пройдет после сохранения изменений в БД
+        this.setChanges({ store: { [col]: { [id]: obj } } });
+      } else {
+        this.addBroadcastObject({ col, id });
+      }
+    }
+    markDelete(obj, { saveToDB = false } = {}) {
+      const { _col: col, _id: id } = obj;
+      if (saveToDB) {
+        this.setChanges({ store: { [col]: { [id]: null } } });
+      } else {
+        this.deleteBroadcastObject({ col, id });
+      }
+    }
+
+    addToObjectStorage(obj) {
+      super.addToObjectStorage(obj);
+
+      const { _id: id, _col: col } = obj;
+      if (!this.store[col]) this.store[col] = {};
+      this.store[col][id] = obj;
+    }
+
     defaultClasses(map) {
       if (map) Object.assign(this.#objectsDefaultClasses, map);
       return this.#objectsDefaultClasses;
@@ -92,6 +131,7 @@
         {
           id: this.id(),
           deckType: this.deckType,
+          gameType: this.gameType,
           workerId: application.worker.id,
           port: application.server.port,
         },
@@ -218,7 +258,6 @@
         player.set({ ready: true, userId, userName });
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
-
         // инициатором события был установлен первый player в списке, который совпадает с активным игроком на старте игры
         this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId });
         await this.saveChanges();
@@ -227,6 +266,7 @@
           gameId,
           playerId,
           deckType: this.deckType,
+          gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
         });
       } catch (exception) {
@@ -252,6 +292,7 @@
           gameId: this.id(),
           viewerId: viewer.id(),
           deckType: this.deckType,
+          gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
         });
       } catch (exception) {

@@ -18,7 +18,7 @@
       this.clearChanges();
     }
 
-    async joinGame({ deckType, gameId, playerId, viewerId, isSinglePlayer }) {
+    async joinGame({ deckType, gameType, gameId, playerId, viewerId, isSinglePlayer }) {
       const {
         helper: { getTutorial },
         utils: { structuredClone: clone },
@@ -27,7 +27,7 @@
       for (const session of this.sessions()) {
         session.set({ gameId, playerId, viewerId });
         await session.saveChanges();
-        session.emit('joinGame', { deckType, gameId, playerId, viewerId });
+        session.emit('joinGame', { deckType, gameType, gameId, playerId, viewerId });
       }
 
       this.set({
