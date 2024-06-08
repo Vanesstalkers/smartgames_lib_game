@@ -93,6 +93,7 @@
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
 
       this.run('fillGameData', { data: gameData, newGame: true });
+      if (this.players().length) this.run('initPlayerWaitEvents');
 
       await super.create({ ...this });
 

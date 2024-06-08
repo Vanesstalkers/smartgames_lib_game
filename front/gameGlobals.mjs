@@ -24,7 +24,7 @@ function prepareGameGlobals() {
     return this.$root.state.store.game?.[gameState.gameId] || {};
   }
   function getGamePlaneOffsets() {
-    const deviceOffset = this.$root.state.isMobile ? (this.$root.state.isLandscape ? 200 : 0) : 700;
+    const deviceOffset = this.$root.state.isMobile ? (this.$root.state.isLandscape ? 200 : 0) : 300;
     return {
       [gameState.gameId]: { x: 0 + deviceOffset, y: 0 },
     };
