@@ -44,9 +44,9 @@
   id() {
     return this._id;
   }
-  preventSaveFields(data) {
-    if (!data) return this.#preventSaveFields;
-    this.#preventSaveFields = data;
+  preventSaveFields(fields) {
+    if (!fields) return this.#preventSaveFields;
+    this.#preventSaveFields.push(...fields);
   }
   updateFakeId({ parentId }) {
     if (!parentId) throw new Error('parentId not found');
