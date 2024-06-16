@@ -15,6 +15,7 @@ async (context, { gameId, viewerMode = false }) => {
   lib.store.broadcaster.publishAction(`game-${gameId}`, action, {
     userId,
     userName: user.name || user.login,
+    userAvatar: user.avatarCode,
   });
   return { status: 'ok' };
 };

@@ -4,10 +4,8 @@
     this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData']);
     this.publicStaticFields(['group', 'owner']);
 
-    this.set({
-      title: data.title,
-      name: data.name,
-    });
+    const { title, name, played, disabled } = data;
+    this.set({ title, name, played, disabled });
   }
   /**
    * Перемещает карту к новому держателю (колоду)

@@ -7,15 +7,8 @@
     super(data, { col: 'deck', parent });
     this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData']);
 
-    this.set({
-      type: data.type,
-      subtype: data.subtype,
-      cardGroups: data.cardGroups,
-      placement: data.placement,
-      itemType: data.itemType,
-      settings: data.settings,
-      access: data.access,
-    });
+    const { type, subtype, cardGroups, placement, itemType, settings, access } = data;
+    this.set({ type, subtype, cardGroups, placement, itemType, settings, access });
   }
   prepareBroadcastData({ data, player, viewerMode }) {
     let preparedData = {};
@@ -144,7 +137,6 @@
       for (const key of fields) linkVal[key] = item[key];
     }
     this.set({ itemMap: { [item._id]: linkVal } });
-    this.addToObjectStorage(item);
 
     const game = this.game();
     if (!game.checkChangesDisabled()) {

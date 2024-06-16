@@ -10,6 +10,7 @@
     constructor(storeData = {}, gameObjectData = {}) {
       if (!storeData.col) storeData.col = 'game';
       if (!gameObjectData.col) gameObjectData.col = 'game';
+      if (storeData.id) storeData._id = storeData.id;
       super(storeData, gameObjectData);
 
       this.defaultClasses({
@@ -66,7 +67,7 @@
 
     select(query = {}) {
       if (typeof query === 'string') query = { className: query };
-      if (!query.directParent) query.directParent = null; // для game должно искаться по всем объектам
+      if (!query.directParent) query.directParent = false; // для game должно искаться по всем объектам
       return super.select(query);
     }
 
@@ -92,7 +93,7 @@
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
 
-      this.run('fillGameData', { data: gameData, newGame: true });
+      this.run('fillGameData', gameData);
       if (this.players().length) this.run('initPlayerWaitEvents');
 
       await super.create({ ...this });
@@ -100,28 +101,6 @@
       const initiatedGame = await db.redis.hget('games', this.id());
       if (!initiatedGame) await this.addGameToCache();
 
-      return this;
-    }
-    async load({ fromData = null, fromDB = {} }, { initStore = true } = {}) {
-      if (fromData) {
-        Object.assign(this, fromData);
-      } else {
-        let { id, query } = fromDB;
-        if (!query && id) query = { _id: db.mongo.ObjectID(id) };
-        if (query) {
-          const dbData = await db.mongo.findOne(this.col(), query);
-          if (dbData === null) {
-            throw 'not_found';
-          } else {
-            this.run('fillGameData', { data: dbData, newGame: false });
-            if (!this.id() && initStore) {
-              this.initStore(dbData._id);
-              if (!this.channel()) this.initChannel();
-            }
-          }
-        }
-      }
-      if (this._id) delete this._id; // не должно мешаться при сохранении в mongoDB
       return this;
     }
 
@@ -138,6 +117,10 @@
         },
         { json: true }
       );
+    }
+    async updateGameAtCache(data = {}) {
+      const game = await db.redis.hget('games', this.id(), { json: true });
+      await db.redis.hset('games', this.id(), { ...game, ...data }, { json: true });
     }
 
     /**
@@ -247,16 +230,16 @@
     getPlayerByUserId(id) {
       return this.players().find((player) => player.userId === id);
     }
-    async playerJoin({ userId, userName }) {
+    async playerJoin({ playerId, userId, userName, userAvatar }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
-        const player = this.getFreePlayerSlot();
+        const player = playerId ? this.get(playerId) : this.getFreePlayerSlot();
         if (!player) throw new Error('Свободных мест не осталось');
         const gameId = this.id();
-        const playerId = player.id();
+        playerId = player.id();
 
-        player.set({ ready: true, userId, userName });
+        player.set({ ready: true, userId, userName, avatarCode: userAvatar });
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
         // инициатором события был установлен первый player в списке, который совпадает с активным игроком на старте игры
@@ -549,10 +532,8 @@
     }
     async onTimerTick({ timerId, data: { time = null } = {} }) {
       try {
-        if (this.status === 'FINISHED') {
-          console.debug("!!! lib.timers.timerDelete on this.status === 'FINISHED'");
-          return lib.timers.timerDelete(this);
-        }
+        if (this.status === 'FINISHED') return lib.timers.timerDelete(this);
+
         for (const player of this.getActivePlayers()) {
           if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
 

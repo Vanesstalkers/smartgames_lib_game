@@ -316,11 +316,26 @@ export default {
           path: 'game.api.enter',
           args: [{ gameId: this.$route.params.id }],
         })
-        .then(({ gameId, playerId, viewerId, serverTime }) => {
+        .then(async ({ gameId, playerId, viewerId, serverTime, restorationMode }) => {
+          const viewerMode = viewerId ? true : false;
+          
+          if (restorationMode) {
+            await api.action
+              .call({
+                path: 'game.api.enter',
+                args: [{ gameId, viewerMode }],
+              })
+              .catch((err) => {
+                this.$router.push({ path: `/` }).catch((err) => {
+                  console.log(err);
+                });
+              });
+            return;
+          }
           this.gameState.gameId = gameId;
           this.gameState.sessionPlayerId = playerId;
           this.gameState.sessionViewerId = viewerId;
-          this.gameState.viewerMode = viewerId ? true : false;
+          this.gameState.viewerMode = viewerMode;
           this.$set(this.$root.state, 'serverTimeDiff', serverTime - Date.now());
         })
         .catch((err) => {

@@ -7,7 +7,7 @@
   #_objects = {};
   #fakeParent = null;
   #preventSaveFields = [];
-  #broadcastableFields = null;
+  #broadcastableFields = [];
   #publicStaticFields = null; // отправляется в том числе и для фейковых данных, обновлять нельзя (хранятся в объекте-связи родителя-колоды)
 
   constructor(data, { col: _col, parent } = {}) {
@@ -200,9 +200,9 @@
    * @param {string[]} [data] массив полей для публикации
    * @returns {string[]}
    */
-  broadcastableFields(data) {
-    if (!data) return this.#broadcastableFields;
-    this.#broadcastableFields = data;
+  broadcastableFields(fields) {
+    if (!fields) return this.#broadcastableFields;
+    this.#broadcastableFields.push(...fields);
   }
   publicStaticFields(data) {
     if (data) this.#publicStaticFields = data;
@@ -223,7 +223,7 @@
   prepareBroadcastData({ data, player, viewerMode }) {
     let visibleId = this._id;
     let preparedData;
-    if (!this.#broadcastableFields) {
+    if (this.#broadcastableFields.length === 0) {
       preparedData = data;
     } else {
       preparedData = Object.fromEntries(
