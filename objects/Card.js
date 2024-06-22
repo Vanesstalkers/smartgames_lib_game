@@ -45,9 +45,11 @@
   }
   play({ player, logMsg } = {}) {
     if (this.played) return;
-    const event = this.initEvent(this.name, { player });
+
+    const event = this.initEvent(this.name, { allowedPlayers: [player] });
     if (event !== null && player) player.addEvent(event);
     this.set({ played: Date.now() });
+    
     this.game().logs(logMsg || `Разыграна карта "${this.title}"`);
   }
 });

@@ -237,7 +237,7 @@
     if (!event) return null;
     return event();
   }
-  initEvent(event, { player, defaultResetHandler } = {}) {
+  initEvent(event, { allowedPlayers, defaultResetHandler } = {}) {
     if (typeof event === 'string') {
       const eventName = event;
       event = this.getEvent(eventName);
@@ -249,7 +249,7 @@
     event = new lib.game.GameEvent(event);
     event.source(this);
     event.game(game);
-    event.player(player);
+    event.allowedPlayers(allowedPlayers);
 
     if (event.init) {
       const { removeEvent } = event.init() || {};

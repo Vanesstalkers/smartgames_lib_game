@@ -1,7 +1,7 @@
 (class GameEvent {
   #source;
   #game;
-  #player;
+  #allowedPlayers;
   #init;
   #handlers;
   constructor({ init, handlers, ...data }) {
@@ -20,9 +20,9 @@
     if (data) this.#game = data;
     return this.#game;
   }
-  player(data) {
-    if (data) this.#player = data;
-    return this.#player;
+  allowedPlayers(data) {
+    if (data) this.#allowedPlayers = data;
+    return this.#allowedPlayers;
   }
   set(val, config = {}) {
     lib.utils.mergeDeep({
@@ -40,7 +40,8 @@
     return {
       source: this.#source,
       game: this.#game,
-      player: this.#player,
+      player: this.#game.getActivePlayer(),
+      allowedPlayers: this.#allowedPlayers,
       sourceId: this.sourceId(),
     };
   }

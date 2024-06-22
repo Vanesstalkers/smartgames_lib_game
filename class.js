@@ -172,13 +172,12 @@
 
       this.set({ eventListeners });
     }
-    toggleEventHandlers(handler, data = {}, initPlayers) {
+    toggleEventHandlers(handler, data = {}, initPlayer) {
       if (!this.eventListeners[handler]) return;
 
-      if (!initPlayers) initPlayers = [this.game().getActivePlayer()];
-      if (!Array.isArray(initPlayers)) initPlayers = [initPlayers];
+      if (!initPlayer) initPlayer = this.game().getActivePlayer();
       for (const event of this.eventListeners[handler]) {
-        const playerAccessAllowed = initPlayers.includes(event.player());
+        const playerAccessAllowed = event.allowedPlayers().includes(initPlayer);
         if (!playerAccessAllowed) continue;
 
         const { preventListenerRemove } = event.emit(handler, data) || {};
