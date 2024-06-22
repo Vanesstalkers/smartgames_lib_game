@@ -5,16 +5,16 @@
     :class="[
       'card-event',
       card.played ? 'played' : '',
-      this.isSelected ? 'selected' : '',
+      isSelected ? 'selected' : '',
       selectable ? 'selectable' : '',
+      locked ? 'locked' : '',
       card.eventData.cardClass || '',
-      card.eventData.playDisabled ? 'play-disabled' : '',
     ]"
     :style="customStyle"
     v-on:click.stop="toggleSelect"
   >
     <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
-    <div v-if="canPlay && !card.eventData.playDisabled" v-on:click.stop="playCard" class="play-btn">
+    <div v-if="canPlay && !locked" v-on:click.stop="playCard" class="play-btn">
       {{ card.eventData.buttonText || 'Разыграть' }}
     </div>
   </div>
@@ -70,6 +70,9 @@ export default {
     isSelected() {
       return this.cardId === this.gameCustom.selectedCard;
     },
+    locked() {
+      return this.card.eventData.playDisabled || this.actionsDisabled();
+    },
     customStyle() {
       const {
         state: { serverOrigin },
@@ -93,6 +96,8 @@ export default {
   methods: {
     async playCard() {
       if (this.card.played) return;
+      if (this.locked) return;
+
       await this.handleGameApi({
         name: 'playCard',
         data: {
@@ -129,11 +134,76 @@ export default {
   &.tutorial-active {
     box-shadow: 0 0 10px 10px #f4e205 !important;
   }
+  &.active {
+    border: 4px solid green;
+  }
+  &.played {
+    filter: grayscale(1);
+  }
+  &.selected {
+    z-index: 1;
+    box-shadow: 0px 100px 100px 0px black;
+  }
+  &.selectable {
+    box-shadow: inset 0 0 20px 8px lightgreen !important;
+
+    &.highlight-off,
+    &.locked {
+      box-shadow: none !important;
+    }
+  }
+
+  &.alert {
+    box-shadow: inset 0 0 10px 4px #b53f3f !important;
+
+    .play-btn {
+      background: #b53f3fde;
+
+      &:hover {
+        background: #b53f3f;
+      }
+    }
+  }
+  &.danger {
+    box-shadow: inset 0 0 10px 4px #b53f3f !important;
+
+    .play-btn {
+      background: #b53f3fde;
+
+      &:hover {
+        background: #b53f3f;
+      }
+    }
+  }
+
+  .play-btn {
+    cursor: pointer;
+    position: absolute;
+    bottom: 0px;
+    font-size: 0.5em;
+    border: 1px solid black;
+    text-align: center;
+    cursor: pointer;
+    background: #3f51b5de;
+    color: white;
+    font-size: 16px;
+    padding: 8px 0px;
+    width: 100%;
+    margin: 0px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+
+    &:hover {
+      background: #3f51b5;
+    }
+
+    .locked {
+      opacity: 0.5;
+      cursor: not-allowed !important;
+    }
+  }
 }
-.card-event.selected {
-  z-index: 1;
-  box-shadow: 0px 100px 100px 0px black;
-}
+
 .card-info-btn {
   position: absolute;
   right: 10px;
@@ -152,65 +222,4 @@ export default {
 #game.mobile-view .card-event.selected > .card-info-btn {
   visibility: visible;
 }
-.card-event.played {
-  filter: grayscale(1);
-}
-.play-btn {
-  cursor: pointer;
-  position: absolute;
-  bottom: 0px;
-  font-size: 0.5em;
-  border: 1px solid black;
-  text-align: center;
-  cursor: pointer;
-  background: #3f51b5de;
-  color: white;
-  font-size: 16px;
-  padding: 8px 0px;
-  width: 100%;
-  margin: 0px;
-  border-bottom-left-radius: 4px;
-  border-bottom-right-radius: 4px;
-
-  &:hover {
-    background: #3f51b5;
-  }
-}
-
-.card-event.active {
-  border: 4px solid green;
-}
-
-.card-event.selectable.highlight-off,
-.card-event.selectable.play-disabled {
-  box-shadow: none !important;
-}
-.card-event.selectable {
-  box-shadow: inset 0 0 20px 8px lightgreen !important;
-}
-
-.card-event.alert {
-  box-shadow: inset 0 0 10px 4px #b53f3f !important;
-
-  .play-btn {
-    background: #b53f3fde;
-
-    &:hover {
-      background: #b53f3f;
-    }
-  }
-}
-.card-event.danger {
-  box-shadow: inset 0 0 10px 4px #b53f3f !important;
-
-  .play-btn {
-    background: #b53f3fde;
-
-    &:hover {
-      background: #b53f3f;
-    }
-  }
-}
-
-//
 </style>

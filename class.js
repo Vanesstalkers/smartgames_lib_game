@@ -21,6 +21,10 @@
       });
     }
 
+    isCoreGame() {
+      return this === this.game();
+    }
+
     set(val, config = {}) {
       if (!this._col) throw new Error(`set error ('_col' is no defined)`);
 
@@ -175,7 +179,7 @@
     toggleEventHandlers(handler, data = {}, initPlayer) {
       if (!this.eventListeners[handler]) return;
 
-      if (!initPlayer) initPlayer = this.game().getActivePlayer();
+      if (!initPlayer) initPlayer = this.getActivePlayer();
       for (const event of this.eventListeners[handler]) {
         const playerAccessAllowed = event.allowedPlayers().includes(initPlayer);
         if (!playerAccessAllowed) continue;
@@ -394,7 +398,11 @@
         const activePlayers = this.getActivePlayers();
         if (!activePlayers.includes(player) && eventName !== 'leaveGame')
           throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
-        else if (player.eventData.actionsDisabled && eventName !== 'endRound' && eventName !== 'leaveGame')
+        else if (
+          (this.roundReady || player.eventData.actionsDisabled) &&
+          eventName !== 'endRound' &&
+          eventName !== 'leaveGame'
+        )
           throw new Error('Игрок не может совершать действия в этот ход.');
 
         // !!! защитить методы, которые не должны вызываться с фронта

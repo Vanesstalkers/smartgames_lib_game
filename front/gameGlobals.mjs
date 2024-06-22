@@ -23,6 +23,9 @@ function prepareGameGlobals() {
   function getGame() {
     return this.$root.state.store.game?.[gameState.gameId] || {};
   }
+  function gameFinished() {
+    return this.getGame().status === 'FINISHED';
+  }
   function getGamePlaneOffsets() {
     const deviceOffset = this.$root.state.isMobile ? (this.$root.state.isLandscape ? 200 : 0) : 300;
     return {
@@ -43,6 +46,7 @@ function prepareGameGlobals() {
     handleGameApi,
     playerGameId,
     getGame,
+    gameFinished,
     getGamePlaneOffsets,
     getStore,
     gameState,
