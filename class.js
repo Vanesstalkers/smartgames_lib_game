@@ -316,7 +316,9 @@
     getActivePlayers() {
       return this.players().filter((player) => player.active);
     }
-    changeActivePlayer({ player } = {}) {
+    changeActivePlayer({ resetActivePlayer, player } = {}) {
+      if (resetActivePlayer) player = this.players()[0];
+
       const activePlayer = this.getActivePlayer();
       if (activePlayer.eventData.extraTurn) {
         activePlayer.set({ eventData: { extraTurn: null } });

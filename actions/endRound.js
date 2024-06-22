@@ -1,4 +1,4 @@
-(function ({ forceActivePlayer } = {}) {
+(function ({ resetActivePlayer } = {}) {
   const {
     round,
     settings: {
@@ -24,7 +24,7 @@
   this.toggleEventHandlers('END_ROUND');
 
   // player которому передают ход
-  const activePlayer = this.changeActivePlayer({ player: forceActivePlayer });
+  const activePlayer = this.changeActivePlayer({ resetActivePlayer });
   const playerCardHand = activePlayer.find('Deck[card]');
 
   const playedCards = this.decks.active.select('Card');
