@@ -203,6 +203,9 @@
   getAllItems() {
     return this.select(this.getItemClass().name);
   }
+  items() {
+    return this.getAllItems();
+  }
   getRandomItem({ skipArray = [] } = {}) {
     const items = this.getAllItems().filter(({ _id }) => !skipArray.includes(_id));
     const item = items[Math.floor(Math.random() * items.length)];

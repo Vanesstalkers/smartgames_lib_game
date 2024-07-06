@@ -45,7 +45,7 @@ function addMouseEvents(self) {
         self.gamePlaneRotation = config.rotation;
       }
       if (config.isDragging) {
-        const gamePlaneOffsets = self.getGamePlaneOffsets()[self.playerGameId()];
+        const gamePlaneOffsets = self.getGamePlaneOffsets()[self.gameCustom?.selectedGame || self.playerGameId()];
         config.currentX = event.clientX - config.initialX;
         config.currentY = event.clientY - config.initialY;
 

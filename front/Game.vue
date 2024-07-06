@@ -177,9 +177,6 @@ export default {
     game() {
       return this.getGame();
     },
-    gamePlaneOffsets() {
-      return this.getGamePlaneOffsets()[this.playerGameId()];
-    },
     gameDataLoaded() {
       return this.game.addTime;
     },
@@ -269,8 +266,9 @@ export default {
       }
     },
     resetPlanePosition() {
-      this.gamePlaneTranslateX = -1 * this.gamePlaneOffsets.x;
-      this.gamePlaneTranslateY = -1 * this.gamePlaneOffsets.y;
+      const gamePlaneOffsets = this.getGamePlaneOffsets()[this.gameCustom?.selectedGame || this.playerGameId()];
+      this.gamePlaneTranslateX = -1 * gamePlaneOffsets.x;
+      this.gamePlaneTranslateY = -1 * gamePlaneOffsets.y;
     },
 
     zoomGamePlane(event) {
@@ -318,7 +316,7 @@ export default {
         })
         .then(async ({ gameId, playerId, viewerId, serverTime, restorationMode }) => {
           const viewerMode = viewerId ? true : false;
-          
+
           if (restorationMode) {
             await api.action
               .call({
