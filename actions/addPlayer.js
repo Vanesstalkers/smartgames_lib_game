@@ -15,4 +15,6 @@
     item.access = { [player._id]: {} };
     player.addDeck(item, { deckItemClass });
   }
+
+  return player;
 });

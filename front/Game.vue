@@ -105,7 +105,7 @@
     <GUIWrapper
       class="players"
       :pos="state.isMobile && state.isPortrait ? ['top', 'right'] : ['bottom', 'left']"
-      :offset="state.isMobile && state.isPortrait ? { top: 100 } : {}"
+      :offset="state.isMobile && state.isPortrait ? { top: 200 } : {}"
       :contentClass="['gui-small']"
     >
       <slot name="opponents" />
@@ -247,7 +247,7 @@ export default {
         const value = Math.min(innerWidth / width, innerHeight / height);
         if (value > 0) {
           this.gamePlaneScale = value * 0.75;
-          if(isMobile) this.gamePlaneScale *= 0.7;
+          if (isMobile) this.gamePlaneScale *= 0.7;
           if (this.gamePlaneScaleMin > value && value > 0.2) this.gamePlaneScaleMin = value;
           if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
           if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;

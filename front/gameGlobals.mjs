@@ -35,11 +35,11 @@ function prepareGameGlobals() {
   function getStore() {
     return this.getGame().store || {};
   }
+  function sessionPlayer() {
+    return this.store.player?.[this.gameState.sessionPlayerId] || {};
+  }
   function sessionPlayerIsActive() {
-    return (
-      gameState.sessionPlayerId ===
-      Object.keys(this.getGame().playerMap || {}).find((id) => this.getStore().player?.[id]?.active)
-    );
+    return this.sessionPlayer().active;
   }
 
   const gameGlobals = {
@@ -53,9 +53,10 @@ function prepareGameGlobals() {
     currentRound() {
       return this.game?.round;
     },
+    sessionPlayer,
     sessionPlayerIsActive,
     actionsDisabled() {
-      return this.store.player?.[gameState.sessionPlayerId]?.eventData?.actionsDisabled;
+      return this.sessionPlayer().eventData?.actionsDisabled;
     },
   };
 

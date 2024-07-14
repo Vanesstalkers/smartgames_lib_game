@@ -396,7 +396,7 @@
         if (!player) throw new Error('player not found');
 
         const activePlayers = this.getActivePlayers();
-        if (!activePlayers.includes(player) && eventName !== 'leaveGame')
+        if (!activePlayers.includes(player) && eventName !== 'leaveGame' && !player.eventData.disableActivePlayerCheck)
           throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
         else if (
           (this.roundReady || player.eventData.actionsDisabled) &&

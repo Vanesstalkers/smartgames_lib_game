@@ -62,13 +62,18 @@
         clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
       }
     }
-    this.game().setChanges({ store: { [this._col]: { [this._id]: val } } }, clonedConfig);
+
+    this.game().setChanges(this.prepareChanges(val), clonedConfig);
+    
     lib.utils.mergeDeep({
       masterObj: this,
       target: this,
       source: val,
       config: { deleteNull: true, ...clonedConfig }, // удаляем ключи с null-значением
     });
+  }
+  prepareChanges(val) {
+    return { store: { [this._col]: { [this._id]: val } } }
   }
   markNew(config) {
     this.game().markNew(this, config);
