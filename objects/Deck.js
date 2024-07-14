@@ -127,7 +127,12 @@
   addItem(item) {
     const parentId = this.id();
     const itemClass = this.getItemClass();
-    if (item.constructor != itemClass) item = new itemClass(item, { parent: this });
+    if (item.constructor != itemClass) {
+      // создание нового GameObject, setParent вызовется в конструкторе
+      item = new itemClass(item, { parent: this });
+    } else {
+      item.setParent(this);
+    }
 
     const linkVal = {
       /* addTime: Date.now() */
