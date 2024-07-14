@@ -27,7 +27,7 @@ function prepareGameGlobals() {
     return this.getGame().status === 'FINISHED';
   }
   function getGamePlaneOffsets() {
-    const deviceOffset = this.$root.state.isMobile ? (this.$root.state.isLandscape ? 200 : 0) : 300;
+    const deviceOffset = this.$root.state.isMobile ? (this.$root.state.isLandscape ? 0 : -100) : 500;
     return {
       [gameState.gameId]: { x: 0 + deviceOffset, y: 0 },
     };
