@@ -127,8 +127,10 @@
   addItem(item) {
     const parentId = this.id();
     const itemClass = this.getItemClass();
-    if (item.constructor != itemClass) {
-      // создание нового GameObject, setParent вызовется в конструкторе
+    const newObjectCreation = item.constructor != itemClass ? true : false;
+
+    if (newObjectCreation) {
+      // setParent вызовется в конструкторе
       item = new itemClass(item, { parent: this });
     } else {
       item.setParent(this);
@@ -215,23 +217,6 @@
     const items = this.getAllItems().filter(({ _id }) => !skipArray.includes(_id));
     const item = items[Math.floor(Math.random() * items.length)];
     return item;
-  }
-  smartMoveRandomCard({ target }) {
-    let card = this.getRandomItem();
-    if (card) card.moveToTarget(target);
-    else {
-      this.restoreCardsFromDrop();
-      card = this.getRandomItem();
-      if (card) card.moveToTarget(target);
-    }
-    return card;
-  }
-  restoreCardsFromDrop({ deckDrop } = {}) {
-    if (!deckDrop) deckDrop = this.game().decks.drop;
-    const cards = deckDrop.select('Card').filter(({ group }) => this.cardGroups.includes(group));
-    for (const card of cards) {
-      if (card.restoreAvailable()) card.moveToTarget(this);
-    }
   }
   updateAllItems(updateData) {
     for (const item of this.getAllItems()) {

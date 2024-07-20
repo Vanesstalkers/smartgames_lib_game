@@ -566,4 +566,9 @@
         });
       }
     }
+    async playerUseTutorialLink(data) {
+      this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId });
+      lib.timers.timerRestart(this, { extraTime: 30 });
+      await this.saveChanges();
+    }
   };
