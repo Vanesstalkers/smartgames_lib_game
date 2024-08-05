@@ -1,6 +1,7 @@
 (class GameEvent {
   #source;
   #game;
+  #player;
   #allowedPlayers;
   #init;
   #handlers;
@@ -19,6 +20,10 @@
   game(data) {
     if (data) this.#game = data;
     return this.#game;
+  }
+  player(data) {
+    if (data) this.#player = data;
+    return this.#player;
   }
   allowedPlayers(data) {
     if (data) this.#allowedPlayers = data;
@@ -40,7 +45,7 @@
     return {
       source: this.#source,
       game: this.#game,
-      player: this.#game.getActivePlayer(),
+      player: this.#player || this.#game.getActivePlayer(),
       allowedPlayers: this.#allowedPlayers,
       sourceId: this.sourceId(),
     };
@@ -60,9 +65,9 @@
   addHandler(code, handler) {
     this.#handlers[code] = handler;
   }
-  emit(handler, data = {}) {
+  emit(handler, data = {}, initPlayer) {
     if (data.targetId) data.target = this.#game.get(data.targetId);
     handler = this.#handlers[handler];
-    if (handler) return handler.call(this, data);
+    if (handler) return handler.call(this, { ...data, initPlayer });
   }
 });

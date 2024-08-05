@@ -8,6 +8,14 @@ function prepareGameGlobals() {
     viewerMode: false,
     serverTimeDiff: 0,
     shownCard: '',
+    cardWorkerAction: {},
+  });
+
+  const gameCustom = reactive({
+    pickedDiceId: '',
+    selectedDiceSideId: '',
+    selectedCard: '',
+    selectedFakePlanes: {},
   });
 
   async function handleGameApi(data, { onSuccess, onError } = {}) {
@@ -50,6 +58,7 @@ function prepareGameGlobals() {
     getGamePlaneOffsets,
     getStore,
     gameState,
+    gameCustom,
     currentRound() {
       return this.game?.round;
     },

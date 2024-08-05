@@ -4,8 +4,8 @@
     this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData']);
     this.publicStaticFields(['group', 'owner']);
 
-    const { title, name, played, disabled } = data;
-    this.set({ title, name, played, disabled });
+    const { title, name, playOneTime, played, disabled } = data;
+    this.set({ title, name, playOneTime, played, disabled });
   }
   /**
    * Перемещает карту к новому держателю (колоду)
@@ -29,24 +29,18 @@
     if (!event) return null;
     return event();
   }
-  isPlayOneTime() {
-    return this.getEvent()?.config?.playOneTime;
-  }
   restoreAvailable() {
-    if (this.isPlayOneTime()) {
+    if (this.playOneTime) {
       return this.played ? false : true;
     } else {
       return true;
     }
   }
 
-  canPlay() {
-    return this.getEvent(this.name) ? true : false;
-  }
   play({ player, logMsg } = {}) {
     if (this.played) return;
 
-    const event = this.initEvent(this.name, { allowedPlayers: [player] });
+    const event = this.initEvent(this.name, { player, allowedPlayers: [player] });
     if (event !== null && player) player.addEvent(event);
     this.set({ played: Date.now() });
     

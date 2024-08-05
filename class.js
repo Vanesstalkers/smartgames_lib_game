@@ -184,7 +184,7 @@
         const playerAccessAllowed = event.allowedPlayers().includes(initPlayer);
         if (!playerAccessAllowed) continue;
 
-        const { preventListenerRemove } = event.emit(handler, data) || {};
+        const { preventListenerRemove } = event.emit(handler, data, initPlayer) || {};
         if (!preventListenerRemove) this.removeEventListener({ handler, sourceId: event.sourceId() });
       }
     }
@@ -320,63 +320,6 @@
     getActivePlayers() {
       return this.players().filter((player) => player.active);
     }
-    changeActivePlayer({ resetActivePlayer, player } = {}) {
-      if (resetActivePlayer) player = this.players()[0];
-
-      const activePlayer = this.getActivePlayer();
-      if (activePlayer.eventData.extraTurn) {
-        activePlayer.set({ eventData: { extraTurn: null } });
-        if (activePlayer.eventData.skipTurn) {
-          // актуально только для событий в течение хода игрока, инициированных не им самим
-          activePlayer.set({ eventData: { skipTurn: null } });
-        } else {
-          this.logs({
-            msg: `Игрок {{player}} получает дополнительный ход.`,
-            userId: activePlayer.userId,
-          });
-          return activePlayer;
-        }
-      }
-
-      const playerList = this.players();
-      let activePlayerIndex = playerList.findIndex((player) => player === activePlayer);
-      let newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
-      if (player) {
-        if (player.eventData.skipTurn) player.set({ eventData: { skipTurn: null } });
-        newActivePlayer = player;
-      } else {
-        if (this.isSinglePlayer()) {
-          newActivePlayer.set({ eventData: { actionsDisabled: null } });
-          if (newActivePlayer.eventData.skipTurn) {
-            this.logs({
-              msg: `Игрок {{player}} пропускает ход.`,
-              userId: newActivePlayer.userId,
-            });
-            newActivePlayer.set({
-              eventData: {
-                skipTurn: null,
-                actionsDisabled: true,
-              },
-            });
-          }
-        } else {
-          while (newActivePlayer.eventData.skipTurn) {
-            this.logs({
-              msg: `Игрок {{player}} пропускает ход.`,
-              userId: newActivePlayer.userId,
-            });
-            newActivePlayer.set({ eventData: { skipTurn: null } });
-            activePlayerIndex++;
-            newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
-          }
-        }
-      }
-
-      activePlayer.set({ active: false });
-      newActivePlayer.set({ active: true });
-
-      return newActivePlayer;
-    }
     activatePlayers({ publishText, setData, disableSkipRoundCheck = false }) {
       for (const player of this.players()) {
         if (!disableSkipRoundCheck && player.skipRoundCheck()) continue;
@@ -385,7 +328,7 @@
     }
     checkPlayersReady() {
       for (const player of this.getActivePlayers()) {
-        if (!player.activeReady) return false;
+        if (player.active === false) return false;
       }
       return true;
     }
@@ -400,7 +343,7 @@
           throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
         else if (
           (this.roundReady || player.eventData.actionsDisabled) &&
-          eventName !== 'endRound' &&
+          eventName !== 'handleRound' &&
           eventName !== 'leaveGame'
         )
           throw new Error('Игрок не может совершать действия в этот ход.');
@@ -509,7 +452,7 @@
       const { userId, viewerMode } = accessConfig;
       const storeData = data.store
         ? {
-            store: this.prepareBroadcastData({ userId, viewerMode, data: data.store }),
+            store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }),
           }
         : {};
       return { ...data, ...storeData };
@@ -566,8 +509,8 @@
         });
       }
     }
-    async playerUseTutorialLink(data) {
-      this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId });
+    async playerUseTutorialLink({ user }) {
+      this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId: user._id });
       lib.timers.timerRestart(this, { extraTime: 30 });
       await this.saveChanges();
     }

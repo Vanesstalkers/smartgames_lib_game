@@ -8,14 +8,14 @@
     this.preventSaveFields(['decks']);
 
     this.broadcastableFields([
-      ...['_id', 'code', 'userId', 'avatarCode', 'avatarsMap', 'active', 'ready', 'activeReady'],
+      ...['_id', 'code', 'userId', 'avatarCode', 'avatarsMap', 'active', 'ready'],
       ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper'],
     ]);
 
-    const { userId, avatarCode, avatarsMap = {}, active, activeReady, timerEndTime, timerUpdateTime } = data;
+    const { userId, avatarCode, avatarsMap = {}, active, timerEndTime, timerUpdateTime } = data;
     this.set({
       ready: false, // при восстановлении игры нужна повторная обработка initPlayerWaitEvents
-      ...{ userId, avatarCode, avatarsMap, active, activeReady, timerEndTime, timerUpdateTime },
+      ...{ userId, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
     });
   }
   nextPlayer() {
@@ -45,9 +45,12 @@
   }
 
   activate({ setData, publishText } = {}) {
-    this.set({ active: true, activeReady: false, eventData: { actionsDisabled: null } });
+    this.set({ active: true, eventData: { actionsDisabled: null } });
     if (setData) this.set(setData);
     if (publishText) this.publishInfo({ text: publishText, hideTime: 5000 });
+  }
+  deactivate() {
+    this.set({ active: false });
   }
 
   publishInfo(info = {}) {

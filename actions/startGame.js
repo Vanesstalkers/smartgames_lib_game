@@ -4,7 +4,7 @@
       init: function () {
         const { game, player } = this.eventContext();
         game.set({ status: 'IN_PROCESS' });
-        game.run('endRound', { resetActivePlayer: true });
+        game.run('handleRound');
       },
       handlers: {
         PLAYER_TIMER_END: function () {
@@ -19,7 +19,7 @@
           }
           game.set({ timerOverdueCounter });
 
-          game.run('endRound');
+          game.run('handleRound');
           return { preventListenerRemove: true };
         },
       },
