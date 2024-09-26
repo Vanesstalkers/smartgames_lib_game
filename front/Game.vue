@@ -85,7 +85,7 @@
       id="gamePlane"
       :style="{
         ...gamePlaneCustomStyleData, // например, центровка по координатам блоков в release
-        ...gamePlaneControlStyle, // mouse-events
+        ...gamePlaneControlStyle, // mouse-events + принудительный сдвиг (например, для корпоративных игр)
       }"
     >
       <slot
@@ -165,11 +165,13 @@ export default {
       return this.getStore() || {};
     },
     gamePlaneControlStyle() {
+      // двигаем по XY сам gamePlane
       const transform = [];
       transform.push('translate(' + this.gamePlaneTranslateX + 'px, ' + this.gamePlaneTranslateY + 'px)');
       return { transform: transform.join(' '), scale: this.gamePlaneScale };
     },
     gamePlaneSlotControlStyle() {
+      // вращаем только gp-content
       const transform = [];
       transform.push(`rotate(${this.gamePlaneRotation}deg)`);
       return { transform: transform.join(' '), transformOrigin: this.gamePlaneTransformOrigin };
@@ -252,6 +254,7 @@ export default {
           if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
           if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;
 
+          this.gamePlaneCustomStyleData = {}; // сбрасываем сдвиги gamePlane, т.к. в calcFunc используется getBoundingClientRect()
           this.$nextTick(function () {
             const calcFunc = this.calcGamePlaneCustomStyleData;
             if (typeof calcFunc === 'function') {
@@ -260,7 +263,7 @@ export default {
                 isMobile,
               });
               this.gamePlaneCustomStyleData = calcData;
-              this.gamePlaneTransformOrigin = gamePlaneTransformOrigin;
+              this.gamePlaneTransformOrigin = gamePlaneTransformOrigin; // позволяет вращать gp-content
 
               restoreGamePlaneSettings();
             }

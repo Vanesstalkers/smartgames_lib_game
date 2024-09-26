@@ -1,5 +1,20 @@
-(function ({} = {}, initPlayer) {
+(function ({ notUserCall, timerOverdue } = {}) {
+  let timerOverdueCounter = this.timerOverdueCounter || 0;
+  if (timerOverdue) {
+    timerOverdueCounter++;
+    // если много ходов было завершено по таймауту, то скорее всего все игроки вышли и ее нужно завершать
+    if (timerOverdueCounter > this.settings.autoFinishAfterRoundsOverdue) {
+      console.error("endGame <- timerOverdue");
+      this.run('endGame');
+    }
+  } else {
+    timerOverdueCounter = 0;
+  }
+  this.set({ timerOverdueCounter });
+
   const players = this.players();
+  const initPlayer = !notUserCall ? this.getActivePlayer() : null;
+
   if (initPlayer) {
     this.toggleEventHandlers('END_ROUND', {}, initPlayer);
     initPlayer.deactivate();
@@ -14,7 +29,7 @@
     domain.game.actions.roundSteps ||
     lib.game.actions.roundSteps;
   if (!roundStepsFunc) throw `Round steps for "${this.gameType}" game not found.`;
-  
+
   const { newRoundLogEvents, statusLabel, newRoundNumber } = roundStepsFunc.call(this, { initPlayer });
 
   // обновляем логи

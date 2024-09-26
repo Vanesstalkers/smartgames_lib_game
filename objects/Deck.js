@@ -127,7 +127,7 @@
   addItem(item) {
     const parentId = this.id();
     const itemClass = this.getItemClass();
-    const newObjectCreation = item.constructor != itemClass ? true : false;
+    const newObjectCreation = item.constructor != itemClass ? true : false; // тут может прийти объект с первичным набором атрибутов
 
     if (newObjectCreation) {
       // setParent вызовется в конструкторе
