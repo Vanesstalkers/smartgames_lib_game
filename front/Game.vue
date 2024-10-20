@@ -379,18 +379,23 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss">
 #game {
   height: 100%;
   width: 100%;
-}
-#game.mobile-view {
-  touch-action: none;
-}
 
-#game .selectable {
-  cursor: pointer;
-  box-shadow: inset 0 0 20px 8px yellow;
+  &.mobile-view {
+    touch-action: none;
+  }
+
+  .selectable {
+    cursor: pointer;
+    box-shadow: inset 0 0 20px 8px yellow;
+  }
+
+  .session-player {
+    z-index: 1;
+  }
 }
 
 #gamePlane {
@@ -476,27 +481,30 @@ export default {
   top: 0px;
   left: 0px;
   background-image: url(@/assets/clear-grey-back.png);
-}
-.shown-card > .img {
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  width: 100%;
-  height: 100%;
-}
-.shown-card > .close {
-  background-image: url(@/assets/close.png);
-  background-color: black;
-  cursor: pointer;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
-}
-.shown-card > .close:hover {
-  opacity: 0.7;
+
+  > .img {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  > .close {
+    background-image: url(@/assets/close.png);
+    background-color: black;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+
+    &:hover {
+      opacity: 0.7;
+    }
+  }
 }
 
 .game-controls.tutorial-active {
@@ -515,49 +523,53 @@ export default {
   flex-wrap: wrap;
   justify-content: space-around;
   align-items: center;
-}
-.gameplane-controls > div {
-  width: 30%;
-  height: 30%;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 50%;
-  background-color: black;
-  border-radius: 50%;
-  cursor: pointer;
-}
-.gameplane-controls > div:hover {
-  opacity: 0.5;
-}
-.gameplane-controls > .move-top {
-  background-image: url(assets/arrow-top.png);
-}
-.gameplane-controls > .move-bottom {
-  background-image: url(assets/arrow-bottom.png);
-}
-.gameplane-controls > .move-right {
-  background-image: url(assets/arrow-right.png);
-}
-.gameplane-controls > .move-left {
-  background-image: url(assets/arrow-left.png);
-}
-.gameplane-controls > .zoom-plus {
-  background-image: url(assets/zoom+.png);
-}
-.gameplane-controls > .zoom-minus {
-  background-image: url(assets/zoom-.png);
-}
-.gameplane-controls > .rotate-left {
-  background-image: url(assets/rotate-left.png);
-}
-.gameplane-controls > .rotate-right {
-  background-image: url(assets/rotate-right.png);
-}
-.gameplane-controls > .reset {
-  background-image: url(assets/reset.png);
-}
-.gameplane-controls.tutorial-active {
-  box-shadow: 0 0 40px 40px #f4e205;
+
+  > div {
+    width: 30%;
+    height: 30%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 50%;
+    background-color: black;
+    border-radius: 50%;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.5;
+    }
+  }
+
+  > .move-top {
+    background-image: url(assets/arrow-top.png);
+  }
+  > .move-bottom {
+    background-image: url(assets/arrow-bottom.png);
+  }
+  > .move-right {
+    background-image: url(assets/arrow-right.png);
+  }
+  > .move-left {
+    background-image: url(assets/arrow-left.png);
+  }
+  > .zoom-plus {
+    background-image: url(assets/zoom+.png);
+  }
+  > .zoom-minus {
+    background-image: url(assets/zoom-.png);
+  }
+  > .rotate-left {
+    background-image: url(assets/rotate-left.png);
+  }
+  > .rotate-right {
+    background-image: url(assets/rotate-right.png);
+  }
+  > .reset {
+    background-image: url(assets/reset.png);
+  }
+
+  &.tutorial-active {
+    box-shadow: 0 0 40px 40px #f4e205;
+  }
 }
 
 .gui-btn {
@@ -571,31 +583,33 @@ export default {
   background-position: center;
   margin: 10px;
   cursor: pointer;
-}
-.gui-btn.active {
-  background-color: #00000055;
-}
-.gui-btn:hover {
-  opacity: 0.7;
-}
-.gui-btn.chat {
-  background-image: url(assets/chat.png);
-}
-.gui-btn.chat.unread-messages {
-  border: 2px solid #0078d7;
-  box-shadow: 1px 0px 20px 6px #0078d7;
-}
-.gui-btn.log {
-  background-image: url(assets/log.png);
-}
-.gui-btn.move {
-  background-image: url(assets/move.png);
+
+  &.active {
+    background-color: #00000055;
+  }
+  &:hover {
+    opacity: 0.7;
+  }
+  &.chat {
+    background-image: url(assets/chat.png);
+
+    &.unread-messages {
+      border: 2px solid #0078d7;
+      box-shadow: 1px 0px 20px 6px #0078d7;
+    }
+  }
+  &.log {
+    background-image: url(assets/log.png);
+  }
+  &.move {
+    background-image: url(assets/move.png);
+  }
+  &.tutorial-active {
+    box-shadow: 0 0 20px 20px #f4e205;
+  }
 }
 .mobile-view .gui-btn.move {
   background-image: url(assets/move-mobile.png);
-}
-.gui-btn.tutorial-active {
-  box-shadow: 0 0 20px 20px #f4e205;
 }
 
 .chat-content {
@@ -610,9 +624,10 @@ export default {
   border: 2px solid #f4e205;
   color: #f4e205;
   display: none;
-}
-.chat-content.visible {
-  display: block;
+
+  .visible {
+    display: block;
+  }
 }
 .mobile-view .chat-content {
   left: 0px;
