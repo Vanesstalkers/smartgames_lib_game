@@ -13,14 +13,14 @@
   this.set({ timerOverdueCounter });
 
   const players = this.players();
-  const initPlayer = !notUserCall ? this.getActivePlayer() : null;
+  const initPlayer = !notUserCall ? this.getActivePlayer() : undefined;
 
   if (initPlayer) {
     this.toggleEventHandlers('END_ROUND', {}, initPlayer);
     initPlayer.deactivate();
   }
 
-  if (!this.checkPlayersReady()) return; // ждем завершения хода всеми игроками
+  if (!this.checkAllPlayersFinishRound()) return; // ждем завершения хода всеми игроками
 
   this.toggleEventHandlers(this.roundStep, {}, players);
 

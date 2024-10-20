@@ -45,12 +45,12 @@
   }
 
   activate({ setData, publishText } = {}) {
-    this.set({ active: true, eventData: { actionsDisabled: null } });
+    this.set({ active: true });
     if (setData) this.set(setData);
     if (publishText) this.publishInfo({ text: publishText, hideTime: 5000 });
   }
   deactivate() {
-    this.set({ active: false });
+    this.set({ active: false, eventData: { actionsDisabled: null } });
   }
 
   publishInfo(info = {}) {

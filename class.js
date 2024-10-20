@@ -139,14 +139,19 @@
     /**
      * Обработчики, вынесенные в отдельные файлы (папка actions)
      */
-    run(actionName, data, initPlayer) {
-      const action = domain.game.actions?.[actionName] || lib.game.actions?.[actionName];
+    run(actionPath, data, initPlayer) {
+      const [actionName, actionDir] = actionPath.split('.').reverse();
+
+      let action;
+      if (actionDir) {
+        action = lib.game.actions?.[actionName];
+      } else {
+        action = domain.game.actions?.[actionName];
+        if (!action) action = lib.game.actions?.[actionName];
+      }
+
       if (!action) throw new Error(`action "${actionName}" not found`);
-      return action.call(this, data, initPlayer);
-    }
-    runSuper(actionName, data, initPlayer) {
-      const action = lib.game.actions?.[actionName];
-      if (!action) throw new Error(`action "${actionName}" not found`);
+
       return action.call(this, data, initPlayer);
     }
 
@@ -181,6 +186,8 @@
 
       if (!initPlayer) initPlayer = this.getActivePlayer();
       for (const event of this.eventListeners[handler]) {
+        if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
+
         const playerAccessAllowed = event.allowedPlayers().includes(initPlayer);
         if (!playerAccessAllowed) continue;
 
@@ -246,7 +253,7 @@
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
         // инициатором события был установлен первый player в списке, который совпадает с активным игроком на старте игры
-        this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId });
+        this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
         await this.saveChanges();
 
         lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
@@ -302,6 +309,50 @@
       }
       lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
     }
+    getNextActivePlayer({ currentActivePlayer } = {}) {
+      if (this.round > 0 && currentActivePlayer) {
+        this.logs(
+          {
+            msg: `Игрок {{player}} закончил раунд №${this.round}.`,
+            userId: currentActivePlayer.userId,
+          },
+          { consoleMsg: true }
+        );
+      }
+
+      if (currentActivePlayer?.eventData.extraTurn) {
+        currentActivePlayer.set({ eventData: { extraTurn: null } });
+        if (currentActivePlayer.eventData.skipTurn) {
+          // актуально только для событий в течение хода игрока, инициированных не им самим
+          currentActivePlayer.set({ eventData: { skipTurn: null } });
+        } else {
+          this.logs({
+            msg: `Игрок {{player}} получает дополнительный ход.`,
+            userId: currentActivePlayer.userId,
+          });
+          return currentActivePlayer;
+        }
+      }
+
+      const playerList = this.players();
+      const activePlayerIndex = playerList.findIndex((player) => player === currentActivePlayer);
+      const newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
+
+      if (newActivePlayer.eventData.skipTurn) {
+        this.logs({
+          msg: `Игрок {{player}} пропускает ход.`,
+          userId: newActivePlayer.userId,
+        });
+        newActivePlayer.set({
+          eventData: {
+            skipTurn: null,
+            actionsDisabled: true,
+          },
+        });
+      }
+
+      return newActivePlayer;
+    }
     checkWinnerAndFinishGame() {
       let winningPlayer = this.players().sort((a, b) => (a.money > b.money ? -1 : 1))[0];
       if (winningPlayer.money <= 0) winningPlayer = null;
@@ -326,9 +377,9 @@
         player.activate({ setData, publishText });
       }
     }
-    checkPlayersReady() {
-      for (const player of this.getActivePlayers()) {
-        if (player.active === false) return false;
+    checkAllPlayersFinishRound() {
+      for (const player of this.players()) {
+        if (player.active) return false;
       }
       return true;
     }
@@ -349,7 +400,11 @@
           throw new Error('Игрок не может совершать действия в этот ход.');
 
         // !!! защитить методы, которые не должны вызываться с фронта
-        const result = this.run(eventName, eventData, player);
+        if (this[eventName]) {
+          this[eventName](eventData, player);
+        } else {
+          this.run(eventName, eventData, player);
+        }
 
         await this.saveChanges();
 
@@ -490,7 +545,6 @@
           if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
 
           if (player.timerEndTime < Date.now()) {
-            this.eventListeners['PLAYER_TIMER_END'].reverse(); // глобальные события игры, добавленные при ее создании, должны отработать последними
             this.toggleEventHandlers('PLAYER_TIMER_END');
             await this.saveChanges();
           }
