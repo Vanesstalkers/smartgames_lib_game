@@ -13,12 +13,8 @@
       if (storeData.id) storeData._id = storeData.id;
       super(storeData, gameObjectData);
 
-      this.defaultClasses({
-        Player: lib.game.objects.Player,
-        Viewer: lib.game.objects.Viewer,
-        Deck: lib.game.objects.Deck,
-        Card: lib.game.objects.Card,
-      });
+      const { Card, Deck, Player, Viewer } = lib.game._objects;
+      this.defaultClasses({ Card, Deck, Player, Viewer });
     }
 
     isCoreGame() {
