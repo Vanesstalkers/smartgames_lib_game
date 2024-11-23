@@ -1,4 +1,6 @@
 async (context, { gameId }) => {
+  // PIPELINE_GAME_START (9) :: подписываемся на изменения в состоянии игры
+
   const { sessionId } = context.session.state;
   const session = lib.store('session').get(sessionId);
   const user = session.user();

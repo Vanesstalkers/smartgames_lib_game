@@ -49,23 +49,11 @@
 
     <div :class="['chat-content', 'scroll-off', showChat ? 'visible' : '']">
       <chat
-        :channels="{
-          [`game-${gameState.gameId}`]: {
-            name: 'Игровой чат',
-            users: chatUsers,
-            items: game.chat,
-            inGame: true,
-          },
-          [`lobby-${state.currentLobby}`]: {
-            name: 'Общий чат',
-            users: this.lobby.users || {},
-            items: this.lobby.chat || {},
-          },
-        }"
         :defActiveChannel="`game-${gameState.gameId}`"
         :userData="userData"
         :isVisible="showChat"
         :hasUnreadMessages="hasUnreadMessages"
+        :channels="chatChannels"
       />
     </div>
 
@@ -187,6 +175,21 @@ export default {
     },
     lobby() {
       return this.state.store.lobby?.[this.state.currentLobby] || {};
+    },
+    chatChannels() {
+      return {
+        [`game-${this.gameState.gameId}`]: {
+          name: 'Игровой чат',
+          users: this.chatUsers,
+          items: this.game.chat,
+          inGame: true,
+        },
+        [`lobby-${this.state.currentLobby}`]: {
+          name: 'Общий чат',
+          users: this.lobby.users || {},
+          items: this.lobby.chat || {},
+        },
+      };
     },
     chatUsers() {
       return Object.values(this.store.player)

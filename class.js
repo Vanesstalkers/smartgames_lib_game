@@ -184,12 +184,15 @@
     toggleEventHandlers(handler, data = {}, initPlayer) {
       if (!this.eventListeners[handler]) return;
 
-      if (!initPlayer) initPlayer = this.getActivePlayer();
+      if (!initPlayer) initPlayer = this.roundActivePlayer();
       for (const event of this.eventListeners[handler]) {
         if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
 
         const playerAccessAllowed = event.allowedPlayers().includes(initPlayer);
-        if (!playerAccessAllowed) continue;
+        if (!playerAccessAllowed) {
+          console.error(`Not playerAccessAllowed for user "${initPlayer?.code}" to handler "${handler}"`);
+          continue;
+        }
 
         const { preventListenerRemove } = event.emit(handler, data, initPlayer) || {};
         if (!preventListenerRemove) this.removeEventListener({ handler, sourceId: event.sourceId() });
@@ -213,7 +216,7 @@
       if (data.msg.includes('{{player}}')) {
         const player = data.userId
           ? this.players().find(({ userId }) => userId === data.userId)
-          : this.getActivePlayer();
+          : this.roundActivePlayer();
         if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `"${player.userName}"`);
       }
 
@@ -240,6 +243,10 @@
     getPlayerByUserId(id) {
       return this.players().find((player) => player.userId === id);
     }
+
+    /**
+     * PIPELINE_GAME_START (6) :: делаем публикацию о присоединении конкретного игрока к игре
+     */
     async playerJoin({ playerId, userId, userName, userAvatar }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
@@ -309,34 +316,40 @@
       }
       lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
     }
-    getNextActivePlayer({ currentActivePlayer } = {}) {
-      if (this.round > 0 && currentActivePlayer) {
+    roundActivePlayer(player) {
+      if (player) this.set({ roundActivePlayerId: player.id() });
+      return this.get(this.roundActivePlayerId);
+    }
+    selectNextActivePlayer() {
+      const roundActivePlayer = this.roundActivePlayer();
+      if (this.round > 0 && roundActivePlayer) {
         this.logs(
           {
             msg: `Игрок {{player}} закончил раунд №${this.round}.`,
-            userId: currentActivePlayer.userId,
+            userId: roundActivePlayer.userId,
           },
           { consoleMsg: true }
         );
       }
 
-      if (currentActivePlayer?.eventData.extraTurn) {
-        currentActivePlayer.set({ eventData: { extraTurn: null } });
-        if (currentActivePlayer.eventData.skipTurn) {
+      if (roundActivePlayer?.eventData.extraTurn) {
+        roundActivePlayer.set({ eventData: { extraTurn: null } });
+        if (roundActivePlayer.eventData.skipTurn) {
           // актуально только для событий в течение хода игрока, инициированных не им самим
-          currentActivePlayer.set({ eventData: { skipTurn: null } });
+          roundActivePlayer.set({ eventData: { skipTurn: null } });
         } else {
           this.logs({
             msg: `Игрок {{player}} получает дополнительный ход.`,
-            userId: currentActivePlayer.userId,
+            userId: roundActivePlayer.userId,
           });
-          return currentActivePlayer;
+          return roundActivePlayer;
         }
       }
 
       const playerList = this.players();
-      const activePlayerIndex = playerList.findIndex((player) => player === currentActivePlayer);
+      const activePlayerIndex = playerList.findIndex((player) => player === roundActivePlayer);
       const newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
+      this.roundActivePlayer(newActivePlayer);
 
       if (newActivePlayer.eventData.skipTurn) {
         this.logs({
@@ -394,7 +407,7 @@
           throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
         else if (
           (this.roundReady || player.eventData.actionsDisabled) &&
-          eventName !== 'handleRound' &&
+          eventName !== 'updateRoundStep' &&
           eventName !== 'leaveGame'
         )
           throw new Error('Игрок не может совершать действия в этот ход.');

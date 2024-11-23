@@ -45,7 +45,7 @@
     return {
       source: this.#source,
       game: this.#game,
-      player: this.#player || this.#game.getActivePlayer(),
+      player: this.#player || this.#game.roundActivePlayer(),
       allowedPlayers: this.#allowedPlayers,
       sourceId: this.sourceId(),
     };

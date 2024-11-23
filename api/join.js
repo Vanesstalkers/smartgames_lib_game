@@ -11,6 +11,7 @@ async (context, { gameId, viewerMode = false }) => {
     session.set({ gameId });
   }
 
+  // PIPELINE_GAME_START (5) :: делаем публикацию о появлении у игры нового игрока 
   const action = viewerMode ? 'viewerJoin' : 'playerJoin';
   lib.store.broadcaster.publishAction(`game-${gameId}`, action, {
     userId,

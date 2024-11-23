@@ -1,23 +1,14 @@
 (function () {
-  this.initEvent(
-    {
-      init: function () {
-        const { game, player } = this.eventContext();
-        game.set({ status: 'IN_PROCESS' });
-        game.run('handleRound', { notUserCall: true });
-      },
-      handlers: {
-        PLAYER_TIMER_END: function () {
-          const { game, player } = this.eventContext();
-          game.logs({
-            msg: `Игрок {{player}} не успел завершить все действия за отведенное время, и раунд завершится автоматически.`,
-            userId: player.userId,
-          });
-          game.run('handleRound', { timerOverdue: true });
-          return { preventListenerRemove: true };
-        },
-      },
-    },
-    { defaultResetHandler: true, allowedPlayers: this.players() }
-  );
+  const { restorationMode } = this;
+  // PIPELINE_GAME_START (6.4) :: стартуем первый (или восстановленный) раунд игры
+  this.run('initGameProcessEvents');
+  this.set({ status: 'IN_PROCESS' });
+
+  if (restorationMode) {
+    // в игре установлены и active у player-а и roundActivePlayerId у игры, которые обновятся в начале нового раунда
+    this.run('startNewRound');
+  } else {
+    for (const player of this.getActivePlayers()) player.deactivate();
+    this.run('startNewRound');
+  }
 });

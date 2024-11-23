@@ -19,6 +19,7 @@
     }
 
     async joinGame({ deckType, gameType, gameId, playerId, viewerId, isSinglePlayer }) {
+      // PIPELINE_GAME_START (7) :: отправляем игроку сообщение о присоединении к игре и активном обучении
       const {
         helper: { getTutorial },
         utils: { structuredClone: clone },

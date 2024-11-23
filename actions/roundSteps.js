@@ -1,12 +1,11 @@
-(function ({ initPlayer: currentActivePlayer }) {
+(function () {
   const {
     round,
     settings: {
       // конфиги
     },
   } = this;
-
-  const newActivePlayer = this.getNextActivePlayer({ currentActivePlayer });
+  const newActivePlayer = this.selectNextActivePlayer();
 
   const newRoundNumber = round + 1;
   const newRoundLogEvents = [];

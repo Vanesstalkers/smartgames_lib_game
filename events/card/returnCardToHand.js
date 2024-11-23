@@ -30,7 +30,7 @@
 
       this.emit('RESET');
     },
-    ROUND_END: function () {
+    END_ROUND: function () {
       this.emit('RESET');
     },
   },
