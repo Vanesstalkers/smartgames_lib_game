@@ -1,4 +1,4 @@
-(function ({ timerOverdue, preventStartNewRound = false } = {}) {
+(function ({ timerOverdue } = {}) {
   let timerOverdueCounter = this.timerOverdueCounter || 0;
   if (timerOverdue) {
     timerOverdueCounter++;
@@ -16,6 +16,5 @@
   if (activePlayer) this.toggleEventHandlers('END_ROUND', {}, activePlayer);
 
   this.dumpState();
-
-  if (!preventStartNewRound) this.run('startNewRound');
+  this.run('startNewRound');
 });

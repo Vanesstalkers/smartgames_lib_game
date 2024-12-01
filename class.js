@@ -71,7 +71,7 @@
       return super.select(query);
     }
 
-    async create({ deckType, gameType, gameConfig, gameTimer } = {}) {
+    async create({ deckType, gameType, gameConfig, gameTimer } = {}, { initPlayerWaitEvents = true } = {}) {
       const { structuredClone: clone } = lib.utils;
       const {
         [gameType]: {
@@ -94,7 +94,7 @@
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
 
       this.run('fillGameData', gameData);
-      if (this.players().length) this.run('initPlayerWaitEvents');
+      if (initPlayerWaitEvents) this.run('initPlayerWaitEvents');
 
       await super.create({ ...this });
 

@@ -67,4 +67,10 @@
       },
     });
   }
+  publishStoreData(storeData) {
+    lib.store.broadcaster.publishAction(`gameuser-${this.userId}`, 'broadcastToSessions', {
+      type: 'updateStore',
+      data: { game: { [this.game().id()]: { store: storeData } } },
+    });
+  }
 });
