@@ -237,6 +237,7 @@ export default {
         const isMobile = this.state.isMobile;
 
         const gamePlaneRotation = this.gamePlaneRotation;
+        this.gamePlaneRotation = 0; // если не обнулять, то будет мешаться при центровке поля
         const gamePlaneTranslateX = this.gamePlaneTranslateX;
         const gamePlaneTranslateY = this.gamePlaneTranslateY;
 
