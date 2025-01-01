@@ -40,7 +40,7 @@
   play({ player, logMsg } = {}) {
     if (this.played) return;
 
-    const event = this.initEvent(this.name, { player, allowedPlayers: [player] });
+    const event = this.initEvent(this.name, { game: player.game(), player, allowedPlayers: [player] });
     if (event !== null && player) player.addEvent(event);
     this.set({ played: Date.now() });
     

@@ -15,6 +15,7 @@ function prepareGameGlobals() {
     pickedDiceId: '',
     selectedDiceSideId: '',
     selectedCard: '',
+    selectedPlane: '',
     selectedFakePlanes: {},
   });
 
@@ -28,8 +29,9 @@ function prepareGameGlobals() {
   function playerGameId() {
     return gameState.gameId;
   }
-  function getGame() {
-    return this.$root.state.store.game?.[gameState.gameId] || {};
+  function getGame(gameId) {
+    if (!gameId) gameId = gameState.gameId;
+    return this.$root.state.store.game?.[gameId] || {};
   }
   function gameFinished() {
     return this.getGame().status === 'FINISHED';

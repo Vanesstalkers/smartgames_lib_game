@@ -8,15 +8,40 @@
     this.preventSaveFields(['decks']);
 
     this.broadcastableFields([
-      ...['_id', 'code', 'userId', 'avatarCode', 'avatarsMap', 'active', 'ready'],
+      ...['_id', 'code', 'gameId', 'userId', 'avatarCode', 'avatarsMap', 'active', 'ready'],
       ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper'],
     ]);
 
-    const { userId, avatarCode, avatarsMap = {}, active, timerEndTime, timerUpdateTime } = data;
+    const { userId, eventData = {}, avatarCode, avatarsMap = {}, active, timerEndTime, timerUpdateTime } = data;
     this.set({
       ready: false, // при восстановлении игры нужна повторная обработка initPlayerWaitEvents
-      ...{ userId, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
+      ...{ userId, eventData, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
     });
+  }
+
+  prepareBroadcastData({ data, player, viewerMode }) {
+    const bFields = this.broadcastableFields();
+    let visibleId = this._id;
+    let preparedData;
+    if (!bFields) {
+      preparedData = data;
+    } else {
+      preparedData = {};
+      for (const [key, value] of Object.entries(data)) {
+        if (bFields.includes(key)) {
+          if (key === 'eventData' && player !== this) continue;
+          preparedData[key] = value;
+        }
+      }
+    }
+
+    return { visibleId, preparedData };
+  }
+
+  game(game) {
+    const result = super.game(game);
+    if (game) this.set({ gameId: game.id() }); // внутри .set() есть обращение к .game(), которого могло установиться строчкой выше
+    return result;
   }
   nextPlayer() {
     const players = this.game().players();

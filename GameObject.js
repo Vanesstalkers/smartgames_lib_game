@@ -3,7 +3,7 @@
   _col;
   #game;
   #parent;
-  #parentList;
+  // #parentList;
   #_objects = {};
   #fakeParent = null;
   #preventSaveFields = [];
@@ -64,7 +64,7 @@
     }
 
     this.game().setChanges(this.prepareChanges(val), clonedConfig);
-    
+
     lib.utils.mergeDeep({
       masterObj: this,
       target: this,
@@ -73,7 +73,7 @@
     });
   }
   prepareChanges(val) {
-    return { store: { [this._col]: { [this._id]: val } } }
+    return { store: { [this._col]: { [this._id]: val } } };
   }
   markNew(config) {
     this.game().markNew(this, config);
@@ -90,6 +90,7 @@
     if (parent) {
       do {
         parent.addToObjectStorage(this);
+        for (const obj of Object.values(this.#_objects)) parent.addToObjectStorage(obj);
       } while ((parent = parent.parent()));
     }
   }
@@ -101,6 +102,7 @@
     if (!parent) return;
     do {
       parent.deleteFromObjectStorage(this);
+      for (const obj of Object.values(this.#_objects)) parent.deleteFromObjectStorage(obj);
     } while ((parent = parent.parent()));
   }
   deleteFromObjectStorage(obj) {
@@ -155,7 +157,7 @@
     if (parent) {
       this.deleteFromParentsObjectStorage();
       this.#parent = parent;
-      this.#parentList = [parent].concat(parent.getParentList() || []); // самый дальний родитель в конце массива
+      // this.#parentList = [parent].concat(parent.getParentList() || []); // самый дальний родитель в конце массива
       this.addToParentsObjectStorage();
     }
   }
@@ -171,9 +173,9 @@
   getParent() {
     return this.#fakeParent || this.#parent;
   }
-  getParentList() {
-    return this.#parentList;
-  }
+  // getParentList() {
+  //   return this.#parentList;
+  // }
   findParent({ className, directParent = false } = {}) {
     let parent = this.parent();
     while (parent) {
@@ -184,7 +186,14 @@
     return null;
   }
   matches({ className } = {}) {
-    if (className && this.constructor.name === className) return true;
+    // if (className && this.constructor.name === className) return true;
+    if (className) {
+      let protoChain = this;
+      while (protoChain.constructor.name !== 'GameObject') {
+        if (protoChain.constructor.name === className) return true;
+        protoChain = Object.getPrototypeOf(protoChain);
+      }
+    }
     return false;
   }
   game(game) {
@@ -242,14 +251,15 @@
     if (!event) return null;
     return event();
   }
-  initEvent(event, { player, allowedPlayers, defaultResetHandler } = {}) {
+  initEvent(event, { game, player, allowedPlayers, defaultResetHandler } = {}) {
     if (typeof event === 'string') {
       const eventName = event;
       event = this.getEvent(eventName);
       event.name = eventName;
     }
     if (!event) throw new Error(`event not found (event=${eventName})`);
-    const game = this.isGame() ? this : this.game();
+
+    if (!game) game = this.isGame() ? this : this.game();
 
     event = new lib.game.GameEvent(event);
     event.source(this);
@@ -257,13 +267,10 @@
     event.player(player);
     event.allowedPlayers(allowedPlayers);
 
-    if (event.init) {
-      const { removeEvent } = event.init() || {};
-      if (removeEvent) return null;
-    }
     this.addEvent(event);
 
     if (defaultResetHandler) {
+      // у объекта одновременно может быть несколько RESET-событий, но они всегда вызываются через emit(...), так что лишние события не вызовутся
       event.addHandler('RESET', function () {
         const { game, source, sourceId } = this.eventContext();
         source.removeEvent(this);
@@ -272,6 +279,15 @@
     }
     for (const handler of event.handlers()) {
       game.addEventListener({ handler, event });
+    }
+
+    // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS) 
+    if (event.init) {
+      const { removeEvent } = event.init() || {};
+      if (removeEvent) {
+        event.emit('RESET');
+        return null;
+      }
     }
 
     return event;

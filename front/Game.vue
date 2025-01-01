@@ -25,7 +25,15 @@
           v-on:click="toggleChat"
         />
         <div :class="['log', 'gui-btn', showLog ? 'active' : '']" v-on:click="toggleLog" />
-        <div :class="['move', 'gui-btn', showMoveControls ? 'active' : '']" v-on:click="toggleMoveControls" />
+        <!-- <div :class="['move', 'gui-btn', showMoveControls ? 'active' : '']" v-on:click="toggleMoveControls" /> -->
+        <div
+          :class="['move', 'gui-btn', showMoveControls ? 'active' : '']"
+          v-on:click="
+            resetPlanePosition();
+            clearMouseEvents();
+            updatePlaneScale();
+          "
+        />
       </div>
       <div v-if="showMoveControls" class="gameplane-controls">
         <div class="zoom-minus" v-on:click="zoomGamePlane({ deltaY: 1 })" />
@@ -592,14 +600,16 @@ export default {
     background-image: url(assets/log.png);
   }
   &.move {
-    background-image: url(assets/move.png);
+    // background-image: url(assets/move.png);
+    background-image: url(assets/center.png);
   }
   &.tutorial-active {
     box-shadow: 0 0 20px 20px #f4e205;
   }
 }
 .mobile-view .gui-btn.move {
-  background-image: url(assets/move-mobile.png);
+  // background-image: url(assets/move-mobile.png);
+  background-image: url(assets/center.png);
 }
 
 .chat-content {
