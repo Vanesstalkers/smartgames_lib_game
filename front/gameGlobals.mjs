@@ -1,6 +1,7 @@
 import { reactive, provide, inject } from 'vue';
+import { addMouseEvents, removeMouseEvents, resetMouseEventsConfig } from './gameMouseEvents.mjs';
 
-function prepareGameGlobals() {
+function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
   const gameState = reactive({
     gameId: '',
     sessionPlayerId: '',
@@ -17,6 +18,10 @@ function prepareGameGlobals() {
     selectedCard: '',
     selectedPlane: '',
     selectedFakePlanes: {},
+    gamePlaneTranslateX: 0,
+    gamePlaneTranslateY: 0,
+    gamePlaneRotation: 0,
+    ...gameCustomArgs,
   });
 
   async function handleGameApi(data, { onSuccess, onError } = {}) {
@@ -38,9 +43,18 @@ function prepareGameGlobals() {
   }
   function getGamePlaneOffsets() {
     const deviceOffset = this.$root.state.isMobile ? (this.$root.state.isLandscape ? 0 : -100) : 500;
-    return {
-      [gameState.gameId]: { x: 0 + deviceOffset, y: 0 },
-    };
+    return { x: 0 + deviceOffset, y: 0 };
+  }
+  function resetPlanePosition() {
+    // если this.getGamePlaneOffsets вызывать не через this, то потеряется ссылка на this.$root
+    const { x, y } = this.getGamePlaneOffsets();
+    gameCustom.gamePlaneTranslateX = -1 * x;
+    gameCustom.gamePlaneTranslateY = -1 * y;
+  }
+  function updateGamePlaneTranslate({ x, y }) {
+    this.resetPlanePosition();
+    this.gameCustom.gamePlaneTranslateX += x;
+    this.gameCustom.gamePlaneTranslateY += y;
   }
   function getStore() {
     return this.getGame().store || {};
@@ -53,11 +67,16 @@ function prepareGameGlobals() {
   }
 
   const gameGlobals = {
+    addMouseEvents,
+    removeMouseEvents,
+    resetMouseEventsConfig,
     handleGameApi,
     playerGameId,
     getGame,
     gameFinished,
     getGamePlaneOffsets,
+    resetPlanePosition,
+    updateGamePlaneTranslate,
     getStore,
     gameState,
     gameCustom,
