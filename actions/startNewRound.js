@@ -12,4 +12,10 @@
   // обновляем логи
   for (const logEvent of newRoundLogEvents) this.logs(logEvent);
   this.set({ statusLabel: statusLabel || `Раунд ${newRoundNumber}`, round: newRoundNumber });
+
+  this.dumpState();
+
+  lib.timers.timerRestart(this, this.lastRoundTimerConfig);
+  // делаем после обновления таймера, в частности из-за карты "time"
+  this.playRoundStartCards();
 });

@@ -15,6 +15,5 @@
   const activePlayer = this.roundActivePlayer();
   if (activePlayer) this.toggleEventHandlers('END_ROUND', {}, activePlayer);
 
-  this.dumpState();
   this.run('startNewRound');
 });

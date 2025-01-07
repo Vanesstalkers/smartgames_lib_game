@@ -71,7 +71,10 @@
       return super.select(query);
     }
 
-    async create({ deckType, gameType, gameConfig, gameTimer, cardTemplate } = {}, { initPlayerWaitEvents = true } = {}) {
+    async create(
+      { deckType, gameType, gameConfig, gameTimer, cardTemplate } = {},
+      { initPlayerWaitEvents = true } = {}
+    ) {
       const { structuredClone: clone } = lib.utils;
       const {
         [gameType]: {
@@ -102,6 +105,11 @@
       if (!initiatedGame) await this.addGameToCache();
 
       return this;
+    }
+    restore() {
+      this.set({ status: 'IN_PROCESS', statusLabel: `Раунд ${this.round}` });
+      this.run('initGameProcessEvents');
+      lib.timers.timerRestart(this, this.lastRoundTimerConfig);
     }
 
     async addGameToCache() {
@@ -169,10 +177,11 @@
         },
       });
     }
-    removeAllEventListeners({ sourceId }) {
+    removeAllEventListeners({ sourceId, event: eventToRemove }) {
       const eventListeners = {};
       for (const [handler, listeners] of Object.entries(this.eventListeners)) {
-        eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
+        if (sourceId) eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
+        if (eventToRemove) eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
       }
 
       this.set({ eventListeners });

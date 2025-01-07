@@ -13,6 +13,7 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
   });
 
   const gameCustom = reactive({
+    dataLoaded: false,
     pickedDiceId: '',
     selectedDiceSideId: '',
     selectedCard: '',
@@ -60,7 +61,7 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
     return this.getGame().store || {};
   }
   function sessionPlayer() {
-    return this.store.player?.[this.gameState.sessionPlayerId] || {};
+    return this.store.player?.[this.gameState.sessionPlayerId] || { eventData: {} };
   }
   function sessionPlayerIsActive() {
     return this.sessionPlayer().active;

@@ -136,8 +136,11 @@
   getCodeTemplate(_code) {
     return '' + this.getCodePrefix() + _code + this.getCodeSuffix();
   }
-  getObjects() {
-    return this.select(...arguments);
+  getAllObjects() {
+    return this.select();
+  }
+  getObjects(query) {
+    return this.select(query);
   }
   select(query = {}) {
     if (typeof query === 'string') query = { className: query };
@@ -281,7 +284,7 @@
       game.addEventListener({ handler, event });
     }
 
-    // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS) 
+    // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS)
     if (event.init) {
       const { removeEvent } = event.init() || {};
       if (removeEvent) {
