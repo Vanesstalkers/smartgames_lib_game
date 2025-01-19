@@ -25,25 +25,33 @@
           v-on:click="toggleChat"
         />
         <div :class="['log', 'gui-btn', showLog ? 'active' : '']" v-on:click="toggleLog" />
-        <div :class="['move', 'gui-btn', showMoveControls ? 'active' : '']" v-on:click="toggleMoveControls" />
+        <!-- <div :class="['move', 'gui-btn', showMoveControls ? 'active' : '']" v-on:click="toggleMoveControls" /> -->
+        <div
+          :class="['move', 'gui-btn', showMoveControls ? 'active' : '']"
+          v-on:click="
+            resetPlanePosition();
+            resetMouseEventsConfig();
+            updatePlaneScale();
+          "
+        />
       </div>
       <div v-if="showMoveControls" class="gameplane-controls">
         <div class="zoom-minus" v-on:click="zoomGamePlane({ deltaY: 1 })" />
-        <div class="move-top" v-on:click="gamePlaneTranslateY -= 100" />
+        <div class="move-top" v-on:click="gameCustom.gamePlaneTranslateY -= 100" />
         <div class="zoom-plus" v-on:click="zoomGamePlane({ deltaY: -1 })" />
-        <div class="move-left" v-on:click="gamePlaneTranslateX -= 100" />
+        <div class="move-left" v-on:click="gameCustom.gamePlaneTranslateX -= 100" />
         <div
           class="reset"
           v-on:click="
             resetPlanePosition();
-            clearMouseEvents();
+            resetMouseEventsConfig();
             updatePlaneScale();
           "
         />
-        <div class="move-right" v-on:click="gamePlaneTranslateX += 100" />
-        <div class="rotate-right" v-on:click="gamePlaneRotation += 15" />
-        <div class="move-bottom" v-on:click="gamePlaneTranslateY += 100" />
-        <div class="rotate-left" v-on:click="gamePlaneRotation -= 15" />
+        <div class="move-right" v-on:click="gameCustom.gamePlaneTranslateX += 100" />
+        <div class="rotate-right" v-on:click="gameCustom.gamePlaneRotation += 15" />
+        <div class="move-bottom" v-on:click="gameCustom.gamePlaneTranslateY += 100" />
+        <div class="rotate-left" v-on:click="gameCustom.gamePlaneRotation -= 15" />
       </div>
     </GUIWrapper>
 
@@ -79,7 +87,9 @@
       <slot
         name="gameplane"
         :gamePlaneScale="gamePlaneScale"
-        :gamePlaneControlStyle="{ ...gamePlaneSlotControlStyle }"
+        :gamePlaneControlStyle="{
+          /* ...gamePlaneSlotControlStyle */
+        }"
       />
     </div>
 
@@ -105,7 +115,7 @@
 import { provide, inject } from 'vue';
 import { prepareGameGlobals } from './gameGlobals.mjs';
 import { addEvents, removeEvents } from './gameEvents.mjs';
-import { addMouseEvents, removeMouseEvents, config as mouseEventsConfig } from './gameMouseEvents.mjs';
+// import { addMouseEvents, removeMouseEvents, config as mouseEventsConfig } from './gameMouseEvents.mjs';
 
 import GUIWrapper from '@/components/gui-wrapper.vue';
 import tutorial from '~/lib/helper/front/helper.vue';
@@ -135,10 +145,8 @@ export default {
       gamePlaneScale: 1,
       gamePlaneScaleMin: this.planeScaleMin || 0.3,
       gamePlaneScaleMax: this.planeScaleMax || 1.0,
-      gamePlaneTranslateX: 0,
-      gamePlaneTranslateY: 0,
-      gamePlaneRotation: 0,
-      gamePlaneTransformOrigin: 'center center',
+      // gamePlaneRotation: 0,
+      // gamePlaneTransformOrigin: 'center center',
       planeScaleNeedUpdated: 0,
     };
   },
@@ -155,15 +163,18 @@ export default {
     gamePlaneControlStyle() {
       // двигаем по XY сам gamePlane
       const transform = [];
-      transform.push('translate(' + this.gamePlaneTranslateX + 'px, ' + this.gamePlaneTranslateY + 'px)');
+
+      const { gamePlaneTranslateX, gamePlaneTranslateY } = this.gameCustom;
+      transform.push('translate(' + gamePlaneTranslateX + 'px, ' + gamePlaneTranslateY + 'px)');
+
       return { transform: transform.join(' '), scale: this.gamePlaneScale };
     },
-    gamePlaneSlotControlStyle() {
-      // вращаем только gp-content
-      const transform = [];
-      transform.push(`rotate(${this.gamePlaneRotation}deg)`);
-      return { transform: transform.join(' '), transformOrigin: this.gamePlaneTransformOrigin };
-    },
+    // gamePlaneSlotControlStyle() {
+    //   // вращаем только gp-content
+    //   const transform = [];
+    //   transform.push(`rotate(${this.gamePlaneRotation}deg)`);
+    //   return { transform: transform.join(' '), transformOrigin: this.gamePlaneTransformOrigin };
+    // },
     game() {
       return this.getGame();
     },
@@ -236,15 +247,15 @@ export default {
         const { innerWidth, innerHeight } = window;
         const isMobile = this.state.isMobile;
 
-        const gamePlaneRotation = this.gamePlaneRotation;
-        this.gamePlaneRotation = 0; // если не обнулять, то будет мешаться при центровке поля
-        const gamePlaneTranslateX = this.gamePlaneTranslateX;
-        const gamePlaneTranslateY = this.gamePlaneTranslateY;
+        const gamePlaneRotation = this.gameCustom.gamePlaneRotation;
+        this.gameCustom.gamePlaneRotation = 0; // если не обнулять, то будет мешаться при центровке поля
+        const gamePlaneTranslateX = this.gameCustom.gamePlaneTranslateX;
+        const gamePlaneTranslateY = this.gameCustom.gamePlaneTranslateY;
 
         const restoreGamePlaneSettings = () => {
-          this.gamePlaneRotation = gamePlaneRotation;
-          this.gamePlaneTranslateX = gamePlaneTranslateX;
-          this.gamePlaneTranslateY = gamePlaneTranslateY;
+          this.gameCustom.gamePlaneRotation = gamePlaneRotation;
+          this.gameCustom.gamePlaneTranslateX = gamePlaneTranslateX;
+          this.gameCustom.gamePlaneTranslateY = gamePlaneTranslateY;
         };
 
         let { width, height } = this.$el.querySelector('#gamePlane').getBoundingClientRect();
@@ -262,12 +273,17 @@ export default {
           this.$nextTick(function () {
             const calcFunc = this.calcGamePlaneCustomStyleData;
             if (typeof calcFunc === 'function') {
-              const { gamePlaneTransformOrigin, ...calcData } = calcFunc.call(this, {
+              const calcFuncResult = calcFunc.call(this, {
                 gamePlaneScale: this.gamePlaneScale,
                 isMobile,
               });
-              this.gamePlaneCustomStyleData = calcData;
-              this.gamePlaneTransformOrigin = gamePlaneTransformOrigin; // позволяет вращать gp-content
+
+              if (calcFuncResult) {
+                // const { gamePlaneTransformOrigin,  ...calcData } = calcFuncResult;
+                // this.gamePlaneCustomStyleData = calcData;
+                // this.gamePlaneTransformOrigin = gamePlaneTransformOrigin; // позволяет вращать gp-content
+                this.gamePlaneCustomStyleData = calcFuncResult;
+              }
 
               restoreGamePlaneSettings();
             }
@@ -275,20 +291,10 @@ export default {
         }
       }
     },
-    resetPlanePosition() {
-      const gamePlaneOffsets = this.getGamePlaneOffsets()[this.gameCustom?.selectedGame || this.playerGameId()];
-      this.gamePlaneTranslateX = -1 * gamePlaneOffsets.x;
-      this.gamePlaneTranslateY = -1 * gamePlaneOffsets.y;
-    },
-
     zoomGamePlane(event) {
       this.gamePlaneScale += event.deltaY > 0 ? -0.1 : 0.1;
       if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
       if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;
-    },
-    clearMouseEvents() {
-      mouseEventsConfig.xOffset = 0;
-      mouseEventsConfig.yOffset = 0;
     },
 
     closeCardInfo() {
@@ -339,7 +345,7 @@ export default {
         });
 
       addEvents(this);
-      addMouseEvents(this);
+      this.addMouseEvents(this);
     },
     hasUnreadMessages(count = 0) {
       this.unreadMessages = count;
@@ -361,7 +367,7 @@ export default {
     this.$set(this.$root.state, 'viewLoaded', false);
 
     removeEvents();
-    removeMouseEvents();
+    this.removeMouseEvents();
     if (this.$root.state.store.game?.[this.gameState.gameId]) {
       delete this.$root.state.store.game[this.gameState.gameId];
     }
@@ -592,14 +598,16 @@ export default {
     background-image: url(assets/log.png);
   }
   &.move {
-    background-image: url(assets/move.png);
+    // background-image: url(assets/move.png);
+    background-image: url(assets/center.png);
   }
   &.tutorial-active {
     box-shadow: 0 0 20px 20px #f4e205;
   }
 }
 .mobile-view .gui-btn.move {
-  background-image: url(assets/move-mobile.png);
+  // background-image: url(assets/move-mobile.png);
+  background-image: url(assets/center.png);
 }
 
 .chat-content {
