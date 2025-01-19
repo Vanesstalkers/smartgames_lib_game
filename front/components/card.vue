@@ -51,7 +51,7 @@ export default {
       return this.getStore();
     },
     game() {
-      return this.getGame();
+      return this.getGame(this.card.sourceGameId);
     },
     card() {
       if (this.cardData) {
@@ -82,7 +82,7 @@ export default {
         imgExt = 'jpg',
       } = this;
 
-      const rootPath = `${serverOrigin}/img/cards`;
+      const rootPath = `${serverOrigin}/img/cards/${game.cardTemplate}`;
       const { group, name } = card;
 
       const cardPath = [this.cardGroup || group, name || 'back-side'].filter((s) => s).join('/');

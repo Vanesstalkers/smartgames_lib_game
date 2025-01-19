@@ -71,7 +71,10 @@
       return super.select(query);
     }
 
-    async create({ deckType, gameType, gameConfig, gameTimer } = {}, { initPlayerWaitEvents = true } = {}) {
+    async create(
+      { deckType, gameType, gameConfig, gameTimer, cardTemplate } = {},
+      { initPlayerWaitEvents = true } = {}
+    ) {
       const { structuredClone: clone } = lib.utils;
       const {
         [gameType]: {
@@ -88,7 +91,7 @@
       const gameData = {
         settings: clone(settings),
         addTime: Date.now(),
-        ...{ deckType, gameType, gameConfig, gameTimer },
+        ...{ deckType, gameType, gameConfig, gameTimer, cardTemplate },
       };
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
@@ -102,6 +105,11 @@
       if (!initiatedGame) await this.addGameToCache();
 
       return this;
+    }
+    restore() {
+      this.set({ status: 'IN_PROCESS', statusLabel: `Раунд ${this.round}` });
+      this.run('initGameProcessEvents');
+      lib.timers.timerRestart(this, this.lastRoundTimerConfig);
     }
 
     async addGameToCache() {
@@ -169,10 +177,11 @@
         },
       });
     }
-    removeAllEventListeners({ sourceId }) {
+    removeAllEventListeners({ sourceId, event: eventToRemove }) {
       const eventListeners = {};
       for (const [handler, listeners] of Object.entries(this.eventListeners)) {
-        eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
+        if (sourceId) eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
+        if (eventToRemove) eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
       }
 
       this.set({ eventListeners });
@@ -576,5 +585,36 @@
       this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId: user._id });
       lib.timers.timerRestart(this, { extraTime: 30 });
       await this.saveChanges();
+    }
+    async dumpState() {
+      const clone = lib.utils.structuredClone(this);
+      clone._gameid = db.mongo.ObjectID(clone._id);
+      clone._dumptime = Date.now();
+      delete clone._id;
+      await db.mongo.insertOne(this.col() + '_dump', clone);
+    }
+    async loadFromDB({ query, fromDump }) {
+      const col = this.col();
+      const _id = db.mongo.ObjectID(query._id);
+
+      if (!fromDump) return await db.mongo.findOne(col, query);
+
+      query._gameid = _id;
+      delete query._id;
+      const [
+        dumpData, // берем первый элемент, т.к. в ответе массив
+      ] = await db.mongo.find(col + '_dump', query, {
+        ...{ sort: { round: -1, _dumptime: -1 }, limit: 1 },
+      });
+
+      if (!dumpData) throw new Error('Копия для восстановления не найдена.');
+
+      await db.mongo.deleteOne(col, { _id });
+
+      dumpData._id = _id;
+      delete dumpData._gameid;
+      await db.mongo.insertOne(col, dumpData);
+
+      return dumpData;
     }
   };

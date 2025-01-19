@@ -192,13 +192,14 @@
     if (!this.#updatedItems[item._id]) this.#updatedItems[item._id] = {};
     this.#updatedItems[item._id][item.fakeId[this.id()]] = action;
   }
-  moveAllItems({ target, setData, emitEvent }) {
+  moveAllItems({ target, setData, emitEvent, markNew }) {
     for (const item of this.getAllItems()) {
       if (emitEvent) {
         for (const event of item.eventData.activeEvents) event.emit(emitEvent);
       }
       if (setData) item.set(setData);
-      item.moveToTarget(target);
+      item.moveToTarget(target); // внутри сработает markDelete 
+      if (markNew) item.markNew();
     }
   }
   moveRandomItems({ count, target }) {
