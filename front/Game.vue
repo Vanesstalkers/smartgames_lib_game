@@ -66,9 +66,9 @@
     </div>
 
     <div v-if="showLog" class="log-content scroll-off">
-      <div v-for="[id, logItem] in Object.entries(logs).reverse()" :key="id" class="log-item">
-        [ {{ new Date(logItem.time).toTimeString().split(' ')[0] }} ]:
-        {{ logItem.msg }}
+      <div v-for="[id, logItem] in logItems" :key="id" class="log-item">
+        <span class="time">[ {{ new Date(logItem.time).toTimeString().split(' ')[0] }} ]</span> ::
+        <span v-html="logItem.msg" />
       </div>
     </div>
 
@@ -211,8 +211,14 @@ export default {
           return Object.assign(obj, { [userId]: user });
         }, {});
     },
-    logs() {
-      return this.game.logs || {};
+    logItems() {
+      const items = Object.entries(this.game.logs || {})
+        .map(([id, item]) => {
+          item.msg = item.msg.replace(/\|\|\|([a-zA-Zа-яА-ЯёЁ0-9\s]+)\|\|\|/g, '<a>$1</a>');
+          return [id, item];
+        })
+        .reverse();
+      return items || [];
     },
   },
   watch: {
@@ -311,7 +317,7 @@ export default {
       if (this.showLog) return (this.showLog = false);
       this.showLog = true;
       await api.action
-        .call({ path: 'game.api.showLogs', args: [{ lastItemTime: Object.values(this.logs).pop()?.time }] })
+        .call({ path: 'game.api.showLogs', args: [{ lastItemTime: this.logItems.pop()?.[1]?.time }] })
         .then(() => {
           // если делать присвоение здесь, то будет сбрасываться tutorial-active на кнопке
           // this.showLog = true;
@@ -646,13 +652,24 @@ export default {
   color: #f4e205;
   overflow: auto;
   text-align: left;
+
+  .log-item {
+    padding: 10px;
+    line-height: 24px;
+
+    .time {
+      font-weight: bold;
+      color: lightgrey;
+    }
+    a {
+      font-weight: bold;
+      color: lightblue;
+    }
+  }
 }
 .mobile-view .log-content {
   left: 0px;
   width: calc(100% - 40px);
   margin: 20px;
-}
-.log-item {
-  padding: 10px;
 }
 </style>

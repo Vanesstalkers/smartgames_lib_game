@@ -222,7 +222,7 @@
         const player = data.userId
           ? this.players().find(({ userId }) => userId === data.userId)
           : this.roundActivePlayer();
-        if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `"${player.userName}"`);
+        if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `|||${player.userName}|||`);
       }
 
       const id = (Date.now() + Math.random()).toString().replace('.', '_');
