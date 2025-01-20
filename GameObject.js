@@ -269,9 +269,9 @@
     if (defaultResetHandler) {
       // у объекта одновременно может быть несколько RESET-событий, но они всегда вызываются через emit(...), так что лишние события не вызовутся
       event.addHandler('RESET', function () {
-        const { game, source, sourceId } = this.eventContext();
+        const { game, source } = this.eventContext();
         source.removeEvent(this);
-        game.removeAllEventListeners({ sourceId });
+        game.removeAllEventListeners({ event: this });
       });
     }
     for (const handler of event.handlers()) {
