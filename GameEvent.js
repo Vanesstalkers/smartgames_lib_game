@@ -10,6 +10,12 @@
     this.#handlers = handlers || {};
     Object.assign(this, data);
   }
+  destroy() {
+    const { game, player, source } = this.eventContext();
+    if (player) player.removeEvent(this); // добавляется в card.play()
+    source.removeEvent(this);
+    game.removeAllEventListeners({ event: this });
+  }
   source(data) {
     if (data) this.#source = data;
     return this.#source;

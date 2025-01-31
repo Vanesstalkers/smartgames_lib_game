@@ -82,7 +82,7 @@ export default {
         imgExt = 'jpg',
       } = this;
 
-      const rootPath = `${serverOrigin}/img/cards/${game.cardTemplate}`;
+      const rootPath = `${serverOrigin}/img/cards/${game.templates.card}`;
       const { group, name } = card;
 
       const cardPath = [this.cardGroup || group, name || 'back-side'].filter((s) => s).join('/');

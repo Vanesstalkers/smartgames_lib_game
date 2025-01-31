@@ -71,10 +71,7 @@
       return super.select(query);
     }
 
-    async create(
-      { deckType, gameType, gameConfig, gameTimer, cardTemplate } = {},
-      { initPlayerWaitEvents = true } = {}
-    ) {
+    async create({ deckType, gameType, gameConfig, gameTimer, templates } = {}, { initPlayerWaitEvents = true } = {}) {
       const { structuredClone: clone } = lib.utils;
       const {
         [gameType]: {
@@ -91,7 +88,7 @@
       const gameData = {
         settings: clone(settings),
         addTime: Date.now(),
-        ...{ deckType, gameType, gameConfig, gameTimer, cardTemplate },
+        ...{ deckType, gameType, gameConfig, gameTimer, templates },
       };
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
@@ -190,6 +187,8 @@
       if (!this.eventListeners[handler]) return;
 
       if (!initPlayer) initPlayer = this.roundActivePlayer();
+      if (!initPlayer) return; // генерация стартового поля
+
       for (const event of this.eventListeners[handler]) {
         if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
 
@@ -337,7 +336,14 @@
         );
       }
 
-      if (roundActivePlayer?.eventData.extraTurn) {
+      if (this.forcedNextActivePlayerId) {
+        const player = this.get(this.forcedNextActivePlayerId);
+        this.roundActivePlayer(player);
+        this.set({ forcedNextActivePlayerId: null });
+        return player;
+      }
+
+      if (roundActivePlayer?.eventData.extraTurn && !forcedNextActivePlayer) {
         roundActivePlayer.set({ eventData: { extraTurn: null } });
         if (roundActivePlayer.eventData.skipTurn) {
           // актуально только для событий в течение хода игрока, инициированных не им самим
@@ -404,7 +410,7 @@
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
-        const player = this.players().find((player) => player.userId === userId);
+        const player = this.getPlayerByUserId(userId);
         if (!player) throw new Error('player not found');
 
         const activePlayers = this.getActivePlayers();
@@ -534,7 +540,9 @@
       await db.redis.hdel('games', this.id());
       await this.saveChanges();
       await this.broadcastData({ logs: this.logs() });
-      this.remove();
+      this.removeStore();
+      this.removeChannel();
+      lib.game.flush.list.push(this);
     }
 
     onTimerRestart({ timerId, data: { time, extraTime = 0 } = {} }) {
