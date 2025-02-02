@@ -16,6 +16,6 @@
         },
       },
     },
-    { defaultResetHandler: true, allowedPlayers: this.players() }
+    { allowedPlayers: this.players() }
   );
 });

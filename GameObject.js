@@ -135,8 +135,8 @@
   getCodeTemplate(_code) {
     return '' + this.getCodePrefix() + _code + this.getCodeSuffix();
   }
-  getAllObjects() {
-    return this.select();
+  getAllObjects({ directParent = this } = {}) {
+    return this.select({ directParent });
   }
   getObjects(query) {
     return this.select(query);
@@ -248,17 +248,18 @@
     if (!event) return null;
     return event();
   }
-  initEvent(event, { game, player, allowedPlayers, defaultResetHandler } = {}) {
-    if (typeof event === 'string') {
-      const eventName = event;
-      event = this.getEvent(eventName);
-      event.name = eventName;
+  initEvent(eventData, { game, player, allowedPlayers } = {}) {
+    if (typeof eventData === 'string') {
+      const eventName = eventData;
+      eventData = this.getEvent(eventName);
+      eventData.name = eventName;
     }
-    if (!event) throw new Error(`event not found (event=${eventName})`);
+    if (!eventData) throw new Error(`event not found (event=${eventName})`);
 
     if (!game) game = this.isGame() ? this : this.game();
 
-    event = new lib.game.GameEvent(event);
+    let event = new lib.game.GameEvent(eventData);
+
     event.source(this);
     event.game(game);
     event.player(player);
@@ -266,12 +267,10 @@
 
     this.addEvent(event);
 
-    if (defaultResetHandler) {
+    if (event.handlers('RESET').length === 0) {
       // у объекта одновременно может быть несколько RESET-событий, но они всегда вызываются через emit(...), так что лишние события не вызовутся
       event.addHandler('RESET', function () {
-        const { game, source } = this.eventContext();
-        source.removeEvent(this);
-        game.removeAllEventListeners({ event: this });
+        this.destroy();
       });
     }
     for (const handler of event.handlers()) {
@@ -280,10 +279,10 @@
 
     // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS)
     if (event.init) {
-      const { removeEvent } = event.init() || {};
-      if (removeEvent) {
+      const { resetEvent } = event.init() || {};
+      if (resetEvent) {
         event.emit('RESET');
-        return null;
+        event = null;
       }
     }
 
