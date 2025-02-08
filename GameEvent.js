@@ -10,6 +10,12 @@
     this.#handlers = handlers || {};
     Object.assign(this, data);
   }
+  destroy() {
+    const { game, player, source } = this.eventContext();
+    if (player) player.removeEvent(this); // добавляется в card.play()
+    source.removeEvent(this);
+    game.removeAllEventListeners({ event: this });
+  }
   source(data) {
     if (data) this.#source = data;
     return this.#source;
@@ -59,8 +65,10 @@
   init() {
     if (this.hasInitAction()) return this.#init();
   }
-  handlers() {
-    return Object.keys(this.#handlers);
+  handlers(name) {
+    let result = Object.keys(this.#handlers);
+    if (name) result = result.filter((handler) => handler === name);
+    return result;
   }
   addHandler(code, handler) {
     this.#handlers[code] = handler;

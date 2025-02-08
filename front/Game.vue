@@ -343,15 +343,15 @@ export default {
           this.gameState.sessionViewerId = viewerId;
           this.gameState.viewerMode = viewerMode;
           this.$set(this.$root.state, 'serverTimeDiff', serverTime - Date.now());
+
+          addEvents(this);
+          this.addMouseEvents(this);
         })
         .catch((err) => {
           this.$router.push({ path: `/` }).catch((err) => {
             console.log(err);
           });
         });
-
-      addEvents(this);
-      this.addMouseEvents(this);
     },
     hasUnreadMessages(count = 0) {
       this.unreadMessages = count;

@@ -59,6 +59,12 @@
       if (!this.store[col]) this.store[col] = {};
       this.store[col][id] = obj;
     }
+    deleteFromObjectStorage(obj) {
+      super.deleteFromObjectStorage(obj);
+
+      const { _id: id, _col: col } = obj;
+      if (this.store[id]) delete this.store[id];
+    }
 
     defaultClasses(map) {
       if (map) Object.assign(this.#objectsDefaultClasses, map);
@@ -71,10 +77,7 @@
       return super.select(query);
     }
 
-    async create(
-      { deckType, gameType, gameConfig, gameTimer, cardTemplate } = {},
-      { initPlayerWaitEvents = true } = {}
-    ) {
+    async create({ deckType, gameType, gameConfig, gameTimer, templates } = {}, { initPlayerWaitEvents = true } = {}) {
       const { structuredClone: clone } = lib.utils;
       const {
         [gameType]: {
@@ -91,7 +94,7 @@
       const gameData = {
         settings: clone(settings),
         addTime: Date.now(),
-        ...{ deckType, gameType, gameConfig, gameTimer, cardTemplate },
+        ...{ deckType, gameType, gameConfig, gameTimer, templates },
       };
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
@@ -190,6 +193,8 @@
       if (!this.eventListeners[handler]) return;
 
       if (!initPlayer) initPlayer = this.roundActivePlayer();
+      if (!initPlayer) return; // генерация стартового поля
+
       for (const event of this.eventListeners[handler]) {
         if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
 
@@ -404,18 +409,24 @@
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
-        const player = this.players().find((player) => player.userId === userId);
+        const player = this.getPlayerByUserId(userId);
         if (!player) throw new Error('player not found');
 
         const activePlayers = this.getActivePlayers();
-        if (!activePlayers.includes(player) && eventName !== 'leaveGame' && !player.eventData.disableActivePlayerCheck)
+        const { disableActivePlayerCheck, disableActionsDisabledCheck } = player.eventData;
+        if (!activePlayers.includes(player) && eventName !== 'leaveGame' && !disableActivePlayerCheck)
           throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
         else if (
           (this.roundReady || player.eventData.actionsDisabled) &&
+          !disableActionsDisabledCheck &&
           eventName !== 'updateRoundStep' &&
           eventName !== 'leaveGame'
         )
           throw new Error('Игрок не может совершать действия в этот ход.');
+
+        if (disableActivePlayerCheck || disableActionsDisabledCheck) {
+          player.set({ eventData: { disableActivePlayerCheck: null, disableActionsDisabledCheck: null } });
+        }
 
         // !!! защитить методы, которые не должны вызываться с фронта
         if (this[eventName]) {
@@ -534,7 +545,9 @@
       await db.redis.hdel('games', this.id());
       await this.saveChanges();
       await this.broadcastData({ logs: this.logs() });
-      this.remove();
+      this.removeStore();
+      this.removeChannel();
+      lib.game.flush.list.push(this);
     }
 
     onTimerRestart({ timerId, data: { time, extraTime = 0 } = {} }) {

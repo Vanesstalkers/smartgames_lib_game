@@ -52,7 +52,7 @@
     const endRoundEvent = this.findEvent({ skipRound: true });
     if (endRoundEvent) {
       this.game().logs(`Игрок ${this.userName} пропускает ход`);
-      this.removeEvent(endRoundEvent);
+      endRoundEvent.destroy();
       return true;
     }
     return false;
