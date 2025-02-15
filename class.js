@@ -3,6 +3,7 @@
     #logs = {};
     store = {};
     playerMap = {};
+    eventListeners = {};
     #broadcastObject = {};
     #broadcastDataAfterHandlers = {};
     #objectsDefaultClasses = {};
@@ -162,7 +163,6 @@
       return action.call(this, data, initPlayer);
     }
 
-    eventListeners = {};
     addEventListener({ handler, event }) {
       if (!this.eventListeners[handler]) this.set({ eventListeners: { [handler]: [] } });
       this.set({
@@ -184,7 +184,10 @@
       const eventListeners = {};
       for (const [handler, listeners] of Object.entries(this.eventListeners)) {
         if (sourceId) eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
-        if (eventToRemove) eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
+        if (eventToRemove) {
+          if (handler === 'TRIGGER') eventToRemove.player().removeEventWithTriggerListener();
+          else eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
+        }
       }
 
       this.set({ eventListeners });
@@ -409,7 +412,7 @@
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
-        const player = this.getPlayerByUserId(userId);
+        const player = this.getPlayerByUserId(userId) || this.roundActivePlayer();
         if (!player) throw new Error('player not found');
 
         const activePlayers = this.getActivePlayers();
@@ -436,15 +439,6 @@
         }
 
         await this.saveChanges();
-
-        // не используется
-        // const { clientCustomUpdates } = result || {};
-        // if (clientCustomUpdates) {
-        //   lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
-        //     type: 'db/smartUpdated',
-        //     data: clientCustomUpdates,
-        //   });
-        // }
       } catch (exception) {
         if (exception instanceof lib.game.endGameException) {
           await this.removeGame();

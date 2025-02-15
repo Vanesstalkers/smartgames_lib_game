@@ -274,7 +274,9 @@
       });
     }
     for (const handler of event.handlers()) {
-      game.addEventListener({ handler, event });
+      // !!!! в initPrepareGameEvents нет player-а
+      if (handler === 'TRIGGER') player.setEventWithTriggerListener(event);
+      else game.addEventListener({ handler, event });
     }
 
     // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS)
