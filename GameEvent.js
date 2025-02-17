@@ -12,7 +12,10 @@
   }
   destroy() {
     const { game, player, source } = this.eventContext();
-    if (player) player.removeEvent(this); // добавляется в card.play()
+    if (player) {
+      player.removeEvent(this); // добавляется в card.play()
+      player.removeEventWithTriggerListener();
+    }
     source.removeEvent(this);
     game.removeAllEventListeners({ event: this });
   }
@@ -47,6 +50,9 @@
     return this.#source.title || this.#source.name || this.#source.code;
   }
 
+  checkAccess(player) {
+    return this.#player === player || this.#allowedPlayers.includes(player);
+  }
   eventContext() {
     return {
       source: this.#source,

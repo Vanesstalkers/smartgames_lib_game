@@ -248,7 +248,7 @@
     if (!event) return null;
     return event();
   }
-  initEvent(eventData, { game, player, allowedPlayers } = {}) {
+  initEvent(eventData, { game, player, allowedPlayers = [] } = {}) {
     if (typeof eventData === 'string') {
       const eventName = eventData;
       eventData = this.getEvent(eventName);
@@ -274,7 +274,8 @@
       });
     }
     for (const handler of event.handlers()) {
-      game.addEventListener({ handler, event });
+      if (handler === 'TRIGGER') player?.setEventWithTriggerListener(event);
+      else game.addEventListener({ handler, event });
     }
 
     // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS)
