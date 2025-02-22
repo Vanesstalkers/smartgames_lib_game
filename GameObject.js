@@ -135,6 +135,9 @@
   getCodeTemplate(_code) {
     return '' + this.getCodePrefix() + _code + this.getCodeSuffix();
   }
+  shortCode() {
+    return this.code.replace(this.getCodePrefix(), '').replace(this.getCodeSuffix(), '');
+  }
   getAllObjects({ directParent = this } = {}) {
     return this.select({ directParent });
   }
@@ -192,6 +195,9 @@
       }
     }
     return false;
+  }
+  is(className) {
+    return this.matches({ className });
   }
   game(game) {
     if (!game) return this.#game;
