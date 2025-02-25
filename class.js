@@ -171,14 +171,17 @@
         },
       });
     }
-    removeEventListener({ handler, sourceId }) {
+    removeEventListener({ handler, eventToRemove }) {
       const listeners = this.eventListeners[handler];
       if (!listeners) throw new Error(`listeners not found (handler=${handler})`);
-      this.set({
-        eventListeners: {
-          [handler]: listeners.filter((event) => event.sourceId() !== sourceId),
-        },
-      });
+
+      const eventListeners = {};
+      if (eventToRemove) {
+        if (handler === 'TRIGGER') eventToRemove.player().removeEventWithTriggerListener();
+        else eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
+      }
+
+      this.set({ eventListeners });
     }
     removeAllEventListeners({ sourceId, event: eventToRemove }) {
       const eventListeners = {};
@@ -208,7 +211,15 @@
         }
 
         const { preventListenerRemove } = event.emit(handler, data, initPlayer) || {};
-        if (!preventListenerRemove) this.removeEventListener({ handler, sourceId: event.sourceId() });
+        if (!preventListenerRemove) this.removeEventListener({ handler, eventToRemove: event });
+      }
+    }
+    forceEmitEventHandler(handler, data) {
+      if (!this.eventListeners[handler]) return;
+      
+      for (const event of this.eventListeners[handler]) {
+        const { preventListenerRemove } = event.emit(handler, data) || {};
+        if (!preventListenerRemove) this.removeEventListener({ handler, eventToRemove: event });
       }
     }
     clearEvents() {
