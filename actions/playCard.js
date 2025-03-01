@@ -1,5 +1,5 @@
 (function ({ cardId }, player) {
-  if (this.triggerEventEnabled() || player.triggerEventEnabled())
+  if (player.triggerEventEnabled())
     throw new Error('Игрок не может совершить это действие, пока не завершит активное событие.');
 
   const card = this.get(cardId);

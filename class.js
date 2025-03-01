@@ -227,9 +227,6 @@
         this.set({ eventListeners: { [handler]: [] } });
       }
     }
-    triggerEventEnabled() {
-      return this.eventListeners['TRIGGER']?.length ? true : false;
-    }
 
     logs(data, { consoleMsg } = {}) {
       if (!data) return this.#logs;

@@ -275,7 +275,7 @@
 
     if (event.handlers('RESET').length === 0) {
       // у объекта одновременно может быть несколько RESET-событий, но они всегда вызываются через emit(...), так что лишние события не вызовутся
-      event.addHandler('RESET', function () {
+      event.setHandler('RESET', function () {
         this.destroy();
       });
     }

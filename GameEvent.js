@@ -76,7 +76,7 @@
     if (name) result = result.filter((handler) => handler === name);
     return result;
   }
-  addHandler(code, handler) {
+  setHandler(code, handler) {
     this.#handlers[code] = handler;
   }
   emit(handler, data = {}, initPlayer) {
