@@ -135,6 +135,9 @@
   getCodeTemplate(_code) {
     return '' + this.getCodePrefix() + _code + this.getCodeSuffix();
   }
+  shortCode() {
+    return this.code.replace(this.getCodePrefix(), '').replace(this.getCodeSuffix(), '');
+  }
   getAllObjects({ directParent = this } = {}) {
     return this.select({ directParent });
   }
@@ -193,6 +196,9 @@
     }
     return false;
   }
+  is(className) {
+    return this.matches({ className });
+  }
   game(game) {
     if (!game) return this.#game;
     this.#game = game;
@@ -248,7 +254,7 @@
     if (!event) return null;
     return event();
   }
-  initEvent(eventData, { game, player, allowedPlayers } = {}) {
+  initEvent(eventData, { game, player, allowedPlayers = [] } = {}) {
     if (typeof eventData === 'string') {
       const eventName = eventData;
       eventData = this.getEvent(eventName);
@@ -269,12 +275,13 @@
 
     if (event.handlers('RESET').length === 0) {
       // у объекта одновременно может быть несколько RESET-событий, но они всегда вызываются через emit(...), так что лишние события не вызовутся
-      event.addHandler('RESET', function () {
+      event.setHandler('RESET', function () {
         this.destroy();
       });
     }
     for (const handler of event.handlers()) {
-      game.addEventListener({ handler, event });
+      if (handler === 'TRIGGER') player?.setEventWithTriggerListener(event);
+      else game.addEventListener({ handler, event });
     }
 
     // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS)

@@ -8,7 +8,7 @@
   // делается после, чтобы можно было в END_ROUND-обработчике сделать проверку на FINISHED-статус
   this.toggleEventHandlers('END_ROUND');
 
-  if (message) this.logs(`Игра закончилась по причине: "${message}".`);
+  if (message) this.logs(`Игра закончилась по причине: "${message}"`);
 
   if (winningPlayer) this.setWinner({ player: winningPlayer });
 

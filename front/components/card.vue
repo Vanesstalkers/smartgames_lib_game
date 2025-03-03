@@ -10,11 +10,11 @@
       locked ? 'locked' : '',
       card.eventData.cardClass || '',
     ]"
-    :style="customStyle"
+    :style="getCustomStyle"
     v-on:click.stop="toggleSelect"
   >
     <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
-    <div v-if="canPlay && !locked" v-on:click.stop="playCard" class="play-btn">
+    <div v-if="canPlay && !locked" v-on:click.stop="callPlayCard" class="play-btn">
       {{ card.eventData.buttonText || 'Разыграть' }}
     </div>
   </div>
@@ -26,6 +26,15 @@ import { inject } from 'vue';
 export default {
   name: 'card',
   props: {
+    playCard: {
+      type: Function,
+    },
+    customStyle: {
+      type: Object,
+      default: () => {
+        return {};
+      },
+    },
     cardId: String,
     canPlay: Boolean,
     playerActive: {
@@ -51,6 +60,9 @@ export default {
       return this.getStore();
     },
     game() {
+      return this.getGame();
+    },
+    sourceGame() {
       return this.getGame(this.card.sourceGameId);
     },
     card() {
@@ -73,28 +85,16 @@ export default {
     locked() {
       return this.card.eventData.playDisabled || this.actionsDisabled();
     },
-    customStyle() {
-      const {
-        state: { serverOrigin },
-        card,
-        game,
-        imgFullPath,
-        imgExt = 'jpg',
-      } = this;
-
-      const rootPath = `${serverOrigin}/img/cards/${game.templates.card}`;
-      const { group, name } = card;
-
-      const cardPath = [this.cardGroup || group, name || 'back-side'].filter((s) => s).join('/');
-      const path = imgFullPath || `${rootPath}/${cardPath}.${imgExt}` || `empty-card.${imgExt}`;
-
-      return {
-        backgroundImage: `url(${path})`,
-      };
+    getCustomStyle() {
+      return this.customStyle;
     },
   },
   methods: {
-    async playCard() {
+    async callPlayCard() {
+      if (typeof this.playCard === 'function') this.playCard();
+      else this.defaultPlayCard();
+    },
+    async defaultPlayCard() {
       if (this.card.played) return;
       if (this.locked) return;
 

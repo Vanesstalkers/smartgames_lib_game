@@ -3,6 +3,7 @@
     #logs = {};
     store = {};
     playerMap = {};
+    eventListeners = {};
     #broadcastObject = {};
     #broadcastDataAfterHandlers = {};
     #objectsDefaultClasses = {};
@@ -162,7 +163,6 @@
       return action.call(this, data, initPlayer);
     }
 
-    eventListeners = {};
     addEventListener({ handler, event }) {
       if (!this.eventListeners[handler]) this.set({ eventListeners: { [handler]: [] } });
       this.set({
@@ -171,20 +171,26 @@
         },
       });
     }
-    removeEventListener({ handler, sourceId }) {
+    removeEventListener({ handler, eventToRemove }) {
       const listeners = this.eventListeners[handler];
       if (!listeners) throw new Error(`listeners not found (handler=${handler})`);
-      this.set({
-        eventListeners: {
-          [handler]: listeners.filter((event) => event.sourceId() !== sourceId),
-        },
-      });
+
+      const eventListeners = {};
+      if (eventToRemove) {
+        if (handler === 'TRIGGER') eventToRemove.player().removeEventWithTriggerListener();
+        else eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
+      }
+
+      this.set({ eventListeners });
     }
     removeAllEventListeners({ sourceId, event: eventToRemove }) {
       const eventListeners = {};
       for (const [handler, listeners] of Object.entries(this.eventListeners)) {
         if (sourceId) eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
-        if (eventToRemove) eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
+        if (eventToRemove) {
+          if (handler === 'TRIGGER') eventToRemove.player().removeEventWithTriggerListener();
+          else eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
+        }
       }
 
       this.set({ eventListeners });
@@ -198,23 +204,28 @@
       for (const event of this.eventListeners[handler]) {
         if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
 
-        const playerAccessAllowed = event.allowedPlayers().includes(initPlayer);
+        const playerAccessAllowed = event.checkAccess(initPlayer);
         if (!playerAccessAllowed) {
           console.error(`Not playerAccessAllowed for user "${initPlayer?.code}" to handler "${handler}"`);
           continue;
         }
 
         const { preventListenerRemove } = event.emit(handler, data, initPlayer) || {};
-        if (!preventListenerRemove) this.removeEventListener({ handler, sourceId: event.sourceId() });
+        if (!preventListenerRemove) this.removeEventListener({ handler, eventToRemove: event });
+      }
+    }
+    forceEmitEventHandler(handler, data) {
+      if (!this.eventListeners[handler]) return;
+      
+      for (const event of this.eventListeners[handler]) {
+        const { preventListenerRemove } = event.emit(handler, data) || {};
+        if (!preventListenerRemove) this.removeEventListener({ handler, eventToRemove: event });
       }
     }
     clearEvents() {
       for (const handler of Object.keys(this.eventListeners)) {
         this.set({ eventListeners: { [handler]: [] } });
       }
-    }
-    triggerEventEnabled() {
-      return this.eventListeners['TRIGGER']?.length ? true : false;
     }
 
     logs(data, { consoleMsg } = {}) {
@@ -409,7 +420,7 @@
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
-        const player = this.getPlayerByUserId(userId);
+        const player = this.getPlayerByUserId(userId) || this.roundActivePlayer();
         if (!player) throw new Error('player not found');
 
         const activePlayers = this.getActivePlayers();
@@ -436,15 +447,6 @@
         }
 
         await this.saveChanges();
-
-        // не используется
-        // const { clientCustomUpdates } = result || {};
-        // if (clientCustomUpdates) {
-        //   lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
-        //     type: 'db/smartUpdated',
-        //     data: clientCustomUpdates,
-        //   });
-        // }
       } catch (exception) {
         if (exception instanceof lib.game.endGameException) {
           await this.removeGame();

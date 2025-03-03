@@ -1,4 +1,6 @@
 (class Player extends lib.game.GameObject {
+  #eventWithTriggerListener = null;
+
   constructor(data, { parent }) {
     super(data, { col: 'player', parent });
     Object.assign(this, {
@@ -66,7 +68,7 @@
     }
   }
   triggerEventEnabled() {
-    return this.eventData.activeEvents.find((event) => event.hasHandler('TRIGGER')) ? true : false;
+    return this.#eventWithTriggerListener !== null ? true : false;
   }
 
   activate({ setData, publishText } = {}) {
@@ -97,5 +99,20 @@
       type: 'updateStore',
       data: { game: { [this.game().id()]: { store: storeData } } },
     });
+  }
+  setEventWithTriggerListener(event) {
+    if (this.#eventWithTriggerListener) throw new Error('Предыдущее событие не завершено');
+    if (!event.hasHandler('TRIGGER')) throw new Error('Событие не содержит обработчик TRIGGER');
+
+    this.#eventWithTriggerListener = event;
+    this.set({ eventData: { triggerListenerEnabled: Date.now() } });
+  }
+  removeEventWithTriggerListener() {
+    this.#eventWithTriggerListener = null;
+    this.set({ eventData: { triggerListenerEnabled: null } });
+  }
+  toggleEventWithTriggerListener(data = {}) {
+    if (!this.#eventWithTriggerListener) throw new Error('Событие не найдено');
+    return this.#eventWithTriggerListener.emit('TRIGGER', data, this);
   }
 });
