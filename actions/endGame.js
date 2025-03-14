@@ -1,4 +1,4 @@
-(function ({ winningPlayer, canceledByUser, customFinalize = false, message } = {}) {
+(function ({ winningPlayer, canceledByUser, customFinalize = false, msg } = {}) {
   lib.timers.timerDelete(this);
 
   if (this.status !== 'IN_PROCESS') canceledByUser = true; // можно отменить игру, еще она еще не начата (ставим true, чтобы ниже попасть в условие cancel-ветку)
@@ -8,7 +8,7 @@
   // делается после, чтобы можно было в END_ROUND-обработчике сделать проверку на FINISHED-статус
   this.toggleEventHandlers('END_ROUND');
 
-  if (message) this.logs(`Игра закончилась по причине: "${message}"`);
+  if (msg) this.logs(`Игра закончилась по причине: "${JSON.stringify(msg)}"`);
 
   if (winningPlayer) this.setWinner({ player: winningPlayer });
 
@@ -20,10 +20,10 @@
         ? 'lose'
         : 'cancel'
       : this.winUserId // у игры есть победитель
-      ? userId === this.winUserId
-        ? 'win'
-        : 'lose'
-      : 'lose'; // игра закончилась автоматически
+        ? userId === this.winUserId
+          ? 'win'
+          : 'lose'
+        : 'lose'; // игра закончилась автоматически
     player.set({ endGameStatus });
     playerEndGameStatus[userId] = endGameStatus;
   }

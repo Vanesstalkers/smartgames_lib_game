@@ -1,4 +1,5 @@
 (class GameEvent {
+  #name;
   #source;
   #game;
   #player;
@@ -8,6 +9,7 @@
   constructor({ init, handlers, ...data }) {
     this.#init = init;
     this.#handlers = handlers || {};
+    this.#name = data.name;
     Object.assign(this, data);
   }
   destroy() {
