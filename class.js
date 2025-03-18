@@ -111,7 +111,7 @@
       return this;
     }
     restore() {
-      this.set({ status: 'IN_PROCESS', statusLabel: `Раунд ${this.round}` });
+      this.set({ status: 'IN_PROCESS', statusLabel: `Раунд ${this.round}`, addTime: Date.now() });
       this.run('initGameProcessEvents');
       lib.timers.timerRestart(this, this.lastRoundTimerConfig);
     }
@@ -216,7 +216,7 @@
     }
     forceEmitEventHandler(handler, data) {
       if (!this.eventListeners[handler]) return;
-      
+
       for (const event of this.eventListeners[handler]) {
         const { preventListenerRemove } = event.emit(handler, data) || {};
         if (!preventListenerRemove) this.removeEventListener({ handler, eventToRemove: event });
@@ -248,7 +248,7 @@
     async showLogs({ userId, sessionId, lastItemTime }) {
       let logs = this.logs();
       if (lastItemTime) {
-        logs = Object.fromEntries(Object.entries(logs).filter(([{}, { time }]) => time > lastItemTime));
+        logs = Object.fromEntries(Object.entries(logs).filter(([{ }, { time }]) => time > lastItemTime));
       }
       await this.broadcastData({ logs }, { customChannel: `session-${sessionId}` });
     }
@@ -538,8 +538,8 @@
       const { userId, viewerMode } = accessConfig;
       const storeData = data.store
         ? {
-            store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }),
-          }
+          store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }),
+        }
         : {};
       return { ...data, ...storeData };
     }

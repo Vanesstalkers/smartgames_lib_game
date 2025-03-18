@@ -279,9 +279,13 @@
         this.destroy();
       });
     }
-    for (const handler of event.handlers()) {
-      if (handler === 'TRIGGER') player?.setEventWithTriggerListener(event);
-      else game.addEventListener({ handler, event });
+    const handlers = event.handlers();
+    for (const handler of handlers) {
+      if (handler === 'TRIGGER') {
+        player?.setEventWithTriggerListener(event);
+      } else {
+        game.addEventListener({ handler, event });
+      }
     }
 
     // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS)
