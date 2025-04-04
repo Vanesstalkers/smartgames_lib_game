@@ -7,6 +7,7 @@
   #fakeParent = null;
   #preventSaveFields = [];
   #broadcastableFields = [];
+  #preventBroadcastFields = [];
   #publicStaticFields = null; // отправляется в том числе и для фейковых данных, обновлять нельзя (хранятся в объекте-связи родителя-колоды)
 
   constructor(data, { col: _col, parent } = {}) {
@@ -37,7 +38,12 @@
       this.code = ''; // чтобы у дочерних объектов не было префикса "Game[]"
     } else {
       this.game(parent.isGame() ? parent : parent.game());
-      if (!this.isGame() && newObject) this.markNew({ saveToDB: true });
+      if (!this.isGame() && newObject) {
+        this.markNew({
+          saveToDB: true,
+          changes: { masterObject: {} } // без этого объекты, созданные в ходе игры, попадут на фронт не целиком 
+        });
+      }
     }
   }
   id() {
@@ -46,6 +52,7 @@
   preventSaveFields(fields) {
     if (!fields) return this.#preventSaveFields;
     this.#preventSaveFields.push(...fields);
+    return true;
   }
   updateFakeId({ parentId }) {
     if (!parentId) throw new Error('parentId not found');
@@ -220,6 +227,12 @@
   broadcastableFields(fields) {
     if (!fields) return this.#broadcastableFields;
     this.#broadcastableFields.push(...fields);
+    return true;
+  }
+  preventBroadcastFields(fields) {
+    if (!fields) return this.#preventBroadcastFields;
+    this.#preventBroadcastFields.push(...fields);
+    return true;
   }
   publicStaticFields(data) {
     if (data) this.#publicStaticFields = data;
@@ -228,11 +241,12 @@
 
   prepareSaveData() {
     let preparedData;
-    if (!this.#preventSaveFields.length) {
+    const preventSaveFieldsList = this.preventSaveFields();
+    if (!preventSaveFieldsList.length) {
       preparedData = this;
     } else {
       preparedData = Object.fromEntries(
-        Object.entries(this).filter(([key, val]) => !this.#preventSaveFields.includes(key))
+        Object.entries(this).filter(([key, val]) => !preventSaveFieldsList.includes(key))
       );
     }
     return preparedData;
@@ -240,11 +254,12 @@
   prepareBroadcastData({ data, player, viewerMode }) {
     let visibleId = this._id;
     let preparedData;
-    if (this.#broadcastableFields.length === 0) {
+    const broadcastableFieldsList = this.broadcastableFields();
+    if (broadcastableFieldsList.length === 0) {
       preparedData = data;
     } else {
       preparedData = Object.fromEntries(
-        Object.entries(data).filter(([key, val]) => this.#broadcastableFields.includes(key))
+        Object.entries(data).filter(([key, val]) => broadcastableFieldsList.includes(key))
       );
     }
     return { visibleId, preparedData };
@@ -316,5 +331,12 @@
       return activeEvent !== event;
     });
     this.set({ eventData: { activeEvents } });
+  }
+  /**
+   * Проверяет наличие активного события замены костяшек
+   * @returns {boolean} true если есть активное событие замены костяшек
+   */
+  hasDiceReplacementEvent() {
+    return this.eventData.activeEvents.some(event => event.name === 'diceReplacementEvent');
   }
 });

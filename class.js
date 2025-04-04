@@ -16,6 +16,8 @@
 
       const { Card, Deck, Player, Viewer } = lib.game._objects;
       this.defaultClasses({ Card, Deck, Player, Viewer });
+      
+      this.preventSaveFields(['eventData.activeEvents']);
     }
 
     isCoreGame() {
@@ -35,11 +37,11 @@
     setChanges(val, config) {
       super.setChanges(val, config);
     }
-    markNew(obj, { saveToDB = false } = {}) {
+    markNew(obj, { saveToDB = false, changes: changesConfig } = {}) {
       const { _col: col, _id: id } = obj;
       if (saveToDB) {
         // broadcast пройдет после сохранения изменений в БД
-        this.setChanges({ store: { [col]: { [id]: obj } } });
+        this.setChanges({ store: { [col]: { [id]: obj } } }, changesConfig);
       } else {
         this.addBroadcastObject({ col, id });
       }
@@ -547,6 +549,7 @@
       await db.redis.hdel('games', this.id());
       await this.saveChanges();
       await this.broadcastData({ logs: this.logs() });
+      lib.timers.timerDelete(this);
       this.removeStore();
       this.removeChannel();
       lib.game.flush.list.push(this);
@@ -575,7 +578,7 @@
         if (this.status === 'FINISHED') return lib.timers.timerDelete(this);
 
         for (const player of this.getActivePlayers()) {
-          if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
+          if (!player.timerEndTime) continue; // сюда попадут "потерянные tick-и" при завершении игры и восстановлении игры
 
           if (player.timerEndTime < Date.now()) {
             this.toggleEventHandlers('PLAYER_TIMER_END');

@@ -8,7 +8,8 @@
      * @returns {(import('application/lib/game/types.js').objects.Deck)}
      */
     addDeck(data, { deckMapName = 'deckMap', deckClass, deckItemClass, parentDirectLink = true } = {}) {
-      const { Deck: defaultDeckClass, Card: defaultCardClass } = this.game().defaultClasses();
+      const defaultClasses = this.defaultClasses ? this.defaultClasses() : this.game().defaultClasses();
+      const { Deck: defaultDeckClass, Card: defaultCardClass } = defaultClasses;
       if (!deckClass) deckClass = defaultDeckClass;
       if (!deckItemClass) deckItemClass = defaultCardClass;
 
