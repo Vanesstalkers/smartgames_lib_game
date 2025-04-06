@@ -13,7 +13,7 @@
   for (const logEvent of newRoundLogEvents) this.logs(logEvent);
   this.set({ statusLabel: statusLabel || `Раунд ${newRoundNumber}`, round: newRoundNumber });
 
-  this.dumpState(); // вся структура updateRoundStep/startNewRound/roundSteps сделана ради этой строчки
+  this.dumpState(); // вся структура roundEnd/roundStart/roundSteps сделана ради этой строчки
 
   lib.timers.timerRestart(this, this.lastRoundTimerConfig);
   // делаем после обновления таймера, в частности из-за карты "time"

@@ -6,7 +6,7 @@
         msg: `Игрок {{player}} не успел завершить все действия за отведенное время, и раунд завершится автоматически.`,
         userId: player.userId,
       });
-      game.run('updateRoundStep', { timerOverdue: true });
+      game.run('roundEnd', { timerOverdue: true });
       return { preventListenerRemove: true };
     },
   },
