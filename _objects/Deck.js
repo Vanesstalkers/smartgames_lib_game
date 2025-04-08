@@ -40,10 +40,11 @@
               }
             } else {
               // первичная рассылка из addSubscriber
+              const fakeId = item.fakeId[fakeIdParent];
               if (item.visible) {
                 ids[id] = val;
+                if(fakeId) ids[fakeId] = null;
               } else {
-                const fakeId = item.fakeId[fakeIdParent];
                 if (!fakeId) throw '!fakeId';
                 ids[fakeId] = val;
               }
