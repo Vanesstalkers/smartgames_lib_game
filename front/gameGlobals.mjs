@@ -13,14 +13,6 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
   });
 
   const gameCustom = reactive({
-    pickedDiceId: '',
-    selectedDiceSideId: '',
-    selectedCard: '',
-    selectedPlane: '',
-    selectedFakePlanes: {},
-    gamePlaneTranslateX: 0,
-    gamePlaneTranslateY: 0,
-    gamePlaneRotation: 0,
     ...gameCustomArgs,
   });
 

@@ -16,7 +16,7 @@
 
       const { Card, Deck, Player, Viewer } = lib.game._objects;
       this.defaultClasses({ Card, Deck, Player, Viewer });
-      
+
       this.preventSaveFields(['eventData.activeEvents']);
     }
 
@@ -301,12 +301,12 @@
         lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'logout'); // инициирует hideGameIframe
       }
     }
-    async viewerJoin({ userId, userName }) {
+    async viewerJoin({ viewerId, userId, userName }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
         const { Viewer: viewerClass } = this.defaultClasses();
-        const viewer = new viewerClass({ userId }, { parent: this });
+        const viewer = new viewerClass({ _id: viewerId, userId }, { parent: this });
         viewer.set({ userId, userName });
         this.logs({ msg: `Наблюдатель присоединился к игре.` });
 
@@ -326,8 +326,8 @@
         });
       }
     }
-    async playerLeave({ userId, viewerId }) {
-      if (this.status !== 'FINISHED' && !viewerId) {
+    async playerLeave({ userId }) {
+      if (this.status !== 'FINISHED') {
         this.logs({ msg: `Игрок {{player}} вышел из игры.`, userId });
         try {
           this.run('endGame', { canceledByUser: userId });
@@ -336,6 +336,17 @@
             await this.removeGame();
           } else throw exception;
         }
+      }
+      lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
+    }
+    async viewerLeave({ userId, viewerId }) {
+      if (this.status !== 'FINISHED') {
+        const viewer = this.get(viewerId);
+        if (!viewer) return;
+
+        viewer.markDelete({ saveToDB: true });
+        this.deleteFromObjectStorage(viewer);
+        await this.saveChanges();
       }
       lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
     }
