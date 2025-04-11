@@ -58,6 +58,16 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
     return this.sessionPlayer().active;
   }
 
+  function logItems() {
+    const items = Object.entries(this.game.logs || {})
+      .map(([id, item]) => {
+        item.msg = item.msg.replace(/<player\s*([^>]*)>([\S\s]+?)<\/player>/g, '<a $1>$2</a>');
+        return [id, item];
+      })
+      .reverse();
+    return items || [];
+  }
+
   const gameGlobals = {
     addMouseEvents,
     removeMouseEvents,
@@ -80,6 +90,7 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
     actionsDisabled() {
       return this.sessionPlayer().eventData?.actionsDisabled;
     },
+    logItems,
   };
 
   return gameGlobals;

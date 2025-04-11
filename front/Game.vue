@@ -66,7 +66,7 @@
     </div>
 
     <div v-if="showLog" class="log-content scroll-off">
-      <div v-for="[id, logItem] in logItems" :key="id" class="log-item">
+      <div v-for="[id, logItem] in logItems()" :key="id" class="log-item">
         <span class="time">[ {{ new Date(logItem.time).toTimeString().split(' ')[0] }} ]</span> ::
         <span v-html="logItem.msg" />
       </div>
@@ -211,15 +211,6 @@ export default {
           return Object.assign(obj, { [userId]: user });
         }, {});
     },
-    logItems() {
-      const items = Object.entries(this.game.logs || {})
-        .map(([id, item]) => {
-          item.msg = item.msg.replace(/\|\|\|([a-zA-Zа-яА-ЯёЁ0-9\s]+)\|\|\|/g, '<a>$1</a>');
-          return [id, item];
-        })
-        .reverse();
-      return items || [];
-    },
   },
   watch: {
     gameDataLoaded: function () {
@@ -317,7 +308,7 @@ export default {
       if (this.showLog) return (this.showLog = false);
       this.showLog = true;
       await api.action
-        .call({ path: 'game.api.showLogs', args: [{ lastItemTime: this.logItems.pop()?.[1]?.time }] })
+        .call({ path: 'game.api.showLogs', args: [{ lastItemTime: this.logItems().pop()?.[1]?.time }] })
         .then(() => {
           // если делать присвоение здесь, то будет сбрасываться tutorial-active на кнопке
           // this.showLog = true;

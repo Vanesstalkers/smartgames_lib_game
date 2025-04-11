@@ -5,7 +5,7 @@
   const card = this.get(cardId);
   card.play({
     player,
-    logMsg: `Пользователь {{player}} разыграл карту "${card.title}".`,
+    logMsg: `Игрок {{player}} разыграл карту <a>${card.title}</a>.`,
   });
   card.moveToTarget(this.decks.active);
 });
