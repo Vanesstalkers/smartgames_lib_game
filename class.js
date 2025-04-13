@@ -344,6 +344,10 @@
         const viewer = this.get(viewerId);
         if (!viewer) return;
 
+        const user = lib.store('user').get(user.gameId);
+        user.set({ gameId: null });
+        await user.saveChanges();
+
         viewer.markDelete({ saveToDB: true });
         this.deleteFromObjectStorage(viewer);
         await this.saveChanges();
@@ -564,6 +568,8 @@
       this.removeStore();
       this.removeChannel();
       lib.game.flush.list.push(this);
+      await db.mongo.deleteOne(this.col(), { _id: this.id() });
+      await db.mongo.deleteMany(this.col() + '_dump', { _gameid: db.mongo.ObjectID(this.id()) });
     }
 
     onTimerRestart({ timerId, data: { time, extraTime = 0 } = {} }) {

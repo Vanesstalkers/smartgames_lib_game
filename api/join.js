@@ -3,7 +3,12 @@ async (context, { gameId, viewerMode = false }) => {
   const session = lib.store('session').get(sessionId);
   const { userId } = session;
   const user = session.user();
-  if (user.gameId) throw new Error('Уже подключен к другой игре');
+  if (user.gameId && user.gameId !== gameId) {
+    lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
+      data: { message: 'Уже подключен к другой игре. Повторите попытку подключения.' },
+    });
+    return { status: 'error', logout: true };
+  }
 
   for (const session of user.sessions()) {
     // на случай повторного вызова api до обработки playerJoin
