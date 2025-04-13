@@ -344,7 +344,7 @@
         const viewer = this.get(viewerId);
         if (!viewer) return;
 
-        const user = lib.store('user').get(user.gameId);
+        const user = lib.store('user').get(userId);
         user.set({ gameId: null });
         await user.saveChanges();
 

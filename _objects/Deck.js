@@ -20,7 +20,7 @@
       for (const [key, value] of Object.entries(data)) {
         if (key === 'itemMap' && !this.access[player?._id] && !viewerMode) {
           const ids = {};
-          for (const [idx, [id, val]] of Object.entries(value).entries()) {
+          for (const [id, val] of Object.entries(value)) {
             const item = game.get(id); // ищем в game, потому что item мог быть перемещен
             const updatedItemsEntries = Object.entries(this.#updatedItems[id] || {});
             if (updatedItemsEntries.length) {
@@ -35,7 +35,7 @@
                   ids[id] = val;
                   ids[fakeId] = null; // если не удалить, то будет задвоение внутри itemMap на фронте
                 } else {
-                  ids[fakeId] = val;
+                  ids[fakeId] = item.prepareFakeData?.(val) || val;
                 }
               }
             } else {
@@ -43,10 +43,10 @@
               const fakeId = item.fakeId[fakeIdParent];
               if (item.visible) {
                 ids[id] = val;
-                if(fakeId) ids[fakeId] = null;
+                if (fakeId) ids[fakeId] = null;
               } else {
                 if (!fakeId) throw '!fakeId';
-                ids[fakeId] = val;
+                ids[fakeId] = item.prepareFakeData?.(val) || val;
               }
             }
           }
@@ -59,8 +59,8 @@
       for (const [key, value] of Object.entries(data)) {
         if (key === 'itemMap') {
           const ids = {};
-          for (const [idx, [id, val]] of Object.entries(value).entries()) {
-            if (parent === player || viewerMode) {
+          for (const [id, val] of Object.entries(value)) {
+            if (parent === player || this.access[player?._id] || viewerMode) {
               ids[id] = val;
             } else {
               const item = game.get(id); // ищем в game, потому что item мог быть перемещен
@@ -77,7 +77,7 @@
                     ids[id] = val;
                     ids[fakeId] = null; // если не удалить, то будет задвоение внутри itemMap на фронте
                   } else {
-                    ids[fakeId] = val;
+                    ids[fakeId] = item.prepareFakeData?.(val) || val;
                   }
                 }
               } else {
@@ -88,7 +88,7 @@
                   ids[id] = val;
                   ids[fakeId] = null; // если не удалить, то будет задвоение внутри itemMap на фронте
                 } else {
-                  ids[fakeId] = val;
+                  ids[fakeId] = item.prepareFakeData?.(val) || val;
                 }
               }
             }
