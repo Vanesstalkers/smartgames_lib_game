@@ -14,10 +14,10 @@
       ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper'],
     ]);
 
-    const { userId, eventData = {}, avatarCode, avatarsMap = {}, active, timerEndTime, timerUpdateTime } = data;
+    const { userId, eventData = {}, avatarCode, avatarsMap = {}, active, removed, timerEndTime, timerUpdateTime } = data;
     this.set({
       ready: false, // при восстановлении игры нужна повторная обработка initPlayerWaitEvents
-      ...{ userId, eventData, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
+      ...{ userId, eventData, avatarCode, avatarsMap, active, removed, timerEndTime, timerUpdateTime },
     });
   }
 

@@ -560,7 +560,7 @@
         : {};
       return { ...data, ...storeData };
     }
-    async removeGame() {
+    async removeGame({ preventDeleteDumps = false } = {}) {
       await db.redis.hdel('games', this.id());
       await this.saveChanges();
       await this.broadcastData({ logs: this.logs() });
@@ -569,7 +569,9 @@
       this.removeChannel();
       lib.game.flush.list.push(this);
       await db.mongo.deleteOne(this.col(), { _id: this.id() });
-      await db.mongo.deleteMany(this.col() + '_dump', { _gameid: db.mongo.ObjectID(this.id()) });
+      if (!preventDeleteDumps) {
+        await db.mongo.deleteMany(this.col() + '_dump', { _gameid: db.mongo.ObjectID(this.id()) });
+      }
     }
 
     onTimerRestart({ timerId, data: { time, extraTime = 0 } = {} }) {
@@ -642,7 +644,7 @@
         ...{ sort: { round: -1, _dumptime: -1 }, limit: 1 },
       });
 
-      if (!dumpData) throw new Error('Копия для восстановления не найдена.');
+      if (!dumpData) return null;
 
       await db.mongo.deleteOne(col, { _id });
 

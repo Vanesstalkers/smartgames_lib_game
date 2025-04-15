@@ -81,7 +81,7 @@
       }
     }
 
-    async gameFinished({ gameId, gameType, playerEndGameStatus, fullPrice, roundCount }) {
+    async gameFinished({ gameId, gameType, playerEndGameStatus, fullPrice, roundCount, preventCalcStats = false } = {}) {
       const {
         helper: { getTutorial },
         utils: { structuredClone: clone },
@@ -103,6 +103,8 @@
         await this.saveChanges();
         return;
       }
+
+      if (preventCalcStats) return;
 
       const endGameStatus = playerEndGameStatus[this.id()];
 
