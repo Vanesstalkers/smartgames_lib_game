@@ -4,16 +4,28 @@
       this.channelName(`gameuser-${this.id()}`);
       super.initChannel({ col, id });
     }
+
+    /**
+     * Сюда попадут рассылки publishData(user...`)
+     */
     async processData(data) {
-      const superData = data.user?.[this.id()];
-      if (superData) data = superData;
+      const wrappedData = data.user?.[this.id()];
+      if (wrappedData) data = wrappedData;
       this.set(data);
       await this.broadcastData(data);
     }
-    async saveChanges() {
+    /**
+     * Переопределяем метод, сохранявший данные в БД - оставляем только рассылки и публикацию в lobby.user 
+     */
+    async saveChanges({ saveToLobbyUser = false } = {}) {
       const changes = this.getChanges();
 
-      await lib.store.broadcaster.publishData(`user-${this.id()}`, changes);
+      if (saveToLobbyUser) {
+        await lib.store.broadcaster.publishData(`user-${this.id()}`, changes);
+        // т.к. gameuser подписан на lobby.user, то триггернется this.processData (избегаем повторного вызова this.broadcastData)
+      } else {
+        this.broadcastData(changes);
+      }
 
       this.clearChanges();
     }
@@ -32,7 +44,6 @@
       }
 
       this.set({
-        ...{ gameId, playerId, viewerId },
         ...(!this.rankings?.[deckType] ? { rankings: { [deckType]: {} } } : {}),
       });
 
@@ -62,6 +73,8 @@
 
       this.set({ currentTutorial, helper, helperLinks });
       await this.saveChanges();
+      this.set({ gameId, playerId, viewerId });
+      await this.saveChanges({ saveToLobbyUser: true });
     }
     async leaveGame() {
       const { gameId } = this;
@@ -70,7 +83,7 @@
       if (this.currentTutorial?.active) {
         this.set({ currentTutorial: null, helper: null });
       }
-      await this.saveChanges();
+      await this.saveChanges({ saveToLobbyUser: true });
 
       this.unsubscribe(`game-${gameId}`);
       for (const session of this.sessions()) {
@@ -134,6 +147,6 @@
         incomeText += ` (с учетом штрафа ${penaltySum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}₽)`;
       tutorial[endGameStatus].text = tutorial[endGameStatus].text.replace('[[win-money]]', incomeText);
       this.set({ money: (this.money || 0) + income, helper: tutorial[endGameStatus], rankings });
-      await this.saveChanges();
+      await this.saveChanges({ saveToLobbyUser: true });
     }
   };

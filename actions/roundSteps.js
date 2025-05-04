@@ -9,7 +9,7 @@
 
   const newRoundNumber = round + 1;
   const newRoundLogEvents = [];
-  newRoundLogEvents.push(`Начало раунда №${newRoundNumber}.`);
+  newRoundLogEvents.push(`<a>Начало раунда №${newRoundNumber}.</a>`);
 
   // обновляем таймер
   const actionsDisabled = newActivePlayer.eventData.actionsDisabled === true;

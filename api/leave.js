@@ -9,7 +9,7 @@ async (context, { } = {}) => {
     if (viewerId) lib.store.broadcaster.publishAction(`game-${currentGameId}`, 'viewerLeave', { userId, viewerId });
     else lib.store.broadcaster.publishAction(`game-${currentGameId}`, 'playerLeave', { userId });
   } else {
-    // игра была удалена вместе с каналом,`
+    // игра была удалена вместе с каналом
     session.user().leaveGame();
   }
 

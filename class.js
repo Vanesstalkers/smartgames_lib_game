@@ -344,10 +344,6 @@
         const viewer = this.get(viewerId);
         if (!viewer) return;
 
-        const user = lib.store('user').get(userId);
-        user.set({ gameId: null });
-        await user.saveChanges();
-
         viewer.markDelete({ saveToDB: true });
         this.deleteFromObjectStorage(viewer);
         await this.saveChanges();

@@ -9,7 +9,7 @@ async (context, { gameId }) => {
   const gameLoaded = await db.redis.hget('games', gameId, { json: true });
   if (!gameLoaded.id) {
     user.set({ gameId: null, playerId: null, viewerId: null });
-    await user.saveChanges();
+    await user.saveChanges({ saveToLobbyUser: true });
     throw new Error('Игра была отменена');
   }
 

@@ -74,32 +74,24 @@
   activate({ setData, publishText } = {}) {
     this.set({ active: true });
     if (setData) this.set(setData);
-    if (publishText) this.publishInfo({ text: publishText, hideTime: 5000 });
+    if (publishText) {
+      lib.store.broadcaster.publishData(`gameuser-${this.userId}`, {
+        helper: {
+          text: publishText,
+          pos: { desktop: 'top-left', mobile: 'top-left' },
+          hideTime: 5000,
+        },
+      });
+    }
   }
   deactivate() {
     this.set({ active: false, eventData: { actionsDisabled: null } });
   }
 
-  publishInfo(info = {}) {
-    if (!info.text) return;
+  updateUser(data = {}) {
+    lib.store.broadcaster.publishData(`user-${this.userId}`, data);
+  }
 
-    lib.store.broadcaster.publishData(`gameuser-${this.userId}`, {
-      helper: {
-        text: info.text,
-        pos: {
-          desktop: 'top-left',
-          mobile: 'top-left',
-        },
-        hideTime: info.hideTime || 3000,
-      },
-    });
-  }
-  publishStoreData(storeData) {
-    lib.store.broadcaster.publishAction(`gameuser-${this.userId}`, 'broadcastToSessions', {
-      type: 'updateStore',
-      data: { game: { [this.game().id()]: { store: storeData } } },
-    });
-  }
   setEventWithTriggerListener(event) {
     if (this.#eventWithTriggerListener) throw new Error('Предыдущее событие не завершено');
     if (!event.hasHandler('TRIGGER')) throw new Error('Событие не содержит обработчик TRIGGER');

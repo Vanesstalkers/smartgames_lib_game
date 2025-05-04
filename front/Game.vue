@@ -1,53 +1,44 @@
 <template>
-  <div
-    v-if="gameDataLoaded"
-    id="game"
-    :type="game.gameType"
-    :class="[
-      debug ? 'debug' : '',
-      state.isMobile ? 'mobile-view' : '',
-      state.isLandscape ? 'landscape-view' : 'portrait-view',
-      gameState.viewerMode ? 'viewer-mode' : '',
-    ]"
-    @wheel.prevent="zoomGamePlane"
-  >
-    <tutorial :inGame="true" class="scroll-off" />
+  <div v-if="gameDataLoaded" id="game" :type="game.gameType" :class="[
+    debug ? 'debug' : '',
+    state.isMobile ? 'mobile-view' : '',
+    state.isLandscape ? 'landscape-view' : 'portrait-view',
+    gameState.viewerMode ? 'viewer-mode' : '',
+  ]" @wheel.prevent="zoomGamePlane">
+    <slot name="helper-guru">
+      <tutorial :inGame="true" class="scroll-off" :defaultMenu="{
+        text: 'Чем могу помочь?',
+        bigControls: true,
+        buttons: [
+          { text: 'Спасибо, ничего не нужно', action: 'exit', exit: true },
+        ],
+      }" />
+    </slot>
 
-    <GUIWrapper
-      :pos="['top', 'left']"
+    <GUIWrapper :pos="['top', 'left']"
       :offset="{ top: 20, left: state.isMobile ? 60 : [60, 80, 110, 130, 160, 190][state.guiScale] }"
-      :contentClass="['gui-small']"
-      :wrapperStyle="{ zIndex: 1 }"
-    >
+      :contentClass="['gui-small']" :wrapperStyle="{ zIndex: 1 }">
       <div class="game-controls" style="display: flex">
-        <div
-          :class="['chat', 'gui-btn', showChat ? 'active' : '', unreadMessages ? 'unread-messages' : '']"
-          v-on:click="toggleChat"
-        />
+        <div :class="['chat', 'gui-btn', showChat ? 'active' : '', unreadMessages ? 'unread-messages' : '']"
+          v-on:click="toggleChat" />
         <div :class="['log', 'gui-btn', showLog ? 'active' : '']" v-on:click="toggleLog" />
         <!-- <div :class="['move', 'gui-btn', showMoveControls ? 'active' : '']" v-on:click="toggleMoveControls" /> -->
-        <div
-          :class="['move', 'gui-btn', showMoveControls ? 'active' : '']"
-          v-on:click="
-            resetPlanePosition();
-            resetMouseEventsConfig();
-            updatePlaneScale();
-          "
-        />
+        <div :class="['move', 'gui-btn', showMoveControls ? 'active' : '']" v-on:click="
+          resetPlanePosition();
+        resetMouseEventsConfig();
+        updatePlaneScale();
+        " />
       </div>
       <div v-if="showMoveControls" class="gameplane-controls">
         <div class="zoom-minus" v-on:click="zoomGamePlane({ deltaY: 1 })" />
         <div class="move-top" v-on:click="gameCustom.gamePlaneTranslateY -= 100" />
         <div class="zoom-plus" v-on:click="zoomGamePlane({ deltaY: -1 })" />
         <div class="move-left" v-on:click="gameCustom.gamePlaneTranslateX -= 100" />
-        <div
-          class="reset"
-          v-on:click="
-            resetPlanePosition();
-            resetMouseEventsConfig();
-            updatePlaneScale();
-          "
-        />
+        <div class="reset" v-on:click="
+          resetPlanePosition();
+        resetMouseEventsConfig();
+        updatePlaneScale();
+        " />
         <div class="move-right" v-on:click="gameCustom.gamePlaneTranslateX += 100" />
         <div class="rotate-right" v-on:click="gameCustom.gamePlaneRotation += 15" />
         <div class="move-bottom" v-on:click="gameCustom.gamePlaneTranslateY += 100" />
@@ -56,13 +47,8 @@
     </GUIWrapper>
 
     <div :class="['chat-content', 'scroll-off', showChat ? 'visible' : '']">
-      <chat
-        :defActiveChannel="`game-${gameState.gameId}`"
-        :userData="userData"
-        :isVisible="showChat"
-        :hasUnreadMessages="hasUnreadMessages"
-        :channels="chatChannels"
-      />
+      <chat :defActiveChannel="`game-${gameState.gameId}`" :userData="userData" :isVisible="showChat"
+        :hasUnreadMessages="hasUnreadMessages" :channels="chatChannels" />
     </div>
 
     <div v-if="showLog" class="log-content scroll-off">
@@ -77,20 +63,13 @@
       <div class="img" :style="state.shownCard" />
     </div>
 
-    <div
-      id="gamePlane"
-      :style="{
-        ...gamePlaneCustomStyleData, // например, центровка по координатам блоков в release
-        ...gamePlaneControlStyle, // mouse-events + принудительный сдвиг (например, для корпоративных игр)
-      }"
-    >
-      <slot
-        name="gameplane"
-        :gamePlaneScale="gamePlaneScale"
-        :gamePlaneControlStyle="{
-          /* ...gamePlaneSlotControlStyle */
-        }"
-      />
+    <div id="gamePlane" :style="{
+      ...gamePlaneCustomStyleData, // например, центровка по координатам блоков в release
+      ...gamePlaneControlStyle, // mouse-events + принудительный сдвиг (например, для корпоративных игр)
+    }">
+      <slot name="gameplane" :gamePlaneScale="gamePlaneScale" :gamePlaneControlStyle="{
+        /* ...gamePlaneSlotControlStyle */
+      }" />
     </div>
 
     <GUIWrapper id="gameInfo" :pos="['top', 'right']" :offset="{}">
@@ -100,12 +79,8 @@
     <GUIWrapper class="session-player" :pos="['bottom', 'right']">
       <slot name="player" />
     </GUIWrapper>
-    <GUIWrapper
-      class="players"
-      :pos="state.isMobile && state.isPortrait ? ['top', 'right'] : ['bottom', 'left']"
-      :offset="state.isMobile && state.isPortrait ? { top: 200 } : {}"
-      :contentClass="['gui-small']"
-    >
+    <GUIWrapper class="players" :pos="state.isMobile && state.isPortrait ? ['top', 'right'] : ['bottom', 'left']"
+      :offset="state.isMobile && state.isPortrait ? { top: 200 } : {}" :contentClass="['gui-small']">
       <slot name="opponents" />
     </GUIWrapper>
   </div>
@@ -348,7 +323,7 @@ export default {
       this.unreadMessages = count;
     },
   },
-  async created() {},
+  async created() { },
   async mounted() {
     this.$on('resetPlanePosition', this.resetPlanePosition);
 
@@ -398,9 +373,11 @@ export default {
   opacity: 1;
   transform-origin: center;
 }
+
 #game.mobile-view #gamePlane {
   margin-left: -50px;
 }
+
 #game.mobile-view.landscape-view #gamePlane {
   margin-left: -100px;
 }
@@ -408,60 +385,79 @@ export default {
 .gui-resizeable.scale-1 {
   scale: 0.8;
 }
+
 .gui-resizeable.scale-2 {
   scale: 1;
 }
+
 .gui-resizeable.scale-3 {
   scale: 1.5;
 }
+
 .gui-resizeable.scale-4 {
   scale: 2;
 }
+
 .gui-resizeable.scale-5 {
   scale: 2.5;
 }
+
 #game.mobile-view .gui-resizeable.scale-1 {
   scale: 0.6;
 }
+
 #game.mobile-view .gui-resizeable.scale-2 {
   scale: 0.8;
 }
+
 #game.mobile-view .gui-resizeable.scale-3 {
   scale: 1;
 }
+
 #game.mobile-view .gui-resizeable.scale-4 {
   scale: 1.2;
 }
+
 #game.mobile-view .gui-resizeable.scale-5 {
   scale: 1.5;
 }
+
 .gui-resizeable.gui-small.scale-1 {
   scale: 0.6;
 }
+
 .gui-resizeable.gui-small.scale-2 {
   scale: 0.8;
 }
+
 .gui-resizeable.gui-small.scale-3 {
   scale: 1;
 }
+
 .gui-resizeable.gui-small.scale-4 {
   scale: 1.2;
 }
+
 .gui-resizeable.gui-small.scale-5 {
   scale: 1.5;
 }
+
 #game.mobile-view .gui-resizeable.gui-small.scale-1 {
   scale: 0.4;
 }
+
 #game.mobile-view .gui-resizeable.gui-small.scale-2 {
   scale: 0.6;
 }
+
 #game.mobile-view .gui-resizeable.gui-small.scale-3 {
   scale: 0.8;
 }
+
 #game.mobile-view .gui-resizeable.gui-small.scale-4 {
   scale: 1;
 }
+
 #game.mobile-view .gui-resizeable.gui-small.scale-5 {
   scale: 1.2;
 }
@@ -475,7 +471,7 @@ export default {
   left: 0px;
   background-image: url(@/assets/clear-grey-back.png);
 
-  > .img {
+  >.img {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -483,7 +479,7 @@ export default {
     height: 100%;
   }
 
-  > .close {
+  >.close {
     background-image: url(@/assets/close.png);
     background-color: black;
     cursor: pointer;
@@ -517,7 +513,7 @@ export default {
   justify-content: space-around;
   align-items: center;
 
-  > div {
+  >div {
     width: 30%;
     height: 30%;
     background-repeat: no-repeat;
@@ -532,31 +528,39 @@ export default {
     }
   }
 
-  > .move-top {
+  >.move-top {
     background-image: url(assets/arrow-top.png);
   }
-  > .move-bottom {
+
+  >.move-bottom {
     background-image: url(assets/arrow-bottom.png);
   }
-  > .move-right {
+
+  >.move-right {
     background-image: url(assets/arrow-right.png);
   }
-  > .move-left {
+
+  >.move-left {
     background-image: url(assets/arrow-left.png);
   }
-  > .zoom-plus {
+
+  >.zoom-plus {
     background-image: url(assets/zoom+.png);
   }
-  > .zoom-minus {
+
+  >.zoom-minus {
     background-image: url(assets/zoom-.png);
   }
-  > .rotate-left {
+
+  >.rotate-left {
     background-image: url(assets/rotate-left.png);
   }
-  > .rotate-right {
+
+  >.rotate-right {
     background-image: url(assets/rotate-right.png);
   }
-  > .reset {
+
+  >.reset {
     background-image: url(assets/reset.png);
   }
 
@@ -580,9 +584,11 @@ export default {
   &.active {
     background-color: #00000055;
   }
+
   &:hover {
     opacity: 0.7;
   }
+
   &.chat {
     background-image: url(assets/chat.png);
 
@@ -591,17 +597,21 @@ export default {
       box-shadow: 1px 0px 20px 6px #0078d7;
     }
   }
+
   &.log {
     background-image: url(assets/log.png);
   }
+
   &.move {
     // background-image: url(assets/move.png);
     background-image: url(assets/center.png);
   }
+
   &.tutorial-active {
     box-shadow: 0 0 20px 20px #f4e205;
   }
 }
+
 .mobile-view .gui-btn.move {
   // background-image: url(assets/move-mobile.png);
   background-image: url(assets/center.png);
@@ -624,6 +634,7 @@ export default {
     display: block;
   }
 }
+
 .mobile-view .chat-content {
   left: 0px;
   width: calc(100% - 40px);
@@ -652,12 +663,14 @@ export default {
       font-weight: bold;
       color: lightgrey;
     }
+
     a {
       font-weight: bold;
       color: lightblue;
     }
   }
 }
+
 .mobile-view .log-content {
   left: 0px;
   width: calc(100% - 40px);
