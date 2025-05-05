@@ -7,7 +7,7 @@
   ]" @wheel.prevent="zoomGamePlane">
     <slot name="helper-guru">
       <tutorial :inGame="true" class="scroll-off" :defaultMenu="{
-        text: 'Чем могу помочь?',
+        text: `Чем могу помочь, ${userData.name || userData.login}?`,
         bigControls: true,
         buttons: [
           { text: 'Спасибо, ничего не нужно', action: 'exit', exit: true },
@@ -157,7 +157,7 @@ export default {
       return this.game.addTime;
     },
     userData() {
-      return this.state.store?.user?.[this.state.currentUser] || {};
+      return this.sessionUserData();
     },
     lobby() {
       return this.state.store.lobby?.[this.state.currentLobby] || {};

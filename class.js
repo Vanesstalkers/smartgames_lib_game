@@ -142,7 +142,27 @@
      * @param {*} data
      */
     async processData(data) {
-      this.set(data, { removeEmptyObject: true });
+      for (const [key, map] of Object.entries(data)) {
+        switch (key) {
+          case 'user':
+            const userMap = {};
+            
+            for (const [userId, user] of Object.entries(map)) {
+              const { name, login, avatarCode } = user;
+              const userName = name || login;
+
+              const player = this.getPlayerByUserId(userId);
+              player.set({ userName, avatarCode })
+
+              userMap[userId] = { userName, avatarCode };
+            }
+
+            this.broadcastData({ user: userMap }, { wrapperDisabled: true });
+            break;
+          default:
+            this.set(data, { removeEmptyObject: true });
+        }
+      }
       await this.saveChanges();
     }
 
@@ -267,9 +287,6 @@
       return this.players().find((player) => player.userId === id);
     }
 
-    /**
-     * PIPELINE_GAME_START (6) :: делаем публикацию о присоединении конкретного игрока к игре
-     */
     async playerJoin({ playerId, userId, userName, userAvatar }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
@@ -380,7 +397,7 @@
         }
       }
 
-      const playerList = this.players().filter(p => !p.removed);
+      const playerList = this.players().filter(p => p.ready);
       const activePlayerIndex = playerList.findIndex((player) => player === roundActivePlayer);
       const newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
       this.roundActivePlayer(newActivePlayer);

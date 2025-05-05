@@ -10,14 +10,14 @@
     this.preventSaveFields(['decks']);
 
     this.broadcastableFields([
-      ...['_id', 'code', 'gameId', 'userId', 'avatarCode', 'avatarsMap', 'active', 'ready', 'removed'],
+      ...['_id', 'code', 'gameId', 'userId', 'userName', 'avatarCode', 'avatarsMap', 'active', 'ready'],
       ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper'],
     ]);
 
-    const { userId, eventData = {}, avatarCode, avatarsMap = {}, active, removed, timerEndTime, timerUpdateTime } = data;
+    const { userId, userName, eventData = {}, avatarCode, avatarsMap = {}, active, timerEndTime, timerUpdateTime } = data;
     this.set({
       ready: false, // при восстановлении игры нужна повторная обработка initPlayerWaitEvents
-      ...{ userId, eventData, avatarCode, avatarsMap, active, removed, timerEndTime, timerUpdateTime },
+      ...{ userId, userName, eventData, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
     });
   }
 
@@ -103,8 +103,8 @@
     this.#eventWithTriggerListener = null;
     this.set({ eventData: { triggerListenerEnabled: null } });
   }
-  toggleEventWithTriggerListener(data = {}) {
+  handleEventWithTriggerListener(handler, data = {}) {
     if (!this.#eventWithTriggerListener) throw new Error('Событие не найдено');
-    return this.#eventWithTriggerListener.emit('TRIGGER', data, this);
+    return this.#eventWithTriggerListener.emit(handler, data, this);
   }
 });

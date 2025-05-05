@@ -1,3 +1,3 @@
 (function ({ eventData = {} }, initPlayer) {
-  initPlayer.toggleEventWithTriggerListener(eventData);
+  initPlayer.handleEventWithTriggerListener('TRIGGER', eventData);
 });

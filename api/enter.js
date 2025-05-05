@@ -1,6 +1,4 @@
 async (context, { gameId }) => {
-  // PIPELINE_GAME_START (9) :: подписываемся на изменения в состоянии игры
-
   const { sessionId } = context.session.state;
   const session = lib.store('session').get(sessionId);
   const user = session.user();
@@ -12,6 +10,8 @@ async (context, { gameId }) => {
     await user.saveChanges({ saveToLobbyUser: true });
     throw new Error('Игра была отменена');
   }
+  const game = lib.store('game').get(gameId);
+  game.subscribe(`user-${user.id()}`);
 
   user.subscribe(`game-${gameId}`, { rule: 'actions-only' });
   session.subscribe(`game-${gameId}`, {

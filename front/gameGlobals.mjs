@@ -57,6 +57,9 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
   function sessionPlayerIsActive() {
     return this.sessionPlayer().active;
   }
+  function sessionUserData() {
+    return this.$root.state.store?.user?.[this.$root.state.currentUser] || {};
+  }
 
   function logItems() {
     const items = Object.entries(this.game.logs || {})
@@ -75,6 +78,7 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
     handleGameApi,
     playerGameId,
     getGame,
+    sessionUserData,
     gameFinished,
     getGamePlaneOffsets,
     resetPlanePosition,
