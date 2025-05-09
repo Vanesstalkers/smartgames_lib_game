@@ -134,6 +134,7 @@
     }
     async updateGameAtCache(data = {}) {
       const game = await db.redis.hget('games', this.id(), { json: true });
+      if (game.notFound) delete game.notFound;
       await db.redis.hset('games', this.id(), { ...game, ...data }, { json: true });
     }
 
@@ -146,7 +147,7 @@
         switch (key) {
           case 'user':
             const userMap = {};
-            
+
             for (const [userId, user] of Object.entries(map)) {
               const { name, login, avatarCode } = user;
               const userName = name || login;
@@ -219,22 +220,31 @@
     }
     toggleEventHandlers(handler, data = {}, initPlayer) {
       if (!this.eventListeners[handler]) return;
+      const eventPlayers = this.eventListeners[handler].map(e => e.player()).filter(_ => _);
 
       if (!initPlayer) initPlayer = this.roundActivePlayer();
-      if (!initPlayer) return; // генерация стартового поля
+      if (!initPlayer && !eventPlayers.length) return; // ожидание игрока и генерация стартового поля
 
+      const result = [];
       for (const event of this.eventListeners[handler]) {
         if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
 
-        const playerAccessAllowed = event.checkAccess(initPlayer);
+        const player = initPlayer || event.player();
+        const playerAccessAllowed = event.checkAccess(player);
         if (!playerAccessAllowed) {
-          console.error(`Not playerAccessAllowed for user "${initPlayer?.code}" to handler "${handler}"`);
+          console.error(`Not playerAccessAllowed for user "${player?.code}" to handler "${handler}"`);
+          result.push({ error: 'access_not_allowed' });
           continue;
         }
 
-        const { preventListenerRemove } = event.emit(handler, data, initPlayer) || {};
+        const handlerResult = event.emit(handler, data, player) || {};
+        const { preventListenerRemove } = handlerResult;
         if (!preventListenerRemove) this.removeEventListener({ handler, eventToRemove: event });
+
+        result.push(handlerResult);
       }
+
+      return result;
     }
     forceEmitEventHandler(handler, data) {
       if (!this.eventListeners[handler]) return;
@@ -485,6 +495,7 @@
           lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'broadcastToSessions', {
             data: { message: exception.message, stack: exception.stack },
           });
+          await this.saveChanges();
         }
       }
     }

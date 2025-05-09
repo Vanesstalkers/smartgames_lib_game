@@ -1,5 +1,5 @@
 <template>
-  <div v-if="gameDataLoaded" id="game" :type="game.gameType" :class="[
+  <div v-if="gameDataLoaded" id="game" :type="game.gameType" :config="game.gameConfig" :class="[
     debug ? 'debug' : '',
     state.isMobile ? 'mobile-view' : '',
     state.isLandscape ? 'landscape-view' : 'portrait-view',
