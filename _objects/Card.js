@@ -7,6 +7,11 @@
     const { title, name, playOneTime, played, disabled } = data;
     this.set({ title, name, playOneTime, played, disabled });
   }
+
+  getTitle() {
+    return this.title || this.name;
+  }
+
   /**
    * Перемещает карту к новому держателю (колоду)
    * @param {GameObject} target - колода для перемещения
