@@ -30,7 +30,7 @@
       this.clearChanges();
     }
 
-    async joinGame({ deckType, gameType, gameId, playerId, viewerId, isSinglePlayer }) {
+    async joinGame({ deckType, gameType, gameId, playerId, viewerId, isSinglePlayer, checkTutorials }) {
       const {
         helper: { getTutorial },
         utils: { structuredClone: clone },
@@ -42,36 +42,39 @@
         session.emit('joinGame', { deckType, gameType, gameId, playerId, viewerId });
       }
 
+      let { currentTutorial = {}, helper = null, helperLinks = {}, finishedTutorials = {} } = this;
+
+      if (checkTutorials) {
+        currentTutorial = null;
+        helper = null;
+        
+        this.set({ currentTutorial, helper });
+        await this.saveChanges({ saveToLobbyUser: true });
+
+        const gameStartTutorialName = 'game-tutorial-start';
+        if (
+          !viewerId && // наблюдателям не нужно обучение
+          !helper && // нет активного обучения
+          !finishedTutorials[gameStartTutorialName] // обучение не было пройдено ранее
+        ) {
+          const tutorial = getTutorial(gameStartTutorialName);
+          helper = Object.values(tutorial).find(({ initialStep }) => initialStep);
+          helper = clone(helper, { convertFuncToString: true });
+          currentTutorial = { active: gameStartTutorialName };
+        }
+        helperLinks = {
+          ...domain.game.tutorial.getHelperLinks(),
+          ...helperLinks,
+        };
+
+        this.set({ currentTutorial, helper, helperLinks });
+        await this.saveChanges();
+      }
+
       this.set({
         ...(!this.rankings?.[deckType] ? { rankings: { [deckType]: {} } } : {}),
       });
 
-      let { currentTutorial = {}, helper = null, helperLinks = {}, finishedTutorials = {} } = this;
-
-      if (currentTutorial.active?.includes('lobby-') && this.gameId) {
-        this.set({ currentTutorial: null, helper: null });
-        currentTutorial = null;
-        helper = null;
-      }
-
-      const gameStartTutorialName = 'game-tutorial-start';
-      if (
-        !viewerId && // наблюдателям не нужно обучение
-        !helper && // нет активного обучения
-        !finishedTutorials[gameStartTutorialName] // обучение не было пройдено ранее
-      ) {
-        const tutorial = getTutorial(gameStartTutorialName);
-        helper = Object.values(tutorial).find(({ initialStep }) => initialStep);
-        helper = clone(helper, { convertFuncToString: true });
-        currentTutorial = { active: gameStartTutorialName };
-      }
-      helperLinks = {
-        ...domain.game.tutorial.getHelperLinks(),
-        ...helperLinks,
-      };
-
-      this.set({ currentTutorial, helper, helperLinks });
-      await this.saveChanges();
       this.set({ gameId, playerId, viewerId });
       await this.saveChanges({ saveToLobbyUser: true });
     }

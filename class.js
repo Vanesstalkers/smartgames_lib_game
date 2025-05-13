@@ -319,6 +319,7 @@
           deckType: this.deckType,
           gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
+          checkTutorials: true,
         });
       } catch (exception) {
         console.error(exception);
@@ -345,6 +346,7 @@
           deckType: this.deckType,
           gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
+          clearTutorials: true,
         });
       } catch (exception) {
         console.error(exception);

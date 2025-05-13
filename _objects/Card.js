@@ -44,11 +44,10 @@
 
   play({ player, logMsg } = {}) {
     if (this.played) return;
+    this.game().logs(logMsg || `Разыграна карта "${this.title}"`);
 
     const event = this.initEvent(this.name, { game: player.game(), player, allowedPlayers: [player] });
     if (event !== null && player) player.addEvent(event);
     this.set({ played: Date.now() });
-    
-    this.game().logs(logMsg || `Разыграна карта "${this.title}"`);
   }
 });
