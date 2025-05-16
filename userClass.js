@@ -106,7 +106,7 @@
         this.set({
           helper: {
             text: 'Игра закончена',
-            buttons: [{ text: 'Закончить игру', action: 'leaveGame' }],
+            buttons: [{ text: 'Выйти из игры', action: 'leaveGame' }],
             actions: {
               leaveGame: (async () => {
                 await api.action.call({ path: 'game.api.leave', args: [] }).catch(prettyAlert);

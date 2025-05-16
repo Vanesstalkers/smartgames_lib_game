@@ -60,7 +60,7 @@
     return false;
   }
   returnTableCardsToHand() {
-    for (const deck of this.getObjects({ className: 'Deck', attr: { placement: 'table' } })) {
+    for (const deck of this.select({ className: 'Deck', attr: { placement: 'table' } })) {
       const cards = deck.select('Card');
       for (const card of cards) {
         for (const event of card.eventData.activeEvents) event.emit('TRIGGER');

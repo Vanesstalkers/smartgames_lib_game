@@ -148,9 +148,6 @@
   getAllObjects({ directParent = this } = {}) {
     return this.select({ directParent });
   }
-  getObjects(query) {
-    return this.select(query);
-  }
   select(query = {}) {
     if (typeof query === 'string') query = { className: query };
     const { className, attr, directParent = this } = query;

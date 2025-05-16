@@ -153,7 +153,7 @@
               const userName = name || login;
 
               const player = this.getPlayerByUserId(userId);
-              player.set({ userName, avatarCode })
+              if (player) player.set({ userName, avatarCode }) // мог быть удален
 
               userMap[userId] = { userName, avatarCode };
             }
@@ -395,7 +395,7 @@
         );
       }
 
-      if (roundActivePlayer?.eventData.extraTurn) {
+      if (roundActivePlayer?.eventData?.extraTurn) {
         roundActivePlayer.set({ eventData: { extraTurn: null } });
         if (roundActivePlayer.eventData.skipTurn) {
           // актуально только для событий в течение хода игрока, инициированных не им самим
@@ -414,7 +414,7 @@
       const newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
       this.roundActivePlayer(newActivePlayer);
 
-      if (newActivePlayer.eventData.skipTurn) {
+      if (newActivePlayer?.eventData?.skipTurn) {
         this.logs({
           msg: `Игрок {{player}} пропускает ход.`,
           userId: newActivePlayer.userId,
