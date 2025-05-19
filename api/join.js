@@ -1,4 +1,4 @@
-async (context, { gameId, viewerMode = false }) => {
+async (context, { gameId, viewerMode = false, ...args }) => {
   const { sessionId } = context.session.state;
   const session = lib.store('session').get(sessionId);
   const { userId } = session;
@@ -17,6 +17,6 @@ async (context, { gameId, viewerMode = false }) => {
   }
 
   const action = viewerMode ? 'viewerJoin' : 'playerJoin';
-  lib.store.broadcaster.publishAction(`game-${gameId}`, action, { userId });
+  lib.store.broadcaster.publishAction(`game-${gameId}`, action, { userId, ...args });
   return { status: 'ok' };
 };

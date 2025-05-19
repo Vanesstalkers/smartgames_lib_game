@@ -112,7 +112,7 @@
 
       return this;
     }
-    restore() {
+    restart() {
       this.set({ status: 'IN_PROCESS', statusLabel: `Раунд ${this.round}`, addTime: Date.now() });
       this.run('initGameProcessEvents');
       lib.timers.timerRestart(this, this.lastRoundTimerConfig);
