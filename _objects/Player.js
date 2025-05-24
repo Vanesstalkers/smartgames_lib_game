@@ -91,6 +91,12 @@
   updateUser(data = {}) {
     lib.store.broadcaster.publishData(`user-${this.userId}`, data);
   }
+  notifyUser(data = {}, config = {}) {
+    if (typeof data === 'string') data = { message: data };
+    lib.store.broadcaster.publishAction(`gameuser-${this.userId}`, 'broadcastToSessions', {
+      data, config,
+    });
+  }
 
   setEventWithTriggerListener(event) {
     if (this.#eventWithTriggerListener) throw new Error('Предыдущее событие не завершено');

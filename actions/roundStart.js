@@ -15,6 +15,12 @@
 
   this.dumpState(); // вся структура roundEnd/roundStart/roundSteps сделана ради этой строчки
 
+  const player = this.roundActivePlayer();
+
+  let message = "Новый раунд";
+  if (!this.isSinglePlayer()) message += ". Ваш ход.";
+  player.notifyUser({ message }, { hideTime: 3000 });
+
   lib.timers.timerRestart(this, this.lastRoundTimerConfig);
   // делаем после обновления таймера, в частности из-за карты "time"
   this.playRoundStartCards();
