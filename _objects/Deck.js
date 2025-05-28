@@ -7,8 +7,8 @@
     super(data, { col: 'deck', parent });
     this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData']);
 
-    const { type, subtype, cardGroups, placement, itemType, settings, access } = data;
-    this.set({ type, subtype, cardGroups, placement, itemType, settings, access });
+    const { type, subtype, cardGroups, placement, itemType, settings, access, itemMap } = data;
+    this.set({ type, subtype, cardGroups, placement, itemType, settings, access, itemMap });
   }
   prepareBroadcastData({ data, player, viewerMode }) {
     let preparedData = {};
@@ -193,13 +193,13 @@
     if (!this.#updatedItems[item._id]) this.#updatedItems[item._id] = {};
     this.#updatedItems[item._id][item.fakeId[this.id()]] = action;
   }
-  moveAllItems({ target, setData, emitEvent, markNew }) {
+  moveAllItems({ target, setData, emitEvent, markNew, markDelete }) {
     for (const item of this.getAllItems()) {
       if (emitEvent) {
         for (const event of item.eventData.activeEvents) event.emit(emitEvent);
       }
       if (setData) item.set(setData);
-      item.moveToTarget(target); // внутри сработает markDelete 
+      item.moveToTarget(target, { markDelete });
       if (markNew) item.markNew();
     }
   }

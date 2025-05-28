@@ -13,6 +13,7 @@
       if (!deckClass) deckClass = defaultDeckClass;
       if (!deckItemClass) deckItemClass = defaultCardClass;
 
+      if (!data.itemMap) data.itemMap = {};
       if (!data.settings) data.settings = {};
       if (!data.access) data.access = {};
       data.settings.parentDeckContainer = deckMapName;

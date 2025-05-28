@@ -68,7 +68,8 @@
     }
   }
   triggerEventEnabled({ ignoreEvents = [] } = {}) {
-    return this.#eventWithTriggerListener !== null && !ignoreEvents.includes(this.#eventWithTriggerListener.name) ? true : false;
+    return this.#eventWithTriggerListener !== null && !ignoreEvents.includes(this.#eventWithTriggerListener.name)
+      ? this.#eventWithTriggerListener : false;
   }
 
   activate({ setData, publishText } = {}) {
