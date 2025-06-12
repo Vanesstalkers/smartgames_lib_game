@@ -388,7 +388,7 @@
       if (this.round > 0 && roundActivePlayer) {
         this.logs(
           {
-            msg: `Игрок {{player}} закончил раунд №${this.round}.`,
+            msg: `Игрок {{player}} закончил раунд №${this.round}`,
             userId: roundActivePlayer.userId,
           },
           { consoleMsg: true }
@@ -397,7 +397,9 @@
 
       if (roundActivePlayer?.eventData?.extraTurn) {
         roundActivePlayer.set({ eventData: { extraTurn: null } });
-        if (roundActivePlayer.eventData.skipTurn) {
+        if (roundActivePlayer.eventData.skipTurn ||
+          roundActivePlayer.ready !== true // игрок мог выйти
+        ) {
           // актуально только для событий в течение хода игрока, инициированных не им самим
           roundActivePlayer.set({ eventData: { skipTurn: null } });
         } else {

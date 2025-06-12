@@ -47,8 +47,10 @@
     </GUIWrapper>
 
     <div :class="['chat-content', 'scroll-off', showChat ? 'visible' : '']">
-      <chat :defActiveChannel="`game-${gameState.gameId}`" :userData="userData" :isVisible="showChat"
-        :hasUnreadMessages="hasUnreadMessages" :channels="chatChannels" />
+      <slot name="chat" :isVisible="showChat" :hasUnreadMessages="hasUnreadMessages">
+        <chat :defActiveChannel="`game-${gameState.gameId}`" :userData="userData" :isVisible="showChat"
+          :hasUnreadMessages="hasUnreadMessages" :channels="chatChannels" />
+      </slot>
     </div>
 
     <div v-if="showLog" class="log-content scroll-off">
@@ -67,9 +69,7 @@
       ...gamePlaneCustomStyleData, // например, центровка по координатам блоков в release
       ...gamePlaneControlStyle, // mouse-events + принудительный сдвиг (например, для корпоративных игр)
     }">
-      <slot name="gameplane" :gamePlaneScale="gamePlaneScale" :gamePlaneControlStyle="{
-        /* ...gamePlaneSlotControlStyle */
-      }" />
+      <slot name="gameplane" :gamePlaneScale="gamePlaneScale" />
     </div>
 
     <GUIWrapper id="gameInfo" :pos="['top', 'right']" :offset="{}">
@@ -120,8 +120,6 @@ export default {
       gamePlaneScale: 1,
       gamePlaneScaleMin: this.planeScaleMin || 0.3,
       gamePlaneScaleMax: this.planeScaleMax || 1.0,
-      // gamePlaneRotation: 0,
-      // gamePlaneTransformOrigin: 'center center',
       planeScaleNeedUpdated: 0,
     };
   },
@@ -144,12 +142,6 @@ export default {
 
       return { transform: transform.join(' '), scale: this.gamePlaneScale };
     },
-    // gamePlaneSlotControlStyle() {
-    //   // вращаем только gp-content
-    //   const transform = [];
-    //   transform.push(`rotate(${this.gamePlaneRotation}deg)`);
-    //   return { transform: transform.join(' '), transformOrigin: this.gamePlaneTransformOrigin };
-    // },
     game() {
       return this.getGame();
     },
@@ -630,7 +622,7 @@ export default {
   color: #f4e205;
   display: none;
 
-  .visible {
+  &.visible {
     display: block;
   }
 }
