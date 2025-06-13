@@ -30,7 +30,7 @@
       this.clearChanges();
     }
 
-    async joinGame({ deckType, gameType, gameId, playerId, viewerId, isSinglePlayer, checkTutorials }) {
+    async joinGame({ deckType, gameType, gameId, playerId, viewerId, isSinglePlayer, checkTutorials = true }) {
       const {
         helper: { getTutorial },
         utils: { structuredClone: clone },
@@ -47,9 +47,8 @@
       if (checkTutorials) {
         currentTutorial = null;
         helper = null;
-        
+
         this.set({ currentTutorial, helper });
-        await this.saveChanges({ saveToLobbyUser: true });
 
         const gameStartTutorialName = 'game-tutorial-start';
         if (
@@ -61,6 +60,8 @@
           helper = Object.values(tutorial).find(({ initialStep }) => initialStep);
           helper = clone(helper, { convertFuncToString: true });
           currentTutorial = { active: gameStartTutorialName };
+        } else {
+          await this.saveChanges({ saveToLobbyUser: true });
         }
         helperLinks = {
           ...domain.game.tutorial.getHelperLinks(),

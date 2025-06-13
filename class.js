@@ -319,7 +319,6 @@
           deckType: this.deckType,
           gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
-          checkTutorials: true,
         });
       } catch (exception) {
         console.error(exception);
@@ -346,7 +345,7 @@
           deckType: this.deckType,
           gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
-          clearTutorials: true,
+          checkTutorials: false,
         });
       } catch (exception) {
         console.error(exception);
@@ -647,7 +646,13 @@
       }
     }
     async playerUseTutorialLink({ user }) {
-      this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId: user._id });
+      const userId = user._id;
+      if (userId !== this.roundActivePlayer().userId
+        || (this.settings.useTutorialLinkExtraTimeLimit > 0
+          && user.useTutorialLinkExtraTimeCount > this.settings.useTutorialLinkExtraTimeLimit)
+      ) return;
+
+      this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId });
       lib.timers.timerRestart(this, { extraTime: 30 });
       await this.saveChanges();
     }
