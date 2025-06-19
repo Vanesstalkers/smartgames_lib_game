@@ -56,7 +56,7 @@
           !helper && // нет активного обучения
           !finishedTutorials[gameStartTutorialName] // обучение не было пройдено ранее
         ) {
-          const tutorial = getTutorial(gameStartTutorialName);
+          const { steps: tutorial } = getTutorial(gameStartTutorialName);
           helper = Object.values(tutorial).find(({ initialStep }) => initialStep);
           helper = clone(helper, { convertFuncToString: true });
           currentTutorial = { active: gameStartTutorialName };

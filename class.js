@@ -645,10 +645,10 @@
         });
       }
     }
-    async playerUseTutorialLink({ user }) {
+    async playerUseTutorial({ user, usedLink }) {
       const userId = user._id;
-      if (userId !== this.roundActivePlayer().userId
-        || (this.settings.useTutorialLinkExtraTimeLimit > 0
+      if (userId !== this.roundActivePlayer()?.userId
+        || (usedLink && this.settings.useTutorialLinkExtraTimeLimit > 0
           && user.useTutorialLinkExtraTimeCount > this.settings.useTutorialLinkExtraTimeLimit)
       ) return;
 

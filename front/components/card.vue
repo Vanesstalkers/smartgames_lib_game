@@ -126,7 +126,6 @@ export default {
   align-items: flex-end;
   flex-wrap: wrap;
   border-radius: 10px;
-  margin: 0px 0px 0px 5px;
   background-color: grey;
 
   &.tutorial-active {
