@@ -6,7 +6,7 @@
     gameState.viewerMode ? 'viewer-mode' : '',
   ]" @wheel.prevent="zoomGamePlane">
     <slot name="helper-guru">
-      <tutorial :inGame="true" class="scroll-off" :defaultMenu="{
+      <tutorial :game="game" class="scroll-off" :defaultMenu="{
         text: `Чем могу помочь, ${userData.name || userData.login}?`,
         bigControls: true,
         buttons: [
@@ -488,8 +488,8 @@ export default {
   }
 }
 
-.game-controls.tutorial-active {
-  box-shadow: rgb(244, 226, 5) 0px 0px 20px 20px;
+#game .tutorial-active {
+  box-shadow: 0 0 20px 20px #f4e205;
 }
 
 .gameplane-controls {

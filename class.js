@@ -645,11 +645,12 @@
         });
       }
     }
-    async playerUseTutorialLink({ user }) {
+    async playerUseTutorial({ user, usedLink }) {
       const userId = user._id;
-      if (userId !== this.roundActivePlayer().userId
-        || (this.settings.useTutorialLinkExtraTimeLimit > 0
+      if (userId !== this.roundActivePlayer()?.userId
+        || (usedLink && this.settings.useTutorialLinkExtraTimeLimit > 0
           && user.useTutorialLinkExtraTimeCount > this.settings.useTutorialLinkExtraTimeLimit)
+        || (!usedLink && this.status === 'IN_PROCESS') // только для стартовых обучений
       ) return;
 
       this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId });

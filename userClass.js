@@ -30,12 +30,7 @@
       this.clearChanges();
     }
 
-    async joinGame({ deckType, gameType, gameId, playerId, viewerId, isSinglePlayer, checkTutorials = true }) {
-      const {
-        helper: { getTutorial },
-        utils: { structuredClone: clone },
-      } = lib;
-
+    async joinGame({ deckType, gameType, gameId, playerId, viewerId, checkTutorials = true }) {
       for (const session of this.sessions()) {
         session.set({ gameId, playerId, viewerId });
         await session.saveChanges();
@@ -56,10 +51,7 @@
           !helper && // нет активного обучения
           !finishedTutorials[gameStartTutorialName] // обучение не было пройдено ранее
         ) {
-          const tutorial = getTutorial(gameStartTutorialName);
-          helper = Object.values(tutorial).find(({ initialStep }) => initialStep);
-          helper = clone(helper, { convertFuncToString: true });
-          currentTutorial = { active: gameStartTutorialName };
+          await lib.helper.updateTutorial(this, { tutorial: gameStartTutorialName });
         } else {
           await this.saveChanges({ saveToLobbyUser: true });
         }
@@ -68,7 +60,7 @@
           ...helperLinks,
         };
 
-        this.set({ currentTutorial, helper, helperLinks });
+        this.set({ helperLinks });
         await this.saveChanges();
       }
 
@@ -142,9 +134,8 @@
       rankings[gameType].totalTime = totalTime + roundCount;
       rankings[gameType].avrTime = Math.floor(rankings[gameType].totalTime / rankings[gameType].win);
 
-      const tutorial = clone(getTutorial('game-tutorial-finished'), {
-        convertFuncToString: true,
-      });
+      const { steps } = getTutorial('game-tutorial-finished');
+      const tutorial = clone(steps, { convertFuncToString: true });
       let incomeText = `${income.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} ₽`;
       if (penaltySum > 0)
         incomeText += ` (с учетом штрафа ${penaltySum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}₽)`;

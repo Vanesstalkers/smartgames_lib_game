@@ -44,7 +44,7 @@
 
   play({ player, logMsg } = {}) {
     if (this.played) return;
-    this.game().logs(logMsg || `Разыграна карта "<a>${this.title}</a>"`);
+    this.game().logs({ msg: logMsg || `Разыграна карта "<a>${this.title}</a>"`, userId: player.userId, });
 
     const event = this.initEvent(this.name, { game: player.game(), player, allowedPlayers: [player] });
     if (event) event.name = this.title;
