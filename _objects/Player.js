@@ -76,7 +76,7 @@
     this.set({ active: true });
     if (setData) this.set(setData);
     if (publishText) {
-      lib.store.broadcaster.publishData(`gameuser-${this.userId}`, {
+      lib.store.broadcaster.publishData.call(this.game(), `gameuser-${this.userId}`, {
         helper: {
           text: publishText,
           pos: { desktop: 'top-left', mobile: 'top-left' },
@@ -90,11 +90,11 @@
   }
 
   updateUser(data = {}) {
-    lib.store.broadcaster.publishData(`user-${this.userId}`, data);
+    lib.store.broadcaster.publishData.call(this.game(), `user-${this.userId}`, data);
   }
   notifyUser(data = {}, config = {}) {
     if (typeof data === 'string') data = { message: data };
-    lib.store.broadcaster.publishAction(`gameuser-${this.userId}`, 'broadcastToSessions', {
+    lib.store.broadcaster.publishAction.call(this.game(), `gameuser-${this.userId}`, 'broadcastToSessions', {
       data, config,
     });
   }

@@ -7,12 +7,12 @@ async (context, { deckType, gameType, gameConfig, gameTimer }) => {
 
   const game = await new domain.game.class().create({ deckType, gameType, gameConfig, gameTimer });
 
-  lib.store.broadcaster.publishAction(`lobby-${lobbyId}`, 'addGame', {
+  lib.store.broadcaster.publishAction.call(session, `lobby-${lobbyId}`, 'addGame', {
     creator: { userId: user.id(), tgUsername: user.tgUsername },
     ...{ id: game.id(), deckType, gameType, gameConfig, gameTimer },
   });
 
-  await lib.store.broadcaster.publishData(`user-${userId}`, {
+  await lib.store.broadcaster.publishData.call(session, `user-${userId}`, {
     lobbyGameConfigs: { active: { deckType, gameType, gameConfig, gameTimer } },
   });
 

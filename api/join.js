@@ -4,7 +4,7 @@ async (context, { gameId, viewerMode = false, ...args }) => {
   const { userId } = session;
   const user = session.user();
   if (user.gameId && user.gameId !== gameId) {
-    lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
+    lib.store.broadcaster.publishAction.call(session, `user-${userId}`, 'broadcastToSessions', {
       data: { message: 'Уже подключен к другой игре. Повторите попытку подключения.' },
     });
     return { status: 'error', logout: true };
@@ -17,6 +17,8 @@ async (context, { gameId, viewerMode = false, ...args }) => {
   }
 
   const action = viewerMode ? 'viewerJoin' : 'playerJoin';
-  lib.store.broadcaster.publishAction(`game-${gameId}`, action, { userId, ...args });
+  const publishData = { userId, userName: user.getName(), ...args }; // userName нужно для логов
+  lib.store.broadcaster.publishAction.call(session, `game-${gameId}`, action, publishData);
+
   return { status: 'ok' };
 };

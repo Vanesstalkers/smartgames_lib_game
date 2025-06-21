@@ -6,8 +6,8 @@ async (context, { } = {}) => {
 
   const gameLoaded = await db.redis.hget('games', currentGameId);
   if (gameLoaded) {
-    if (viewerId) lib.store.broadcaster.publishAction(`game-${currentGameId}`, 'viewerLeave', { userId, viewerId });
-    else lib.store.broadcaster.publishAction(`game-${currentGameId}`, 'playerLeave', { userId });
+    if (viewerId) lib.store.broadcaster.publishAction.call(session, `game-${currentGameId}`, 'viewerLeave', { userId, viewerId });
+    else lib.store.broadcaster.publishAction.call(session, `game-${currentGameId}`, 'playerLeave', { userId });
   } else {
     // игра была удалена вместе с каналом
     session.user().leaveGame();

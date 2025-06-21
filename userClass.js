@@ -21,7 +21,7 @@
       const changes = this.getChanges();
 
       if (saveToLobbyUser) {
-        await lib.store.broadcaster.publishData(`user-${this.id()}`, changes);
+        await lib.store.broadcaster.publishData.call(this, `user-${this.id()}`, changes);
         // т.к. gameuser подписан на lobby.user, то триггернется this.processData (избегаем повторного вызова this.broadcastData)
       } else {
         this.broadcastData(changes);

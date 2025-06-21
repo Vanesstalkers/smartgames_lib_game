@@ -313,7 +313,7 @@
         this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
+        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'joinGame', {
           gameId,
           playerId,
           deckType: this.deckType,
@@ -322,10 +322,10 @@
         });
       } catch (exception) {
         console.error(exception);
-        lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
+        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
         });
-        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'logout'); // инициирует hideGameIframe
+        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'logout'); // инициирует hideGameIframe
       }
     }
     async viewerJoin({ viewerId, userId, userName }) {
@@ -339,7 +339,7 @@
 
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
+        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'joinGame', {
           gameId: this.id(),
           viewerId: viewer.id(),
           deckType: this.deckType,
@@ -349,7 +349,7 @@
         });
       } catch (exception) {
         console.error(exception);
-        lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
+        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
         });
       }
@@ -365,7 +365,7 @@
           } else throw exception;
         }
       }
-      lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
+      lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'leaveGame', {});
     }
     async viewerLeave({ userId, viewerId }) {
       if (this.status !== 'FINISHED') {
@@ -376,7 +376,7 @@
         this.deleteFromObjectStorage(viewer);
         await this.saveChanges();
       }
-      lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
+      lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'leaveGame', {});
     }
     roundActivePlayer(player) {
       if (player) this.set({ roundActivePlayerId: player.id() });
@@ -495,7 +495,7 @@
           await this.removeGame();
         } else {
           console.error(exception);
-          lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'broadcastToSessions', {
+          lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'broadcastToSessions', {
             data: { message: exception.message, stack: exception.stack },
           });
           await this.saveChanges();
