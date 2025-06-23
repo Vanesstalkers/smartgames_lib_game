@@ -104,7 +104,7 @@
               leaveGame: (async () => {
                 await api.action.call({ path: 'game.api.leave', args: [] }).catch(prettyAlert);
                 return { exit: true };
-              }).toString(),
+              }).toString(), // если без toString(), то нужно вызывать через helper.updateTutorial
             },
           },
         });

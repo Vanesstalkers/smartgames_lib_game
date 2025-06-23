@@ -22,27 +22,11 @@
         <div :class="['chat', 'gui-btn', showChat ? 'active' : '', unreadMessages ? 'unread-messages' : '']"
           v-on:click="toggleChat" />
         <div :class="['log', 'gui-btn', showLog ? 'active' : '']" v-on:click="toggleLog" />
-        <!-- <div :class="['move', 'gui-btn', showMoveControls ? 'active' : '']" v-on:click="toggleMoveControls" /> -->
-        <div :class="['move', 'gui-btn', showMoveControls ? 'active' : '']" v-on:click="
+        <div :class="['move', 'gui-btn']" v-on:click="
           resetPlanePosition();
         resetMouseEventsConfig();
         updatePlaneScale();
         " />
-      </div>
-      <div v-if="showMoveControls" class="gameplane-controls">
-        <div class="zoom-minus" v-on:click="zoomGamePlane({ deltaY: 1 })" />
-        <div class="move-top" v-on:click="gameCustom.gamePlaneTranslateY -= 100" />
-        <div class="zoom-plus" v-on:click="zoomGamePlane({ deltaY: -1 })" />
-        <div class="move-left" v-on:click="gameCustom.gamePlaneTranslateX -= 100" />
-        <div class="reset" v-on:click="
-          resetPlanePosition();
-        resetMouseEventsConfig();
-        updatePlaneScale();
-        " />
-        <div class="move-right" v-on:click="gameCustom.gamePlaneTranslateX += 100" />
-        <div class="rotate-right" v-on:click="gameCustom.gamePlaneRotation += 15" />
-        <div class="move-bottom" v-on:click="gameCustom.gamePlaneTranslateY += 100" />
-        <div class="rotate-left" v-on:click="gameCustom.gamePlaneRotation -= 15" />
       </div>
     </GUIWrapper>
 
@@ -115,7 +99,6 @@ export default {
       showChat: false,
       unreadMessages: 0,
       showLog: false,
-      showMoveControls: false,
       gamePlaneCustomStyleData: {},
       gamePlaneScale: 1,
       gamePlaneScaleMin: this.planeScaleMin || 0.3,
@@ -266,11 +249,9 @@ export default {
     },
     toggleChat() {
       this.showLog = false;
-      this.showMoveControls = false;
       this.showChat = !this.showChat;
     },
     async toggleLog() {
-      this.showMoveControls = false;
       this.showChat = false;
       if (this.showLog) return (this.showLog = false);
       this.showLog = true;
@@ -281,11 +262,6 @@ export default {
           // this.showLog = true;
         })
         .catch(prettyAlert);
-    },
-    toggleMoveControls() {
-      this.showLog = false;
-      this.showChat = false;
-      this.showMoveControls = !this.showMoveControls;
     },
     async callGameEnter() {
       // без этого не смогу записать gameId и playerId в context сессии
@@ -490,75 +466,6 @@ export default {
 
 #game .tutorial-active {
   box-shadow: 0 0 20px 20px #f4e205;
-}
-
-.gameplane-controls {
-  position: absolute;
-  top: 0px;
-  left: 100%;
-  height: 200px;
-  width: 200px;
-  margin-left: auto;
-  padding: 5px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
-  align-items: center;
-
-  >div {
-    width: 30%;
-    height: 30%;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 50%;
-    background-color: black;
-    border-radius: 50%;
-    cursor: pointer;
-
-    &:hover {
-      opacity: 0.5;
-    }
-  }
-
-  >.move-top {
-    background-image: url(assets/arrow-top.png);
-  }
-
-  >.move-bottom {
-    background-image: url(assets/arrow-bottom.png);
-  }
-
-  >.move-right {
-    background-image: url(assets/arrow-right.png);
-  }
-
-  >.move-left {
-    background-image: url(assets/arrow-left.png);
-  }
-
-  >.zoom-plus {
-    background-image: url(assets/zoom+.png);
-  }
-
-  >.zoom-minus {
-    background-image: url(assets/zoom-.png);
-  }
-
-  >.rotate-left {
-    background-image: url(assets/rotate-left.png);
-  }
-
-  >.rotate-right {
-    background-image: url(assets/rotate-right.png);
-  }
-
-  >.reset {
-    background-image: url(assets/reset.png);
-  }
-
-  &.tutorial-active {
-    box-shadow: 0 0 40px 40px #f4e205;
-  }
 }
 
 .gui-btn {
