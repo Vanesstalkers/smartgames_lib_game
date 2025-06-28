@@ -645,13 +645,15 @@
         });
       }
     }
-    async playerUseTutorial({ user, usedLink }) {
-      const userId = user._id;
-      if (userId !== this.roundActivePlayer()?.userId
-        || (usedLink && this.settings.useTutorialLinkExtraTimeLimit > 0
-          && user.useTutorialLinkExtraTimeCount > this.settings.useTutorialLinkExtraTimeLimit)
-        || (!usedLink && this.status === 'IN_PROCESS') // только для стартовых обучений
-      ) return;
+    async playerUseTutorial({ userId, usedLink }) {
+      if (usedLink) {
+        this.getPlayerByUserId(userId).notifyUser(
+          'Для повторного использования подсказки <a>зажми Ctrl</a> и выбери её снова'
+        );
+      }
+
+      const roundActivePlayer = this.getPlayerByUserId(userId)?.active;
+      if (!roundActivePlayer) return; // даем прибавку только игрокам, у которых запущен таймер
 
       this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId });
       lib.timers.timerRestart(this, { extraTime: 30 });
