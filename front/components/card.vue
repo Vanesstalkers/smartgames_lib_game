@@ -102,7 +102,7 @@ export default {
           cardId: this.cardId,
           targetPlayerId: this.$parent.playerId,
         },
-      }, { onSuccess: () => { }, onError: () => { this.preventDoubleClick = false } });
+      }, { onSuccess: () => { this.preventDoubleClick = false }, onError: () => { this.preventDoubleClick = false } });
     },
     toggleSelect() {
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;

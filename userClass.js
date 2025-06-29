@@ -11,6 +11,7 @@
     async processData(data) {
       const wrappedData = data.user?.[this.id()];
       if (wrappedData) data = wrappedData;
+      if (data._id) delete data._id;
       this.set(data);
       await this.broadcastData(data);
     }
