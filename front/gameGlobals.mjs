@@ -1,7 +1,7 @@
 import { reactive, provide, inject } from 'vue';
+import { addMouseEvents, removeMouseEvents, resetMouseEventsConfig } from './gameMouseEvents.mjs';
 
-function prepareGameGlobals() {
-
+function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
   const gameState = reactive({
     gameId: '',
     sessionPlayerId: '',
@@ -9,6 +9,11 @@ function prepareGameGlobals() {
     viewerMode: false,
     serverTimeDiff: 0,
     shownCard: '',
+    cardWorkerAction: {},
+  });
+
+  const gameCustom = reactive({
+    ...gameCustomArgs,
   });
 
   async function handleGameApi(data, { onSuccess, onError } = {}) {
@@ -18,31 +23,78 @@ function prepareGameGlobals() {
       .then(onSuccess)
       .catch(onError);
   }
-  function getGame() {
-    return this.$root.state.store.game?.[gameState.gameId] || {};
+  function playerGameId() {
+    return gameState.gameId;
+  }
+  function getGame(gameId) {
+    if (!gameId) gameId = gameState.gameId;
+    return this.$root.state.store.game?.[gameId] || {};
+  }
+  function gameFinished() {
+    return this.getGame().status === 'FINISHED';
+  }
+  function getGamePlaneOffsets() {
+    const deviceOffset = this.$root.state.isMobile ? (this.$root.state.isLandscape ? 0 : -100) : 500;
+    return { x: 0 + deviceOffset, y: 0 };
+  }
+  function resetPlanePosition() {
+    // если this.getGamePlaneOffsets вызывать не через this, то потеряется ссылка на this.$root
+    const { x, y } = this.getGamePlaneOffsets();
+    gameCustom.gamePlaneTranslateX = -1 * x;
+    gameCustom.gamePlaneTranslateY = -1 * y;
+  }
+  function updateGamePlaneTranslate({ x, y }) {
+    this.resetPlanePosition();
+    this.gameCustom.gamePlaneTranslateX += x;
+    this.gameCustom.gamePlaneTranslateY += y;
   }
   function getStore() {
     return this.getGame().store || {};
   }
+  function sessionPlayer() {
+    return this.store.player?.[this.gameState.sessionPlayerId] || { eventData: {} };
+  }
   function sessionPlayerIsActive() {
-    return (
-      gameState.sessionPlayerId ===
-      Object.keys(this.getGame().playerMap || {}).find((id) => this.getStore().player?.[id]?.active)
-    );
+    return this.sessionPlayer().active;
+  }
+  function sessionUserData() {
+    return this.$root.state.store?.user?.[this.$root.state.currentUser] || {};
+  }
+
+  function logItems() {
+    const items = Object.entries(this.game.logs || {})
+      .map(([id, item]) => {
+        item.msg = item.msg.replace(/<player\s*([^>]*)>([\S\s]+?)<\/player>/g, '<a $1>$2</a>');
+        return [id, item];
+      })
+      .reverse();
+    return items || [];
   }
 
   const gameGlobals = {
+    addMouseEvents,
+    removeMouseEvents,
+    resetMouseEventsConfig,
     handleGameApi,
+    playerGameId,
     getGame,
+    sessionUserData,
+    gameFinished,
+    getGamePlaneOffsets,
+    resetPlanePosition,
+    updateGamePlaneTranslate,
     getStore,
     gameState,
+    gameCustom,
     currentRound() {
       return this.game?.round;
     },
+    sessionPlayer,
     sessionPlayerIsActive,
     actionsDisabled() {
-      return this.store.player?.[gameState.sessionPlayerId]?.eventData?.actionsDisabled;
+      return this.sessionPlayer().eventData?.actionsDisabled;
     },
+    logItems,
   };
 
   return gameGlobals;

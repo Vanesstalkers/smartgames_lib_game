@@ -3,10 +3,11 @@
   _col;
   #game;
   #parent;
-  #parentList;
   #_objects = {};
   #fakeParent = null;
-  #broadcastableFields = null;
+  #preventSaveFields = [];
+  #broadcastableFields = [];
+  #preventBroadcastFields = [];
   #publicStaticFields = null; // отправляется в том числе и для фейковых данных, обновлять нельзя (хранятся в объекте-связи родителя-колоды)
 
   constructor(data, { col: _col, parent } = {}) {
@@ -19,7 +20,6 @@
     this.eventData = data.eventData || { activeEvents: [] };
 
     this.setParent(parent);
-    this.addToParentsObjectStorage();
 
     // строго после setParent, потому что parent может вызваться в getCodeTemplate
     const customObjectCode = Object.getPrototypeOf(this).customObjectCode;
@@ -34,88 +34,82 @@
     }
 
     if (!parent) {
-      this.game(this);
-      delete this.code; // чтобы у дочерних объектов не было префикса "Game[]"
+      this.game(this); // иначе у корневой игры не будет работать getStore (и возможно что-то еще)
+      this.code = ''; // чтобы у дочерних объектов не было префикса "Game[]"
     } else {
-      const game = parent.game();
-      this.game(game);
-      if (newObject) this.markNew({ saveToDB: true });
-      if (!game.store[this._col]) game.store[this._col] = {};
-      game.store[this._col][this._id] = this;
+      this.game(parent.isGame() ? parent : parent.game());
+      if (!this.isGame() && newObject) {
+        this.markNew({
+          saveToDB: true,
+          changes: { masterObject: {} } // без этого объекты, созданные в ходе игры, попадут на фронт не целиком 
+        });
+      }
     }
   }
   id() {
     return this._id;
+  }
+  preventSaveFields(fields) {
+    if (!fields) return this.#preventSaveFields;
+    this.#preventSaveFields.push(...fields);
+    return true;
   }
   updateFakeId({ parentId }) {
     if (!parentId) throw new Error('parentId not found');
     this.fakeId[parentId] = (Date.now() + Math.random()).toString();
   }
   set(val, config = {}) {
-    if (!this._col) {
-      throw new Error(`set error ('_col' is no defined)`);
-    } else {
-      this.setChanges(val, config);
+    if (!this._col) throw new Error(`set error ('_col' is no defined)`);
+
+    let clonedConfig = {};
+    if (Object.keys(config).length > 0) {
+      clonedConfig = lib.utils.structuredClone(config);
+      if (clonedConfig.reset) {
+        clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
+      }
     }
+
+    this.game().setChanges(this.prepareChanges(val), clonedConfig);
+
     lib.utils.mergeDeep({
       masterObj: this,
       target: this,
       source: val,
-      config: { deleteNull: true, ...config }, // удаляем ключи с null-значением
+      config: { deleteNull: true, ...clonedConfig }, // удаляем ключи с null-значением
     });
   }
-  setChanges(val, config = {}) {
-    this.#game.setChanges({ store: { [this._col]: { [this._id]: val } } }, config);
+  prepareChanges(val) {
+    return { store: { [this._col]: { [this._id]: val } } };
   }
-
-  setChanges(val, config = {}) {
-    const clonedConfig = lib.utils.structuredClone(config);
-    if (clonedConfig.reset) clonedConfig.reset = config.reset.map((key) => `store.${this._col}.${this._id}.${key}`);
-    this.#game.setChanges(
-      {
-        store: { [this._col]: { [this._id]: val } },
-      },
-      clonedConfig
-    );
+  markNew(config) {
+    this.game().markNew(this, config);
   }
-
-  markNew({ saveToDB = false } = {}) {
-    const { _col: col, _id: id } = this;
-    if (saveToDB) {
-      this.#game.setChanges({ store: { [col]: { [id]: this } } });
-    } else {
-      this.#game.addBroadcastObject({ col, id });
-    }
-  }
-  markDelete({ saveToDB = false } = {}) {
-    const { _col: col, _id: id } = this;
-    if (saveToDB) {
-      this.#game.setChanges({ store: { [col]: { [id]: null } } });
-    } else {
-      this.#game.deleteBroadcastObject({ col, id });
-    }
+  markDelete(config) {
+    this.game().markDelete(this, config);
   }
 
   default_customObjectCode({ codeTemplate, replacementFragment }, data) {
     return codeTemplate.replace(replacementFragment, data._code);
   }
   addToParentsObjectStorage() {
-    let parent = this.getParent();
+    let parent = this.parent();
     if (parent) {
       do {
         parent.addToObjectStorage(this);
-      } while ((parent = parent.getParent()));
+        for (const obj of Object.values(this.#_objects)) parent.addToObjectStorage(obj);
+      } while ((parent = parent.parent()));
     }
   }
   addToObjectStorage(obj) {
     this.#_objects[obj.id()] = obj;
   }
   deleteFromParentsObjectStorage() {
-    let parent = this.getParent();
+    let parent = this.parent();
     if (!parent) return;
     do {
       parent.deleteFromObjectStorage(this);
-    } while ((parent = parent.getParent()));
+      for (const obj of Object.values(this.#_objects)) parent.deleteFromObjectStorage(obj);
+    } while ((parent = parent.parent()));
   }
   deleteFromObjectStorage(obj) {
     if (this.#_objects[obj.id()]) delete this.#_objects[obj.id()];
@@ -140,7 +134,7 @@
     });
   }
   getCodePrefix() {
-    return this.getParent()?.code || '';
+    return this.parent()?.code || '';
   }
   getCodeSuffix() {
     return '';
@@ -148,16 +142,19 @@
   getCodeTemplate(_code) {
     return '' + this.getCodePrefix() + _code + this.getCodeSuffix();
   }
-  getObjects() {
-    return this.select(...arguments);
+  shortCode() {
+    return this.code.replace(this.getCodePrefix(), '').replace(this.getCodeSuffix(), '');
+  }
+  getAllObjects({ directParent = this } = {}) {
+    return this.select({ directParent });
   }
   select(query = {}) {
     if (typeof query === 'string') query = { className: query };
-    const { className, attr, directParent } = query;
+    const { className, attr, directParent = this } = query;
 
     let result = Object.values(this.#_objects);
     if (className) result = result.filter((obj) => obj.constructor.name === className);
-    if (directParent) result = result.filter((obj) => obj.getParent() === directParent);
+    if (directParent) result = result.filter((obj) => obj.parent() === directParent);
     if (attr) {
       for (const [key, val] of Object.entries(attr)) {
         result = result.filter((obj) => obj[key] === val);
@@ -169,7 +166,6 @@
     if (parent) {
       this.deleteFromParentsObjectStorage();
       this.#parent = parent;
-      this.#parentList = [parent].concat(parent.getParentList() || []); // самый дальний родитель в конце массива
       this.addToParentsObjectStorage();
     }
   }
@@ -185,25 +181,34 @@
   getParent() {
     return this.#fakeParent || this.#parent;
   }
-  getParentList() {
-    return this.#parentList;
-  }
   findParent({ className, directParent = false } = {}) {
-    let parent = this.getParent();
+    let parent = this.parent();
     while (parent) {
       if (className && parent.constructor.name === className) return parent;
       if (directParent && parent === directParent) return parent;
-      parent = parent.getParent();
+      parent = parent.parent();
     }
     return null;
   }
   matches({ className } = {}) {
-    if (className && this.constructor.name === className) return true;
+    if (className) {
+      let protoChain = this;
+      while (protoChain.constructor.name !== 'GameObject') {
+        if (protoChain.constructor.name === className) return true;
+        protoChain = Object.getPrototypeOf(protoChain);
+      }
+    }
     return false;
+  }
+  is(className) {
+    return this.matches({ className });
   }
   game(game) {
     if (!game) return this.#game;
     this.#game = game;
+  }
+  isGame() {
+    return this instanceof domain.game.class;
   }
   getStore() {
     return this.game().store;
@@ -216,25 +221,43 @@
    * @param {string[]} [data] массив полей для публикации
    * @returns {string[]}
    */
-  broadcastableFields(data) {
-    if (!data) return this.#broadcastableFields;
-    this.#broadcastableFields = data;
+  broadcastableFields(fields) {
+    if (!fields) return this.#broadcastableFields;
+    this.#broadcastableFields.push(...fields);
+    return true;
+  }
+  preventBroadcastFields(fields) {
+    if (!fields) return this.#preventBroadcastFields;
+    this.#preventBroadcastFields.push(...fields);
+    return true;
   }
   publicStaticFields(data) {
     if (data) this.#publicStaticFields = data;
     return this.#publicStaticFields;
   }
 
+  prepareSaveData() {
+    let preparedData;
+    const preventSaveFieldsList = this.preventSaveFields();
+    if (!preventSaveFieldsList.length) {
+      preparedData = this;
+    } else {
+      preparedData = Object.fromEntries(
+        Object.entries(this).filter(([key, val]) => !preventSaveFieldsList.includes(key))
+      );
+    }
+    return preparedData;
+  }
   prepareBroadcastData({ data, player, viewerMode }) {
     let visibleId = this._id;
     let preparedData;
-    if (!this.#broadcastableFields) {
+    const broadcastableFieldsList = this.broadcastableFields();
+    if (broadcastableFieldsList.length === 0) {
       preparedData = data;
     } else {
-      preparedData = {};
-      for (const [key, value] of Object.entries(data)) {
-        if (this.#broadcastableFields.includes(key)) preparedData[key] = value;
-      }
+      preparedData = Object.fromEntries(
+        Object.entries(data).filter(([key, val]) => broadcastableFieldsList.includes(key))
+      );
     }
     return { visibleId, preparedData };
   }
@@ -243,35 +266,47 @@
     if (!event) return null;
     return event();
   }
-  initEvent(event, { player, defaultResetHandler } = {}) {
-    if (typeof event === 'string') {
-      const eventName = event;
-      event = this.getEvent(eventName);
-      event.name = eventName;
+  initEvent(eventData, { game, player, allowedPlayers = [] } = {}) {
+    if (typeof eventData === 'string') {
+      const eventName = eventData;
+      eventData = this.getEvent(eventName);
+      eventData.name = eventName;
     }
-    if (!event) throw new Error(`event not found (event=${eventName})`);
-    const game = this.game();
+    if (!eventData) throw new Error(`event not found (event=${eventName})`);
 
-    event = new lib.game.GameEvent(event);
+    if (!game) game = this.isGame() ? this : this.game();
+
+    let event = new lib.game.GameEvent(eventData);
+
     event.source(this);
     event.game(game);
     event.player(player);
+    event.allowedPlayers(allowedPlayers);
 
-    if (event.init) {
-      const { removeEvent } = event.init() || {};
-      if (removeEvent) return null;
-    }
     this.addEvent(event);
 
-    if (defaultResetHandler) {
-      event.addHandler('RESET', function () {
-        const { game, source, sourceId } = this.eventContext();
-        source.removeEvent(this);
-        game.removeAllEventListeners({ sourceId });
+    if (event.handlers('RESET').length === 0) {
+      // у объекта одновременно может быть несколько RESET-событий, но они всегда вызываются через emit(...), так что лишние события не вызовутся
+      event.setHandler('RESET', function () {
+        this.destroy();
       });
     }
-    for (const handler of event.handlers()) {
-      game.addEventListener({ handler, event });
+    const handlers = event.handlers();
+    for (const handler of handlers) {
+      if (handler === 'TRIGGER') {
+        player?.setEventWithTriggerListener(event);
+      } else {
+        game.addEventListener({ handler, event });
+      }
+    }
+
+    // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS)
+    if (event.init) {
+      const { resetEvent } = event.init() || {};
+      if (resetEvent) {
+        event.emit('RESET');
+        event = null;
+      }
     }
 
     return event;
@@ -293,5 +328,12 @@
       return activeEvent !== event;
     });
     this.set({ eventData: { activeEvents } });
+  }
+  /**
+   * Проверяет наличие активного события замены костяшек
+   * @returns {boolean} true если есть активное событие замены костяшек
+   */
+  hasDiceReplacementEvent() {
+    return this.eventData.activeEvents.some(event => event.name === 'diceReplacementEvent');
   }
 });

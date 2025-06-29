@@ -1,20 +1,14 @@
 <template>
-  <div
-    v-if="card._id || cardData"
-    :name="card.name"
-    :class="[
-      'card-event',
-      card.played ? 'played' : '',
-      this.isSelected ? 'selected' : '',
-      selectable ? 'selectable' : '',
-      card.eventData.cardClass || '',
-      card.eventData.playDisabled ? 'play-disabled' : '',
-    ]"
-    :style="customStyle"
-    v-on:click.stop="toggleSelect"
-  >
+  <div v-if="card._id || cardData" :name="card.name" :class="[
+    'card-event',
+    card.played ? 'played' : '',
+    isSelected ? 'selected' : '',
+    selectable ? 'selectable' : '',
+    locked ? 'locked' : '',
+    card.eventData.cardClass || '',
+  ]" :style="getCustomStyle" v-on:click.stop="toggleSelect">
     <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
-    <div v-if="canPlay && !card.eventData.playDisabled" v-on:click.stop="playCard" class="play-btn">
+    <div v-if="canPlay && !locked && !preventDoubleClick" v-on:click.stop="callPlayCard" class="play-btn">
       {{ card.eventData.buttonText || 'Разыграть' }}
     </div>
   </div>
@@ -26,6 +20,15 @@ import { inject } from 'vue';
 export default {
   name: 'card',
   props: {
+    playCard: {
+      type: Function,
+    },
+    customStyle: {
+      type: Object,
+      default: () => {
+        return {};
+      },
+    },
     cardId: String,
     canPlay: Boolean,
     playerActive: {
@@ -38,7 +41,9 @@ export default {
     imgFullPath: String, // формат: `${this.state.serverOrigin}/img/cards/${this.card.name}.jpg`
   },
   data() {
-    return {};
+    return {
+      preventDoubleClick: false
+    };
   },
   setup() {
     return inject('gameGlobals');
@@ -53,8 +58,14 @@ export default {
     game() {
       return this.getGame();
     },
+    sourceGame() {
+      return this.getGame(this.card.sourceGameId);
+    },
     card() {
-      if (this.cardData) return this.cardData;
+      if (this.cardData) {
+        if (!this.cardData.eventData) this.cardData.eventData = {};
+        return this.cardData;
+      }
       const card = this.store.card?.[this.cardId];
       return card?._id ? card : { _id: this.cardId, eventData: {} };
     },
@@ -67,36 +78,31 @@ export default {
     isSelected() {
       return this.cardId === this.gameCustom.selectedCard;
     },
-    customStyle() {
-      const {
-        state: { serverOrigin },
-        card,
-        game,
-        imgFullPath,
-        imgExt = 'jpg',
-      } = this;
-
-      const rootPath = `${serverOrigin}/img/cards`;
-      const { group, name } = card;
-
-      const cardPath = [this.cardGroup || group, name || 'back-side'].filter((s) => s).join('/');
-      const path = imgFullPath || `${rootPath}/${cardPath}.${imgExt}` || `empty-card.${imgExt}`;
-
-      return {
-        backgroundImage: `url(${path})`,
-      };
+    locked() {
+      return this.card.eventData.playDisabled || this.actionsDisabled();
+    },
+    getCustomStyle() {
+      return this.customStyle;
     },
   },
   methods: {
-    async playCard() {
+    async callPlayCard() {
+      if (this.preventDoubleClick) return;
+      this.preventDoubleClick = true;
+
+      if (typeof this.playCard === 'function') this.playCard();
+      else this.defaultPlayCard();
+    },
+    async defaultPlayCard() {
       if (this.card.played) return;
+      if (this.locked) return;
       await this.handleGameApi({
         name: 'playCard',
         data: {
           cardId: this.cardId,
           targetPlayerId: this.$parent.playerId,
         },
-      });
+      }, { onSuccess: () => { this.preventDoubleClick = false }, onError: () => { this.preventDoubleClick = false } });
     },
     toggleSelect() {
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;
@@ -105,7 +111,7 @@ export default {
       this.$set(this.$root.state, 'shownCard', this.customStyle);
     },
   },
-  mounted() {},
+  mounted() { },
 };
 </script>
 
@@ -120,17 +126,86 @@ export default {
   align-items: flex-end;
   flex-wrap: wrap;
   border-radius: 10px;
-  margin: 0px 0px 0px 5px;
   background-color: grey;
 
   &.tutorial-active {
     box-shadow: 0 0 10px 10px #f4e205 !important;
   }
+
+  &.active {
+    border: 4px solid green;
+  }
+
+  &.played {
+    filter: grayscale(1);
+  }
+
+  &.selected {
+    z-index: 1;
+    box-shadow: 0px 100px 100px 0px black;
+  }
+
+  &.selectable {
+    box-shadow: inset 0 0 20px 8px lightgreen !important;
+
+    &.highlight-off,
+    &.locked {
+      box-shadow: none !important;
+    }
+  }
+
+  &.alert {
+    box-shadow: inset 0 0 10px 4px #b53f3f !important;
+
+    .play-btn {
+      background: #b53f3fde;
+
+      &:hover {
+        background: #b53f3f;
+      }
+    }
+  }
+
+  &.danger {
+    box-shadow: inset 0 0 10px 4px #b53f3f !important;
+
+    .play-btn {
+      background: #b53f3fde;
+
+      &:hover {
+        background: #b53f3f;
+      }
+    }
+  }
+
+  .play-btn {
+    cursor: pointer;
+    position: absolute;
+    bottom: 0px;
+    font-size: 0.5em;
+    border: 1px solid black;
+    text-align: center;
+    cursor: pointer;
+    background: #3f51b5de;
+    color: white;
+    font-size: 16px;
+    padding: 8px 0px;
+    width: 100%;
+    margin: 0px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+
+    &:hover {
+      background: #3f51b5;
+    }
+
+    .locked {
+      opacity: 0.5;
+      cursor: not-allowed !important;
+    }
+  }
 }
-.card-event.selected {
-  z-index: 1;
-  box-shadow: 0px 100px 100px 0px black;
-}
+
 .card-info-btn {
   position: absolute;
   right: 10px;
@@ -142,72 +217,13 @@ export default {
   cursor: pointer;
   visibility: hidden;
 }
+
 .card-info-btn:hover {
   opacity: 0.7;
 }
-.card-event:hover > .card-info-btn,
-#game.mobile-view .card-event.selected > .card-info-btn {
+
+.card-event:hover>.card-info-btn,
+#game.mobile-view .card-event.selected>.card-info-btn {
   visibility: visible;
 }
-.card-event.played {
-  filter: grayscale(1);
-}
-.play-btn {
-  cursor: pointer;
-  position: absolute;
-  bottom: 0px;
-  font-size: 0.5em;
-  border: 1px solid black;
-  text-align: center;
-  cursor: pointer;
-  background: #3f51b5de;
-  color: white;
-  font-size: 16px;
-  padding: 8px 0px;
-  width: 100%;
-  margin: 0px;
-  border-bottom-left-radius: 4px;
-  border-bottom-right-radius: 4px;
-
-  &:hover {
-    background: #3f51b5;
-  }
-}
-
-.card-event.active {
-  border: 4px solid green;
-}
-
-.card-event.selectable.highlight-off,
-.card-event.selectable.play-disabled {
-  box-shadow: none !important;
-}
-.card-event.selectable {
-  box-shadow: inset 0 0 20px 8px lightgreen !important;
-}
-
-.card-event.alert {
-  box-shadow: inset 0 0 10px 4px #b53f3f !important;
-
-  .play-btn {
-    background: #b53f3fde;
-
-    &:hover {
-      background: #b53f3f;
-    }
-  }
-}
-.card-event.danger {
-  box-shadow: inset 0 0 10px 4px #b53f3f !important;
-
-  .play-btn {
-    background: #b53f3fde;
-
-    &:hover {
-      background: #b53f3f;
-    }
-  }
-}
-
-//
 </style>

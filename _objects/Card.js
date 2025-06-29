@@ -4,11 +4,14 @@
     this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData']);
     this.publicStaticFields(['group', 'owner']);
 
-    this.set({
-      title: data.title,
-      name: data.name,
-    });
+    const { title, name, playOneTime, played, disabled } = data;
+    this.set({ title, name, playOneTime, played, disabled });
   }
+
+  getTitle() {
+    return this.title || this.name;
+  }
+
   /**
    * Перемещает карту к новому держателю (колоду)
    * @param {GameObject} target - колода для перемещения
@@ -31,25 +34,21 @@
     if (!event) return null;
     return event();
   }
-  isPlayOneTime() {
-    return this.getEvent()?.config?.playOneTime;
-  }
   restoreAvailable() {
-    if (this.isPlayOneTime()) {
+    if (this.playOneTime) {
       return this.played ? false : true;
     } else {
       return true;
     }
   }
 
-  canPlay() {
-    return this.getEvent(this.name) ? true : false;
-  }
   play({ player, logMsg } = {}) {
     if (this.played) return;
-    const event = this.initEvent(this.name, { player });
+    this.game().logs({ msg: logMsg || `Разыграна карта "<a>${this.title}</a>"`, userId: player.userId, });
+
+    const event = this.initEvent(this.name, { game: player.game(), player, allowedPlayers: [player] });
+    if (event) event.name = this.title;
     if (event !== null && player) player.addEvent(event);
     this.set({ played: Date.now() });
-    this.game().logs(logMsg || `Разыграна карта "${this.title}"`);
   }
 });

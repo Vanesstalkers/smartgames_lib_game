@@ -3,21 +3,70 @@
     #logs = {};
     store = {};
     playerMap = {};
+    eventListeners = {};
     #broadcastObject = {};
     #broadcastDataAfterHandlers = {};
     #objectsDefaultClasses = {};
 
-    constructor() {
-      const storeData = { col: 'game' };
-      const gameObjectData = { col: 'game' };
+    constructor(storeData = {}, gameObjectData = {}) {
+      if (!storeData.col) storeData.col = 'game';
+      if (!gameObjectData.col) gameObjectData.col = 'game';
+      if (storeData.id) storeData._id = storeData.id;
       super(storeData, gameObjectData);
 
-      this.defaultClasses({
-        Player: lib.game.objects.Player,
-        Viewer: lib.game.objects.Viewer,
-        Deck: lib.game.objects.Deck,
-        Card: lib.game.objects.Card,
+      const { Card, Deck, Player, Viewer } = lib.game._objects;
+      this.defaultClasses({ Card, Deck, Player, Viewer });
+
+      this.preventSaveFields(['eventData.activeEvents']);
+    }
+
+    isCoreGame() {
+      return this === this.game();
+    }
+
+    set(val, config = {}) {
+      if (!this._col) throw new Error(`set error ('_col' is no defined)`);
+
+      const clonedConfig = lib.utils.structuredClone(config);
+      this.setChanges(val, clonedConfig);
+      lib.utils.mergeDeep({
+        ...{ masterObj: this, target: this, source: val },
+        config: { deleteNull: true, ...clonedConfig }, // удаляем ключи с null-значением
       });
+    }
+    setChanges(val, config) {
+      super.setChanges(val, config);
+    }
+    markNew(obj, { saveToDB = false, changes: changesConfig } = {}) {
+      const { _col: col, _id: id } = obj;
+      if (saveToDB) {
+        // broadcast пройдет после сохранения изменений в БД
+        this.setChanges({ store: { [col]: { [id]: obj } } }, changesConfig);
+      } else {
+        this.addBroadcastObject({ col, id });
+      }
+    }
+    markDelete(obj, { saveToDB = false } = {}) {
+      const { _col: col, _id: id } = obj;
+      if (saveToDB) {
+        this.setChanges({ store: { [col]: { [id]: null } } });
+      } else {
+        this.deleteBroadcastObject({ col, id });
+      }
+    }
+
+    addToObjectStorage(obj) {
+      super.addToObjectStorage(obj);
+
+      const { _id: id, _col: col } = obj;
+      if (!this.store[col]) this.store[col] = {};
+      this.store[col][id] = obj;
+    }
+    deleteFromObjectStorage(obj) {
+      super.deleteFromObjectStorage(obj);
+
+      const { _id: id, _col: col } = obj;
+      if (this.store[id]) delete this.store[id];
     }
 
     defaultClasses(map) {
@@ -25,14 +74,20 @@
       return this.#objectsDefaultClasses;
     }
 
-    async create({ deckType, gameType, gameConfig, gameTimer } = {}) {
+    select(query = {}) {
+      if (typeof query === 'string') query = { className: query };
+      if (!query.directParent) query.directParent = false; // для game должно искаться по всем объектам
+      return super.select(query);
+    }
+
+    async create({ deckType, gameType, gameConfig, gameTimer, templates } = {}, { initPlayerWaitEvents = true } = {}) {
       const { structuredClone: clone } = lib.utils;
       const {
         [gameType]: {
           //
           items: { [gameConfig]: settings },
         } = {},
-      } = domain.game.configs.filledGames;
+      } = domain.game.configs.gamesFilled();
 
       if (!settings)
         throw new Error(
@@ -42,13 +97,13 @@
       const gameData = {
         settings: clone(settings),
         addTime: Date.now(),
-        ...{ deckType, gameType, gameConfig, gameTimer },
+        ...{ deckType, gameType, gameConfig, gameTimer, templates },
       };
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
 
-      this.run('fillGameData', { data: gameData, newGame: true });
-      delete this._id; // удаляем _id от gameObject, чтобы он не попал в БД
+      this.run('fillGameData', gameData);
+      if (initPlayerWaitEvents) this.run('initPlayerWaitEvents');
 
       await super.create({ ...this });
 
@@ -57,27 +112,10 @@
 
       return this;
     }
-    async load({ fromData = null, fromDB = {} }, { initStore = true } = {}) {
-      if (fromData) {
-        Object.assign(this, fromData);
-      } else {
-        let { id, query } = fromDB;
-        if (!query && id) query = { _id: db.mongo.ObjectID(id) };
-        if (query) {
-          const dbData = await db.mongo.findOne(this.col(), query);
-          if (dbData === null) {
-            throw 'not_found';
-          } else {
-            this.run('fillGameData', { data: dbData, newGame: false });
-            if (!this.id() && initStore) {
-              this.initStore(dbData._id);
-              if (!this.channel()) this.initChannel();
-            }
-          }
-        }
-      }
-      if (this._id) delete this._id; // не должно мешаться при сохранении в mongoDB
-      return this;
+    restart() {
+      this.set({ status: 'IN_PROCESS', statusLabel: `Раунд ${this.round}`, addTime: Date.now() });
+      this.run('initGameProcessEvents');
+      lib.timers.timerRestart(this, this.lastRoundTimerConfig);
     }
 
     async addGameToCache() {
@@ -87,11 +125,17 @@
         {
           id: this.id(),
           deckType: this.deckType,
+          gameType: this.gameType,
           workerId: application.worker.id,
           port: application.server.port,
         },
         { json: true }
       );
+    }
+    async updateGameAtCache(data = {}) {
+      const game = await db.redis.hget('games', this.id(), { json: true });
+      if (game.notFound) delete game.notFound;
+      await db.redis.hset('games', this.id(), { ...game, ...data }, { json: true });
     }
 
     /**
@@ -99,25 +143,49 @@
      * @param {*} data
      */
     async processData(data) {
-      this.set(data, { removeEmptyObject: true });
+      for (const [key, map] of Object.entries(data)) {
+        switch (key) {
+          case 'user':
+            const userMap = {};
+
+            for (const [userId, user] of Object.entries(map)) {
+              const { name, login, avatarCode } = user;
+              const userName = name || login;
+
+              const player = this.getPlayerByUserId(userId);
+              if (player) player.set({ userName, avatarCode }) // мог быть удален
+
+              userMap[userId] = { userName, avatarCode };
+            }
+
+            this.broadcastData({ user: userMap }, { wrapperDisabled: true });
+            break;
+          default:
+            this.set(data, { removeEmptyObject: true });
+        }
+      }
       await this.saveChanges();
     }
 
     /**
      * Обработчики, вынесенные в отдельные файлы (папка actions)
      */
-    run(actionName, data, initPlayer) {
-      const action = domain.game.actions?.[actionName] || lib.game.actions?.[actionName];
+    run(actionPath, data, initPlayer) {
+      const [actionName, actionDir] = actionPath.split('.').reverse();
+
+      let action;
+      if (actionDir) {
+        action = lib.game.actions?.[actionName];
+      } else {
+        action = domain.game.actions?.[actionName];
+        if (!action) action = lib.game.actions?.[actionName];
+      }
+
       if (!action) throw new Error(`action "${actionName}" not found`);
-      return action.call(this, data, initPlayer);
-    }
-    runSuper(actionName, data, initPlayer) {
-      const action = lib.game.actions?.[actionName];
-      if (!action) throw new Error(`action "${actionName}" not found`);
+
       return action.call(this, data, initPlayer);
     }
 
-    eventListeners = {};
     addEventListener({ handler, event }) {
       if (!this.eventListeners[handler]) this.set({ eventListeners: { [handler]: [] } });
       this.set({
@@ -126,43 +194,70 @@
         },
       });
     }
-    removeEventListener({ handler, sourceId }) {
+    removeEventListener({ handler, eventToRemove }) {
       const listeners = this.eventListeners[handler];
       if (!listeners) throw new Error(`listeners not found (handler=${handler})`);
-      this.set({
-        eventListeners: {
-          [handler]: listeners.filter((event) => event.sourceId() !== sourceId),
-        },
-      });
-    }
-    removeAllEventListeners({ sourceId }) {
+
       const eventListeners = {};
-      for (const [handler, listeners] of Object.entries(this.eventListeners)) {
-        eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
+      if (eventToRemove) {
+        if (handler === 'TRIGGER') eventToRemove.player().removeEventWithTriggerListener();
+        else eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
       }
 
       this.set({ eventListeners });
     }
-    toggleEventHandlers(handler, data = {}, initPlayers) {
+    removeAllEventListeners({ sourceId, event: eventToRemove }) {
+      const eventListeners = {};
+      for (const [handler, listeners] of Object.entries(this.eventListeners)) {
+        if (sourceId) eventListeners[handler] = listeners.filter((event) => event.sourceId() !== sourceId);
+        if (eventToRemove) {
+          if (handler === 'TRIGGER') eventToRemove.player().removeEventWithTriggerListener();
+          else eventListeners[handler] = listeners.filter((event) => event !== eventToRemove);
+        }
+      }
+
+      this.set({ eventListeners });
+    }
+    toggleEventHandlers(handler, data = {}, initPlayer) {
+      if (!this.eventListeners[handler]) return;
+      const eventPlayers = this.eventListeners[handler].map(e => e.player()).filter(_ => _);
+
+      if (!initPlayer) initPlayer = this.roundActivePlayer();
+      if (!initPlayer && !eventPlayers.length) return; // ожидание игрока и генерация стартового поля
+
+      const result = [];
+      for (const event of this.eventListeners[handler]) {
+        if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
+
+        const player = initPlayer || event.player();
+        const playerAccessAllowed = event.checkAccess(player);
+        if (!playerAccessAllowed) {
+          console.error(`Not playerAccessAllowed for user "${player?.code}" to handler "${handler}"`);
+          result.push({ error: 'access_not_allowed' });
+          continue;
+        }
+
+        const handlerResult = event.emit(handler, data, player) || {};
+        const { preventListenerRemove } = handlerResult;
+        if (!preventListenerRemove) this.removeEventListener({ handler, eventToRemove: event });
+
+        result.push(handlerResult);
+      }
+
+      return result;
+    }
+    forceEmitEventHandler(handler, data) {
       if (!this.eventListeners[handler]) return;
 
-      if (!initPlayers) initPlayers = [this.game().getActivePlayer()];
-      if (!Array.isArray(initPlayers)) initPlayers = [initPlayers];
       for (const event of this.eventListeners[handler]) {
-        const playerAccessAllowed = initPlayers.includes(event.player());
-        if (!playerAccessAllowed) continue;
-
         const { preventListenerRemove } = event.emit(handler, data) || {};
-        if (!preventListenerRemove) this.removeEventListener({ handler, sourceId: event.sourceId() });
+        if (!preventListenerRemove) this.removeEventListener({ handler, eventToRemove: event });
       }
     }
     clearEvents() {
       for (const handler of Object.keys(this.eventListeners)) {
         this.set({ eventListeners: { [handler]: [] } });
       }
-    }
-    triggerEventEnabled() {
-      return this.eventListeners['TRIGGER']?.length ? true : false;
     }
 
     logs(data, { consoleMsg } = {}) {
@@ -174,8 +269,8 @@
       if (data.msg.includes('{{player}}')) {
         const player = data.userId
           ? this.players().find(({ userId }) => userId === data.userId)
-          : this.getActivePlayer();
-        if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `"${player.userName}"`);
+          : this.roundActivePlayer();
+        if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `<player>${player.userName}</player>`);
       }
 
       const id = (Date.now() + Math.random()).toString().replace('.', '_');
@@ -185,7 +280,7 @@
     async showLogs({ userId, sessionId, lastItemTime }) {
       let logs = this.logs();
       if (lastItemTime) {
-        logs = Object.fromEntries(Object.entries(logs).filter(([{}, { time }]) => time > lastItemTime));
+        logs = Object.fromEntries(Object.entries(logs).filter(([{ }, { time }]) => time > lastItemTime));
       }
       await this.broadcastData({ logs }, { customChannel: `session-${sessionId}` });
     }
@@ -201,61 +296,66 @@
     getPlayerByUserId(id) {
       return this.players().find((player) => player.userId === id);
     }
-    async playerJoin({ userId, userName }) {
+
+    async playerJoin({ playerId, userId, userName, userAvatar }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
-        const player = this.getFreePlayerSlot();
+        const player = playerId ? this.get(playerId) : this.getFreePlayerSlot();
         if (!player) throw new Error('Свободных мест не осталось');
         const gameId = this.id();
-        const playerId = player.id();
+        playerId = player.id();
 
-        player.set({ ready: true, userId, userName });
+        player.set({ ready: true, userId, userName, avatarCode: userAvatar });
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
-        this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId });
+        // инициатором события был установлен первый player в списке, который совпадает с активным игроком на старте игры
+        this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
+        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'joinGame', {
           gameId,
           playerId,
           deckType: this.deckType,
+          gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
         });
       } catch (exception) {
         console.error(exception);
-        lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
+        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
         });
-        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'logout'); // инициирует hideGameIframe
+        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'logout'); // инициирует hideGameIframe
       }
     }
-    async viewerJoin({ userId, userName }) {
+    async viewerJoin({ viewerId, userId, userName }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
         const { Viewer: viewerClass } = this.defaultClasses();
-        const viewer = new viewerClass({ userId }, { parent: this });
+        const viewer = new viewerClass({ _id: viewerId, userId }, { parent: this });
         viewer.set({ userId, userName });
         this.logs({ msg: `Наблюдатель присоединился к игре.` });
 
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'joinGame', {
+        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'joinGame', {
           gameId: this.id(),
           viewerId: viewer.id(),
           deckType: this.deckType,
+          gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
+          checkTutorials: false,
         });
       } catch (exception) {
         console.error(exception);
-        lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
+        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
         });
       }
     }
-    async playerLeave({ userId, viewerId }) {
-      if (this.status !== 'FINISHED' && !viewerId) {
+    async playerLeave({ userId }) {
+      if (this.status !== 'FINISHED') {
         this.logs({ msg: `Игрок {{player}} вышел из игры.`, userId });
         try {
           this.run('endGame', { canceledByUser: userId });
@@ -265,7 +365,70 @@
           } else throw exception;
         }
       }
-      lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'leaveGame', {});
+      lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'leaveGame', {});
+    }
+    async viewerLeave({ userId, viewerId }) {
+      if (this.status !== 'FINISHED') {
+        const viewer = this.get(viewerId);
+        if (!viewer) return;
+
+        viewer.markDelete({ saveToDB: true });
+        this.deleteFromObjectStorage(viewer);
+        await this.saveChanges();
+      }
+      lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'leaveGame', {});
+    }
+    roundActivePlayer(player) {
+      if (player) this.set({ roundActivePlayerId: player.id() });
+      return this.get(this.roundActivePlayerId);
+    }
+    selectNextActivePlayer() {
+      const roundActivePlayer = this.roundActivePlayer();
+      if (this.round > 0 && roundActivePlayer) {
+        this.logs(
+          {
+            msg: `Игрок {{player}} закончил раунд №${this.round}`,
+            userId: roundActivePlayer.userId,
+          },
+          { consoleMsg: true }
+        );
+      }
+
+      if (roundActivePlayer?.eventData?.extraTurn) {
+        roundActivePlayer.set({ eventData: { extraTurn: null } });
+        if (roundActivePlayer.eventData.skipTurn ||
+          roundActivePlayer.ready !== true // игрок мог выйти
+        ) {
+          // актуально только для событий в течение хода игрока, инициированных не им самим
+          roundActivePlayer.set({ eventData: { skipTurn: null } });
+        } else {
+          this.logs({
+            msg: `Игрок {{player}} получает дополнительный ход.`,
+            userId: roundActivePlayer.userId,
+          });
+          return roundActivePlayer;
+        }
+      }
+
+      const playerList = this.players().filter(p => p.ready);
+      const activePlayerIndex = playerList.findIndex((player) => player === roundActivePlayer);
+      const newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
+      this.roundActivePlayer(newActivePlayer);
+
+      if (newActivePlayer?.eventData?.skipTurn) {
+        this.logs({
+          msg: `Игрок {{player}} пропускает ход.`,
+          userId: newActivePlayer.userId,
+        });
+        newActivePlayer.set({
+          eventData: {
+            skipTurn: null,
+            actionsDisabled: true,
+          },
+        });
+      }
+
+      return newActivePlayer;
     }
     checkWinnerAndFinishGame() {
       let winningPlayer = this.players().sort((a, b) => (a.money > b.money ? -1 : 1))[0];
@@ -285,106 +448,57 @@
     getActivePlayers() {
       return this.players().filter((player) => player.active);
     }
-    changeActivePlayer({ player } = {}) {
-      const activePlayer = this.getActivePlayer();
-      if (activePlayer.eventData.extraTurn) {
-        activePlayer.set({ eventData: { extraTurn: null } });
-        if (activePlayer.eventData.skipTurn) {
-          // актуально только для событий в течение хода игрока, инициированных не им самим
-          activePlayer.set({ eventData: { skipTurn: null } });
-        } else {
-          this.logs({
-            msg: `Игрок {{player}} получает дополнительный ход.`,
-            userId: activePlayer.userId,
-          });
-          return activePlayer;
-        }
-      }
-
-      const playerList = this.players();
-      let activePlayerIndex = playerList.findIndex((player) => player === activePlayer);
-      let newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
-      if (player) {
-        if (player.eventData.skipTurn) player.set({ eventData: { skipTurn: null } });
-        newActivePlayer = player;
-      } else {
-        if (this.isSinglePlayer()) {
-          newActivePlayer.set({ eventData: { actionsDisabled: null } });
-          if (newActivePlayer.eventData.skipTurn) {
-            this.logs({
-              msg: `Игрок {{player}} пропускает ход.`,
-              userId: newActivePlayer.userId,
-            });
-            newActivePlayer.set({
-              eventData: {
-                skipTurn: null,
-                actionsDisabled: true,
-              },
-            });
-          }
-        } else {
-          while (newActivePlayer.eventData.skipTurn) {
-            this.logs({
-              msg: `Игрок {{player}} пропускает ход.`,
-              userId: newActivePlayer.userId,
-            });
-            newActivePlayer.set({ eventData: { skipTurn: null } });
-            activePlayerIndex++;
-            newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
-          }
-        }
-      }
-
-      activePlayer.set({ active: false });
-      newActivePlayer.set({ active: true });
-
-      return newActivePlayer;
-    }
     activatePlayers({ publishText, setData, disableSkipRoundCheck = false }) {
       for (const player of this.players()) {
         if (!disableSkipRoundCheck && player.skipRoundCheck()) continue;
         player.activate({ setData, publishText });
       }
     }
-    checkPlayersReady() {
-      for (const player of this.getActivePlayers()) {
-        if (!player.activeReady) return false;
+    checkAllPlayersFinishRound() {
+      for (const player of this.players()) {
+        if (player.active) return false;
       }
       return true;
     }
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
-        const player = this.players().find((player) => player.userId === userId);
+        const player = this.getPlayerByUserId(userId) || this.roundActivePlayer();
         if (!player) throw new Error('player not found');
 
         const activePlayers = this.getActivePlayers();
-        if (!activePlayers.includes(player) && eventName !== 'leaveGame')
+        const { disableActivePlayerCheck, disableActionsDisabledCheck } = player.eventData;
+        if (!activePlayers.includes(player) && eventName !== 'leaveGame' && !disableActivePlayerCheck)
           throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
-        else if (player.eventData.actionsDisabled && eventName !== 'endRound' && eventName !== 'leaveGame')
+        else if (
+          (this.roundReady || player.eventData.actionsDisabled) &&
+          !disableActionsDisabledCheck &&
+          eventName !== 'roundEnd' &&
+          eventName !== 'leaveGame'
+        )
           throw new Error('Игрок не может совершать действия в этот ход.');
 
+        if (disableActivePlayerCheck || disableActionsDisabledCheck) {
+          player.set({ eventData: { disableActivePlayerCheck: null, disableActionsDisabledCheck: null } });
+        }
+
         // !!! защитить методы, которые не должны вызываться с фронта
-        const result = this.run(eventName, eventData, player);
+        if (this[eventName]) {
+          this[eventName](eventData, player);
+        } else {
+          this.run(eventName, eventData, player);
+        }
 
         await this.saveChanges();
-
-        // не используется
-        // const { clientCustomUpdates } = result || {};
-        // if (clientCustomUpdates) {
-        //   lib.store.broadcaster.publishAction(`user-${userId}`, 'broadcastToSessions', {
-        //     type: 'db/smartUpdated',
-        //     data: clientCustomUpdates,
-        //   });
-        // }
       } catch (exception) {
         if (exception instanceof lib.game.endGameException) {
           await this.removeGame();
         } else {
           console.error(exception);
-          lib.store.broadcaster.publishAction(`gameuser-${userId}`, 'broadcastToSessions', {
+          lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'broadcastToSessions', {
             data: { message: exception.message, stack: exception.stack },
           });
+          await this.saveChanges();
         }
       }
     }
@@ -435,6 +549,10 @@
     broadcastDataBeforeHandler(data, config = {}) {
       const { customChannel } = config;
 
+      for (const key of this.preventBroadcastFields()) {
+        if (data[key]) delete data[key];
+      }
+
       const broadcastObject = !customChannel && this.#broadcastObject;
       if (broadcastObject) {
         for (const col of Object.keys(this.#broadcastObject)) {
@@ -464,16 +582,23 @@
       const { userId, viewerMode } = accessConfig;
       const storeData = data.store
         ? {
-            store: this.prepareBroadcastData({ userId, viewerMode, data: data.store }),
-          }
+          store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }),
+        }
         : {};
       return { ...data, ...storeData };
     }
-    async removeGame() {
+    async removeGame({ preventDeleteDumps = false } = {}) {
       await db.redis.hdel('games', this.id());
       await this.saveChanges();
       await this.broadcastData({ logs: this.logs() });
-      this.remove();
+      lib.timers.timerDelete(this);
+      this.removeStore();
+      this.removeChannel();
+      lib.game.flush.list.push(this);
+      await db.mongo.deleteOne(this.col(), { _id: this.id() });
+      if (!preventDeleteDumps) {
+        await db.mongo.deleteMany(this.col() + '_dump', { _gameid: db.mongo.ObjectID(this.id()) });
+      }
     }
 
     onTimerRestart({ timerId, data: { time, extraTime = 0 } = {} }) {
@@ -496,15 +621,12 @@
     }
     async onTimerTick({ timerId, data: { time = null } = {} }) {
       try {
-        if (this.status === 'FINISHED') {
-          console.debug("!!! lib.timers.timerDelete on this.status === 'FINISHED'");
-          return lib.timers.timerDelete(this);
-        }
+        if (this.status === 'FINISHED') return lib.timers.timerDelete(this);
+
         for (const player of this.getActivePlayers()) {
-          if (!player.timerEndTime) throw 'player.timerEndTime === NaN';
+          if (!player.timerEndTime) continue; // сюда попадут "потерянные tick-и" при завершении игры и восстановлении игры
 
           if (player.timerEndTime < Date.now()) {
-            this.eventListeners['PLAYER_TIMER_END'].reverse(); // глобальные события игры, добавленные при ее создании, должны отработать последними
             this.toggleEventHandlers('PLAYER_TIMER_END');
             await this.saveChanges();
           }
@@ -522,5 +644,50 @@
           timerUpdateTime: Date.now(),
         });
       }
+    }
+    async playerUseTutorial({ userId, usedLink }) {
+      if (usedLink) {
+        this.getPlayerByUserId(userId).notifyUser(
+          'Для повторного использования подсказки <a>зажми Ctrl</a> и выбери её снова'
+        );
+      }
+
+      const roundActivePlayer = this.getPlayerByUserId(userId)?.active;
+      if (!roundActivePlayer) return; // даем прибавку только игрокам, у которых запущен таймер
+
+      this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId });
+      lib.timers.timerRestart(this, { extraTime: 30 });
+      await this.saveChanges();
+    }
+    async dumpState() {
+      const clone = lib.utils.structuredClone(this);
+      clone._gameid = db.mongo.ObjectID(clone._id);
+      clone._dumptime = Date.now();
+      delete clone._id;
+      await db.mongo.insertOne(this.col() + '_dump', clone);
+    }
+    async loadFromDB({ query, fromDump }) {
+      const col = this.col();
+      const _id = db.mongo.ObjectID(query._id);
+
+      if (!fromDump) return await db.mongo.findOne(col, query);
+
+      query._gameid = _id;
+      delete query._id;
+      const [
+        dumpData, // берем первый элемент, т.к. в ответе массив
+      ] = await db.mongo.find(col + '_dump', query, {
+        ...{ sort: { round: -1, _dumptime: -1 }, limit: 1 },
+      });
+
+      if (!dumpData) return null;
+
+      await db.mongo.deleteOne(col, { _id });
+
+      dumpData._id = _id;
+      delete dumpData._gameid;
+      await db.mongo.insertOne(col, dumpData);
+
+      return dumpData;
     }
   };

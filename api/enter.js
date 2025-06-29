@@ -4,12 +4,14 @@ async (context, { gameId }) => {
   const user = session.user();
   if (!gameId || gameId !== user.gameId) throw new Error('Пользователь не участвует в игре');
 
-  const gameLoaded = await db.redis.hget('games', gameId);
-  if (!gameLoaded) {
+  const gameLoaded = await db.redis.hget('games', gameId, { json: true });
+  if (!gameLoaded.id) {
     user.set({ gameId: null, playerId: null, viewerId: null });
-    await user.saveChanges();
+    await user.saveChanges({ saveToLobbyUser: true });
     throw new Error('Игра была отменена');
   }
+  const game = lib.store('game').get(gameId);
+  game.subscribe(`user-${user.id()}`);
 
   user.subscribe(`game-${gameId}`, { rule: 'actions-only' });
   session.subscribe(`game-${gameId}`, {

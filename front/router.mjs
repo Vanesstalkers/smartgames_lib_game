@@ -1,6 +1,6 @@
 export default {
-  path: '/game/release/:id',
-  name: 'Release Game',
+  path: '/game/:id',
+  name: 'Game',
   component: function () {
     return import('./Game.vue');
   },

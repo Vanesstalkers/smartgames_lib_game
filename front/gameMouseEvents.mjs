@@ -42,7 +42,7 @@ function addMouseEvents(self) {
     mouseMove(event) {
       if (config.isRotating) {
         config.rotation = config.rotationLast + (event.clientX - config.initialRotateAngle) / 2;
-        self.gamePlaneRotation = config.rotation;
+        self.gameCustom.gamePlaneRotation = config.rotation;
       }
       if (config.isDragging) {
         config.currentX = event.clientX - config.initialX;
@@ -51,8 +51,7 @@ function addMouseEvents(self) {
         config.xOffset = config.currentX;
         config.yOffset = config.currentY;
 
-        self.gamePlaneTranslateX = config.currentX;
-        self.gamePlaneTranslateY = config.currentY;
+        self.updateGamePlaneTranslate({ x: config.currentX, y: config.currentY });
       }
     },
     touchStart(event) {
@@ -67,8 +66,8 @@ function addMouseEvents(self) {
       } else {
         config.initialX = touches[0].pageX;
         config.initialY = touches[0].pageY;
-        config.xOffset = self.gamePlaneTranslateX;
-        config.yOffset = self.gamePlaneTranslateY;
+        config.xOffset = self.gameCustom.gamePlaneTranslateX;
+        config.yOffset = self.gameCustom.gamePlaneTranslateY;
         config.isTouchMoved = false;
       }
     },
@@ -82,7 +81,7 @@ function addMouseEvents(self) {
 
         const angle = Math.atan2(touch2.pageY - touch1.pageY, touch2.pageX - touch1.pageX);
         config.rotation = config.rotationLast + ((angle - config.initialRotateAngle) * 180) / Math.PI;
-        self.gamePlaneRotation = config.rotation;
+        self.gameCustom.gamePlaneRotation = config.rotation;
 
         // имитируем плавность
         if (delta < 0.5 || delta > 2) return;
@@ -99,8 +98,8 @@ function addMouseEvents(self) {
 
         if (Math.abs(config.distanceX) > 10 || Math.abs(config.distanceY) > 10) {
           config.isTouchMoved = true;
-          self.gamePlaneTranslateX = config.distanceX + config.xOffset;
-          self.gamePlaneTranslateY = config.distanceY + config.yOffset;
+          self.gameCustom.gamePlaneTranslateX = config.distanceX + config.xOffset;
+          self.gameCustom.gamePlaneTranslateY = config.distanceY + config.yOffset;
         }
       }
     },
@@ -130,4 +129,11 @@ function removeMouseEvents() {
   document.body.removeEventListener('touchend', events.touchEnd);
 }
 
-export { addMouseEvents, removeMouseEvents, events, config };
+function resetMouseEventsConfig({ xOffset = 0, yOffset = 0, rotation = 0 } = {}) {
+  config.xOffset = xOffset;
+  config.yOffset = yOffset;
+  config.rotation = rotation;
+  config.rotationLast = rotation;
+}
+
+export { addMouseEvents, removeMouseEvents, resetMouseEventsConfig, events, config };

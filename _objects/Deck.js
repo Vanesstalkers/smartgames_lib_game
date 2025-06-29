@@ -7,15 +7,8 @@
     super(data, { col: 'deck', parent });
     this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData']);
 
-    this.set({
-      type: data.type,
-      subtype: data.subtype,
-      cardGroups: data.cardGroups,
-      placement: data.placement,
-      itemType: data.itemType,
-      settings: data.settings,
-      access: data.access,
-    });
+    const { type, subtype, cardGroups, placement, itemType, settings, access, itemMap } = data;
+    this.set({ type, subtype, cardGroups, placement, itemType, settings, access, itemMap });
   }
   prepareBroadcastData({ data, player, viewerMode }) {
     let preparedData = {};
@@ -27,7 +20,7 @@
       for (const [key, value] of Object.entries(data)) {
         if (key === 'itemMap' && !this.access[player?._id] && !viewerMode) {
           const ids = {};
-          for (const [idx, [id, val]] of Object.entries(value).entries()) {
+          for (const [id, val] of Object.entries(value)) {
             const item = game.get(id); // ищем в game, потому что item мог быть перемещен
             const updatedItemsEntries = Object.entries(this.#updatedItems[id] || {});
             if (updatedItemsEntries.length) {
@@ -42,17 +35,18 @@
                   ids[id] = val;
                   ids[fakeId] = null; // если не удалить, то будет задвоение внутри itemMap на фронте
                 } else {
-                  ids[fakeId] = val;
+                  ids[fakeId] = item.prepareFakeData?.(val) || val;
                 }
               }
             } else {
               // первичная рассылка из addSubscriber
+              const fakeId = item.fakeId[fakeIdParent];
               if (item.visible) {
                 ids[id] = val;
+                if (fakeId) ids[fakeId] = null;
               } else {
-                const fakeId = item.fakeId[fakeIdParent];
                 if (!fakeId) throw '!fakeId';
-                ids[fakeId] = val;
+                ids[fakeId] = item.prepareFakeData?.(val) || val;
               }
             }
           }
@@ -65,8 +59,8 @@
       for (const [key, value] of Object.entries(data)) {
         if (key === 'itemMap') {
           const ids = {};
-          for (const [idx, [id, val]] of Object.entries(value).entries()) {
-            if (parent === player || viewerMode) {
+          for (const [id, val] of Object.entries(value)) {
+            if (parent === player || this.access[player?._id] || viewerMode) {
               ids[id] = val;
             } else {
               const item = game.get(id); // ищем в game, потому что item мог быть перемещен
@@ -83,7 +77,7 @@
                     ids[id] = val;
                     ids[fakeId] = null; // если не удалить, то будет задвоение внутри itemMap на фронте
                   } else {
-                    ids[fakeId] = val;
+                    ids[fakeId] = item.prepareFakeData?.(val) || val;
                   }
                 }
               } else {
@@ -94,7 +88,7 @@
                   ids[id] = val;
                   ids[fakeId] = null; // если не удалить, то будет задвоение внутри itemMap на фронте
                 } else {
-                  ids[fakeId] = val;
+                  ids[fakeId] = item.prepareFakeData?.(val) || val;
                 }
               }
             }
@@ -134,7 +128,14 @@
   addItem(item) {
     const parentId = this.id();
     const itemClass = this.getItemClass();
-    if (item.constructor != itemClass) item = new itemClass(item, { parent: this });
+    const newObjectCreation = item.constructor != itemClass ? true : false; // тут может прийти объект с первичным набором атрибутов
+
+    if (newObjectCreation) {
+      // setParent вызовется в конструкторе
+      item = new itemClass(item, { parent: this });
+    } else {
+      item.setParent(this);
+    }
 
     const linkVal = {
       /* addTime: Date.now() */
@@ -144,7 +145,6 @@
       for (const key of fields) linkVal[key] = item[key];
     }
     this.set({ itemMap: { [item._id]: linkVal } });
-    this.addToObjectStorage(item);
 
     const game = this.game();
     if (!game.checkChangesDisabled()) {
@@ -155,7 +155,7 @@
       this.markItemUpdated({ item, action: 'add' });
     }
 
-    return true;
+    return item;
   }
   removeItem(itemToRemove) {
     this.set({ itemMap: { [itemToRemove._id]: null } });
@@ -168,6 +168,11 @@
         item: itemToRemove,
         action: itemToRemove.visible ? 'removeVisible' : 'remove',
       });
+    }
+  }
+  removeAllItems() {
+    for (const item of this.getAllItems()) {
+      this.removeItem(item);
     }
   }
   setItemVisible(item) {
@@ -188,16 +193,14 @@
     if (!this.#updatedItems[item._id]) this.#updatedItems[item._id] = {};
     this.#updatedItems[item._id][item.fakeId[this.id()]] = action;
   }
-  moveAllItems({ target, setData, emitEvent }) {
-    const store = this.getFlattenStore();
-    const itemIds = Object.keys(this.itemMap);
-    for (const id of itemIds) {
-      const item = store[id];
+  moveAllItems({ target, setData, emitEvent, markNew, markDelete }) {
+    for (const item of this.getAllItems()) {
       if (emitEvent) {
         for (const event of item.eventData.activeEvents) event.emit(emitEvent);
       }
       if (setData) item.set(setData);
-      item.moveToTarget(target);
+      item.moveToTarget(target, { markDelete });
+      if (markNew) item.markNew();
     }
   }
   moveRandomItems({ count, target }) {
@@ -206,35 +209,19 @@
       if (item) item.moveToTarget(target);
     }
   }
+  getAllItems() {
+    return this.select(this.getItemClass().name);
+  }
+  items() {
+    return this.getAllItems();
+  }
   getRandomItem({ skipArray = [] } = {}) {
-    const itemIds = Object.keys(this.itemMap).filter((_id) => !skipArray.includes(_id));
-    if (itemIds.length === 0) return null;
-    const id = itemIds[Math.floor(Math.random() * itemIds.length)];
-    const store = this.getFlattenStore();
-    return store[id];
-  }
-  smartMoveRandomCard({ target }) {
-    let card = this.getRandomItem();
-    if (card) card.moveToTarget(target);
-    else {
-      this.restoreCardsFromDrop();
-      card = this.getRandomItem();
-      if (card) card.moveToTarget(target);
-    }
-    return card;
-  }
-  restoreCardsFromDrop({ deckDrop } = {}) {
-    if (!deckDrop) deckDrop = this.game().decks.drop;
-    const cards = deckDrop.select('Card').filter(({ group }) => this.cardGroups.includes(group));
-    for (const card of cards) {
-      if (card.restoreAvailable()) card.moveToTarget(this);
-    }
+    const items = this.getAllItems().filter(({ _id }) => !skipArray.includes(_id));
+    const item = items[Math.floor(Math.random() * items.length)];
+    return item;
   }
   updateAllItems(updateData) {
-    const store = this.getFlattenStore();
-    const itemIds = Object.keys(this.itemMap);
-    for (const id of itemIds) {
-      const item = store[id];
+    for (const item of this.getAllItems()) {
       item.set(lib.utils.clone(updateData));
     }
   }

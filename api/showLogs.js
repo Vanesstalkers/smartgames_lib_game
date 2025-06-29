@@ -4,7 +4,7 @@ async (context, { lastItemTime } = {}) => {
   const { userId, gameId: currentGameId } = session;
   if (!currentGameId) throw new Error('Не участвует в игре');
 
-  lib.store.broadcaster.publishAction(`game-${currentGameId}`, 'showLogs', { sessionId, userId, lastItemTime });
+  lib.store.broadcaster.publishAction.call(session, `game-${currentGameId}`, 'showLogs', { sessionId, userId, lastItemTime });
 
   return { status: 'ok' };
 };
