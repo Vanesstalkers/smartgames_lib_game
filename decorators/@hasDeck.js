@@ -1,12 +1,5 @@
 ({
   decorate: () => ({
-    /**
-     * @param {*} data
-     * @param {object} [config]
-     * @param {(import('application/lib/game/types.js').objects.Deck)} config.deckClass
-     * @param {string} config.deckListName
-     * @returns {(import('application/lib/game/types.js').objects.Deck)}
-     */
     addDeck(data, { deckMapName = 'deckMap', deckClass, deckItemClass, parentDirectLink = true } = {}) {
       const defaultClasses = this.defaultClasses ? this.defaultClasses() : this.game().defaultClasses();
       const { Deck: defaultDeckClass, Card: defaultCardClass } = defaultClasses;
@@ -18,7 +11,6 @@
       if (!data.access) data.access = {};
       data.settings.parentDeckContainer = deckMapName;
 
-      /** @type {(import('application/lib/game/types.js').objects.Deck)} */
       const deck = new deckClass(data, { parent: this });
 
       this.set({ [deckMapName]: { [deck._id]: {} }, decks: {} });

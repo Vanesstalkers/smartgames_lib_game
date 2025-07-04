@@ -187,8 +187,6 @@ export default {
   },
   methods: {
     updatePlaneScale() {
-      // есть баг-фига с изменением масштаба при повторном нажатии на размещаемый блок
-
       this.state.gamePlaneNeedUpdate = false;
       if (this.$el instanceof HTMLElement) {
         const { innerWidth, innerHeight } = window;
