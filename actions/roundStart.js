@@ -1,6 +1,6 @@
 (function () {
   const roundStepsFunc =
-    domain.game.actions.games?.[this.gameType]?.roundSteps ||
+    domain.game.actions[this.gameType]?.roundSteps ||
     domain.game[this.gameType]?.actions?.roundSteps ||
     domain.game.actions.roundSteps ||
     lib.game.actions.roundSteps;
@@ -22,6 +22,4 @@
   player.notifyUser({ message }, { hideTime: 3000 });
 
   lib.timers.timerRestart(this, this.lastRoundTimerConfig);
-  // делаем после обновления таймера, в частности из-за карты "time"
-  this.playRoundStartCards();
 });
