@@ -87,7 +87,7 @@
           //
           items: { [gameConfig]: settings },
         } = {},
-      } = domain.game.configs.gamesFilled();
+      } = lib.game.actions.getFilledGamesConfigs();
 
       if (!settings)
         throw new Error(
@@ -95,6 +95,7 @@
         );
 
       const gameData = {
+        newGame: true,
         settings: clone(settings),
         addTime: Date.now(),
         ...{ deckType, gameType, gameConfig, gameTimer, templates },
@@ -448,9 +449,13 @@
     getActivePlayers() {
       return this.players().filter((player) => player.active);
     }
-    activatePlayers({ publishText, setData, disableSkipRoundCheck = false }) {
+    activatePlayers({ publishText, setData, disableSkipTurnCheck = false }) {
       for (const player of this.players()) {
-        if (!disableSkipRoundCheck && player.skipRoundCheck()) continue;
+        if (!disableSkipTurnCheck && player.eventData.skipTurn) {
+          this.logs({ msg: `Игрок {{player}} пропускает ход.`, userId: player.userId });
+          player.set({ eventData: { skipTurn: null } });
+          continue;
+        }
         player.activate({ setData, publishText });
       }
     }

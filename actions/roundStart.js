@@ -6,8 +6,7 @@
     lib.game.actions.roundSteps;
   if (!roundStepsFunc) throw `Round steps for "${this.gameType}" game not found.`;
 
-  this.roundActivePlayer()?.deactivate();
-  const { newRoundLogEvents, statusLabel, newRoundNumber } = roundStepsFunc.call(this);
+  const { newRoundLogEvents, statusLabel, newRoundNumber, timerRestart = true, endRound = false } = roundStepsFunc.call(this);
 
   // обновляем логи
   for (const logEvent of newRoundLogEvents) this.logs(logEvent);
@@ -15,11 +14,10 @@
 
   this.dumpState(); // вся структура roundEnd/roundStart/roundSteps сделана ради этой строчки
 
-  const player = this.roundActivePlayer();
+  if (timerRestart) {
+    const timerConfig = timerRestart === true ? this.lastRoundTimerConfig : timerRestart;
+    lib.timers.timerRestart(this, timerConfig);
+  }
 
-  let message = "Новый раунд";
-  if (!this.isSinglePlayer()) message += ". Ваш ход.";
-  player.notifyUser({ message }, { hideTime: 3000 });
-
-  lib.timers.timerRestart(this, this.lastRoundTimerConfig);
+  if (endRound) this.run('endRound');
 });

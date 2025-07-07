@@ -11,6 +11,7 @@
         bigControls: true,
         buttons: [
           { text: 'Спасибо, ничего не нужно', action: 'exit', exit: true },
+          { text: 'Выйти из игры', action: tutorialActions.leaveGame },
         ],
       }" />
     </slot>
@@ -104,6 +105,13 @@ export default {
       gamePlaneScaleMin: this.planeScaleMin || 0.3,
       gamePlaneScaleMax: this.planeScaleMax || 1.0,
       planeScaleNeedUpdated: 0,
+      tutorialActions: {
+        leaveGame: async () => {
+          await api.action
+            .call({ path: 'game.api.leave', args: [] })
+            .catch(prettyAlert);
+        }
+      }
     };
   },
   setup: function () {

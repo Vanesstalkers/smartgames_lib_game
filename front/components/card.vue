@@ -59,7 +59,7 @@ export default {
       return this.getGame();
     },
     sourceGame() {
-      return this.getGame(this.card.sourceGameId);
+      return this.getGame(this.card.sourceGameId); // ??? убрать из core.game
     },
     card() {
       if (this.cardData) {
