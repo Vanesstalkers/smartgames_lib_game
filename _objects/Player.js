@@ -31,7 +31,7 @@
       preparedData = {};
       for (const [key, value] of Object.entries(data)) {
         if (bFields.includes(key)) {
-          if (key === 'eventData' && player !== this) continue;
+          if (key === 'eventData' && player !== this) preparedData[key] = {}; // чтобы на фронте не делать лишние проверки
           preparedData[key] = value;
         }
       }
