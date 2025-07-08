@@ -26,7 +26,7 @@ export default {
     customStyle: {
       type: Object,
       default: () => {
-        return {};
+        return null;
       },
     },
     cardId: String,
@@ -58,9 +58,6 @@ export default {
     game() {
       return this.getGame();
     },
-    sourceGame() {
-      return this.getGame(this.card.sourceGameId);
-    },
     card() {
       if (this.cardData) {
         if (!this.cardData.eventData) this.cardData.eventData = {};
@@ -82,11 +79,30 @@ export default {
       return this.card.eventData.playDisabled || this.actionsDisabled();
     },
     getCustomStyle() {
-      return this.customStyle;
+      if (this.customStyle) return this.customStyle;
+
+      const {
+        state: { serverOrigin },
+        card,
+        game,
+        cardGroup,
+        imgFullPath,
+        imgExt = 'jpg',
+      } = this;
+      const rootPath = `${serverOrigin}/img/cards/${game.templates.card}`;
+      const { group, name } = card;
+
+      const cardPath = [cardGroup || group, name || 'back-side'].filter((s) => s).join('/');
+      const path = imgFullPath || `${rootPath}/${cardPath}.${imgExt}` || `empty-card.${imgExt}`;
+
+      return {
+        backgroundImage: `url(${path})`,
+      };
     },
   },
   methods: {
     async callPlayCard() {
+      console.log('callPlayCard this.preventDoubleClick=', this.preventDoubleClick);
       if (this.preventDoubleClick) return;
       this.preventDoubleClick = true;
 
@@ -108,7 +124,7 @@ export default {
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;
     },
     showInfo(name) {
-      this.$set(this.$root.state, 'shownCard', this.customStyle);
+      this.$set(this.$root.state, 'shownCard', this.getCustomStyle);
     },
   },
   mounted() { },
