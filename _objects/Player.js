@@ -50,15 +50,6 @@
     const idx = players.indexOf(this);
     return players[(idx + 1) % players.length];
   }
-  skipRoundCheck() {
-    const endRoundEvent = this.findEvent({ skipRound: true });
-    if (endRoundEvent) {
-      this.game().logs(`Игрок ${this.userName} пропускает ход`);
-      endRoundEvent.destroy();
-      return true;
-    }
-    return false;
-  }
   returnTableCardsToHand() {
     for (const deck of this.select({ className: 'Deck', attr: { placement: 'table' } })) {
       const cards = deck.select('Card');
@@ -86,7 +77,7 @@
     }
   }
   deactivate() {
-    this.set({ active: false, eventData: { actionsDisabled: null } });
+    this.set({ active: false, eventData: { actionsDisabled: true } });
   }
 
   updateUser(data = {}) {

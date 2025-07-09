@@ -11,6 +11,19 @@
         bigControls: true,
         buttons: [
           { text: 'Спасибо, ничего не нужно', action: 'exit', exit: true },
+          {
+            text: 'Восстановить игру',
+            action: {
+              text: 'Какой раунд игры восстановить?',
+              pos: 'bottom-left',
+              html: tutorialActions.restoreForced.html,
+              buttons: [
+                { text: 'Назад в меню', action: 'init' },
+                { text: 'Выполнить', action: tutorialActions.restoreForced.api },
+              ],
+            },
+          },
+          { text: 'Выйти из игры', action: tutorialActions.leaveGame },
         ],
       }" />
     </slot>
@@ -104,6 +117,28 @@ export default {
       gamePlaneScaleMin: this.planeScaleMin || 0.3,
       gamePlaneScaleMax: this.planeScaleMax || 1.0,
       planeScaleNeedUpdated: 0,
+      tutorialActions: {
+        restoreForced: {
+          html: (game) => `
+            <div v-if="menu.input" class="input">
+              <input value="${game.round}" placeholder="${game.round}" name="restoreForcedInput" type="number" min="1" max="${game.round}" />
+            </div>
+          `,
+          api: async function () {
+            await api.action
+              .call({
+                path: 'game.api.restoreForced',
+                args: [{ round: this.inputData['restoreForcedInput'] }],
+              })
+              .catch(prettyAlert);
+          }
+        },
+        leaveGame: async () => {
+          await api.action
+            .call({ path: 'game.api.leave', args: [] })
+            .catch(prettyAlert);
+        }
+      }
     };
   },
   setup: function () {
