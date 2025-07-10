@@ -673,4 +673,42 @@
       }
       this.set({ timerOverdueCounter });
     }
+    prepareRoundObject(obj = {}) {
+      if (!this.rounds) this.rounds = {};
+
+      const GAME_SYMBOL = Symbol('_game');
+      obj[GAME_SYMBOL] = this;
+      if (!obj._data) obj._data = {};
+
+      return this.rounds[this.round] = new Proxy(obj, {
+        set(target, prop, value) {
+          if (prop === '_data' || prop === GAME_SYMBOL) return false;
+
+          const id = value?.id?.();
+
+          if (id) {
+            target._data[prop] = id;
+          } else {
+            target[prop] = value;
+            delete target._data[prop];
+          }
+
+          return true;
+        },
+
+        get(target, prop) {
+          const data = target._data;
+          return prop in data ? target[GAME_SYMBOL].get(data[prop]) : target[prop];
+        },
+
+        deleteProperty(target, prop) {
+          if (prop === '_data' || prop === GAME_SYMBOL) return false;
+
+          if (prop in target._data) delete target._data[prop];
+          if (prop in target) delete target[prop];
+
+          return true;
+        }
+      });
+    }
   };
