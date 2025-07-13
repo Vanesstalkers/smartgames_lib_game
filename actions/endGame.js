@@ -20,11 +20,16 @@
         ? 'lose'
         : 'cancel'
       : this.winUserId // у игры есть победитель
-        ? userId === this.winUserId
-          ? 'win'
-          : 'lose'
-        : 'lose'; // игра закончилась автоматически
-    player.set({ endGameStatus });
+      ? userId === this.winUserId
+        ? 'win'
+        : 'lose'
+      : 'lose'; // игра закончилась автоматически
+
+    player.set({
+      endGameStatus,
+      eventData: { playDisabled: null, controlBtn: { label: 'Выйти из игры', leaveGame: true } },
+    });
+
     playerEndGameStatus[userId] = endGameStatus;
   }
 
