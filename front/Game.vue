@@ -5,14 +5,9 @@
     state.isLandscape ? 'landscape-view' : 'portrait-view',
     gameState.viewerMode ? 'viewer-mode' : '',
   ]" @wheel.prevent="zoomGamePlane">
-    <slot name="helper-guru">
-      <tutorial :game="game" class="scroll-off" :defaultMenu="{
-        text: `Чем могу помочь, ${userData.name || userData.login}?`,
-        bigControls: true,
-        buttons: [
-          { text: 'Спасибо, ничего не нужно', action: 'exit', exit: true },
-        ],
-      }" />
+    <slot name="helper-guru" :menuWrapper="menuWrapper" :menuButtonsMap="menuButtonsMap">
+      <tutorial :game="game" class="scroll-off"
+        :customMenu="menuWrapper({ buttons: Object.values(menuButtonsMap()).map(button => button()) })" />
     </slot>
 
     <GUIWrapper :pos="['top', 'left']"
@@ -104,6 +99,28 @@ export default {
       gamePlaneScaleMin: this.planeScaleMin || 0.3,
       gamePlaneScaleMax: this.planeScaleMax || 1.0,
       planeScaleNeedUpdated: 0,
+      tutorialActions: {
+        restoreForced: {
+          html: (game) => `
+            <div v-if="menu.input" class="input">
+              <input value="${game.round}" placeholder="${game.round}" name="restoreForcedInput" type="number" min="1" max="${game.round}" />
+            </div>
+          `,
+          api: async function () {
+            await api.action
+              .call({
+                path: 'game.api.restoreForced',
+                args: [{ round: this.inputData['restoreForcedInput'] }],
+              })
+              .catch(prettyAlert);
+          }
+        },
+        leaveGame: async () => {
+          await api.action
+            .call({ path: 'game.api.leave', args: [] })
+            .catch(prettyAlert);
+        }
+      }
     };
   },
   setup: function () {
@@ -186,6 +203,64 @@ export default {
     },
   },
   methods: {
+    menuWrapper({ buttons }) {
+      return {
+        text: `Чем могу помочь, ${this.userData.name || this.userData.login}?`,
+        bigControls: true,
+        buttons
+      };
+    },
+    menuButtonsMap() {
+      const { restoreForced, leaveGame } = this.tutorialActions;
+
+      return {
+        cancel: () => ({ text: 'Спасибо, ничего не нужно', action: 'exit', exit: true }),
+        restore: () => ({
+          text: 'Восстановить игру',
+          action: {
+            text: 'Какой раунд игры восстановить?',
+            pos: 'bottom-left',
+            html: restoreForced.html,
+            buttons: [
+              { text: 'Назад в меню', action: 'init' },
+              { text: 'Выполнить', action: restoreForced.api },
+            ],
+          },
+        }),
+        tutorials: ({ showList = [] } = {}) => ({
+          text: 'Покажи доступные обучения',
+          action: {
+            text: showList.length ? 'Нажмите на нужное обучение в списке, чтобы запустить его повторно:' : 'Нет доступных обучений',
+            showList,
+            buttons: [
+              { text: 'Назад в меню', action: 'init' },
+              { text: 'Спасибо', action: 'exit', exit: true },
+            ],
+          },
+        }),
+        helperLinks: () => ({
+          text: 'Активировать подсказки', action: async function () {
+            await api.action
+              .call({
+                path: 'helper.api.restoreLinks',
+                args: [{ inGame: true }],
+              })
+              .then(() => {
+                this.menu = null;
+                {
+                  // перерисовываем helper-а, чтобы отобразились подсказки
+                  this.resetFlag = true;
+                  setTimeout(() => {
+                    this.resetFlag = false;
+                  }, 100);
+                }
+              })
+              .catch(prettyAlert);
+          }
+        }),
+        leave: () => ({ text: 'Выйти из игры', action: leaveGame }),
+      };
+    },
     updatePlaneScale() {
       this.state.gamePlaneNeedUpdate = false;
       if (this.$el instanceof HTMLElement) {
