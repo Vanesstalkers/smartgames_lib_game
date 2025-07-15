@@ -13,6 +13,11 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
   });
 
   const gameCustom = reactive({
+    selectedCard: '',
+    gamePlaneTranslateX: 0,
+    gamePlaneTranslateY: 0,
+    gamePlaneRotation: 0,
+    gamePlaneTransformOrigin: {},
     ...gameCustomArgs,
   });
 
@@ -40,8 +45,8 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
   function resetPlanePosition() {
     // если this.getGamePlaneOffsets вызывать не через this, то потеряется ссылка на this.$root
     const { x, y } = this.getGamePlaneOffsets();
-    gameCustom.gamePlaneTranslateX = -1 * x;
-    gameCustom.gamePlaneTranslateY = -1 * y;
+    this.gameCustom.gamePlaneTranslateX = -1 * x;
+    this.gameCustom.gamePlaneTranslateY = -1 * y;
   }
   function updateGamePlaneTranslate({ x, y }) {
     this.resetPlanePosition();
@@ -92,7 +97,7 @@ function prepareGameGlobals({ gameCustomArgs = {} } = {}) {
     sessionPlayer,
     sessionPlayerIsActive,
     actionsDisabled() {
-      return this.sessionPlayer().eventData?.actionsDisabled;
+      return this.sessionPlayer().eventData?.actionsDisabled; // например пропуск хода
     },
     logItems,
   };
