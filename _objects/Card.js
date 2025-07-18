@@ -44,11 +44,28 @@
 
   play({ player, logMsg } = {}) {
     if (this.played) return;
-    this.game().logs({ msg: logMsg || `Разыграна карта "<a>${this.title}</a>"`, userId: player.userId, });
+    if (!this.getEvent(this.name)) return;
+
+    this.game().logs({ msg: logMsg || `Разыграна карта "<a>${this.title}</a>"`, userId: player.userId });
 
     const event = this.initEvent(this.name, { game: player.game(), player, allowedPlayers: [player] });
+
     if (event) event.name = this.title;
     if (event !== null && player) player.addEvent(event);
+
     this.set({ played: Date.now() });
+  }
+
+  returnToHand({ player }) {
+    const deck = player.decks[this.group];
+    if (deck) this.moveToTarget(deck);
+
+    this.set({
+      ...{ visible: null, played: null },
+      eventData: {
+        ...{ canReturn: null, playDisabled: null, cardClass: null, restoreState: null },
+        ...this.eventData.restoreState,
+      },
+    });
   }
 });
