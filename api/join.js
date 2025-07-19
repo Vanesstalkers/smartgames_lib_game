@@ -5,7 +5,7 @@ async (context, { gameId, viewerMode = false, ...args }) => {
   const user = session.user();
   if (user.gameId && user.gameId !== gameId) {
     lib.store.broadcaster.publishAction.call(session, `user-${userId}`, 'broadcastToSessions', {
-      data: { message: 'Уже подключен к другой игре. Повторите попытку подключения.' },
+      data: { message: 'Уже подключен к другой игре. Требуется повторить попытку подключения.' },
     });
     return { status: 'error', logout: true };
   }
