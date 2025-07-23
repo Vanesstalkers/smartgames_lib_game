@@ -14,7 +14,16 @@
       ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper'],
     ]);
 
-    const { userId, userName, eventData = {}, avatarCode, avatarsMap = {}, active, timerEndTime, timerUpdateTime } = data;
+    const {
+      userId,
+      userName,
+      eventData = {},
+      avatarCode,
+      avatarsMap = {},
+      active,
+      timerEndTime,
+      timerUpdateTime,
+    } = data;
     this.set({
       ready: false, // при восстановлении игры нужна повторная обработка initPlayerWaitEvents
       ...{ userId, userName, eventData, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
@@ -31,8 +40,9 @@
       preparedData = {};
       for (const [key, value] of Object.entries(data)) {
         if (bFields.includes(key)) {
-          if (key === 'eventData' && player !== this) preparedData[key] = {}; // чтобы на фронте не делать лишние проверки
-          preparedData[key] = value;
+          if (key === 'eventData' && player !== this)
+            preparedData[key] = {}; // чтобы на фронте не делать лишние проверки
+          else preparedData[key] = value;
         }
       }
     }
@@ -50,40 +60,24 @@
     const idx = players.indexOf(this);
     return players[(idx + 1) % players.length];
   }
-  skipRoundCheck() {
-    const endRoundEvent = this.findEvent({ skipRound: true });
-    if (endRoundEvent) {
-      this.game().logs(`Игрок ${this.userName} пропускает ход`);
-      endRoundEvent.destroy();
-      return true;
-    }
-    return false;
-  }
   returnTableCardsToHand() {
     for (const deck of this.select({ className: 'Deck', attr: { placement: 'table' } })) {
       const cards = deck.select('Card');
       for (const card of cards) {
-        for (const event of card.eventData.activeEvents) event.emit('TRIGGER');
+        if (card.eventData.canReturn) card.returnToHand({ player: this });
       }
     }
   }
   triggerEventEnabled({ ignoreEvents = [] } = {}) {
-    return this.#eventWithTriggerListener !== null && !ignoreEvents.includes(this.#eventWithTriggerListener.name)
-      ? this.#eventWithTriggerListener : false;
+    const ignore = ignoreEvents.includes(this.#eventWithTriggerListener.name);
+    const enabled = this.#eventWithTriggerListener !== null && !ignore;
+    return enabled ? this.#eventWithTriggerListener : false;
   }
 
-  activate({ setData, publishText } = {}) {
+  activate({ setData, notifyUser } = {}) {
     this.set({ active: true });
     if (setData) this.set(setData);
-    if (publishText) {
-      lib.store.broadcaster.publishData.call(this.game(), `gameuser-${this.userId}`, {
-        helper: {
-          text: publishText,
-          pos: { desktop: 'top-left', mobile: 'top-left' },
-          hideTime: 5000,
-        },
-      });
-    }
+    if (notifyUser) this.notifyUser(notifyUser);
   }
   deactivate() {
     this.set({ active: false, eventData: { actionsDisabled: null } });
@@ -95,7 +89,8 @@
   notifyUser(data = {}, config = {}) {
     if (typeof data === 'string') data = { message: data };
     lib.store.broadcaster.publishAction.call(this.game(), `gameuser-${this.userId}`, 'broadcastToSessions', {
-      data, config,
+      data,
+      config,
     });
   }
 

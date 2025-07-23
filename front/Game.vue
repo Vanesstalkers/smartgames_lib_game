@@ -84,37 +84,28 @@ export default {
   props: {
     planeScaleMin: Number,
     planeScaleMax: Number,
+    defaultScaleMinVisibleWidth: Number,
     debug: {
       type: Boolean,
       default: false,
     },
   },
   data() {
+
+    const gamePlaneScaleMax = this.planeScaleMax || 1.0;
+    const gamePlaneScale = Math.min(window.innerWidth / this.defaultScaleMinVisibleWidth, gamePlaneScaleMax);
+    const gamePlaneScaleMin = Math.min(this.planeScaleMin || 0.3, gamePlaneScale);
+
     return {
       showChat: false,
       unreadMessages: 0,
       showLog: false,
       gamePlaneCustomStyleData: {},
-      gamePlaneScale: 1,
-      gamePlaneScaleMin: this.planeScaleMin || 0.3,
-      gamePlaneScaleMax: this.planeScaleMax || 1.0,
+      gamePlaneScale,
+      gamePlaneScaleMin,
+      gamePlaneScaleMax,
       planeScaleNeedUpdated: 0,
       tutorialActions: {
-        restoreForced: {
-          html: (game) => `
-            <div v-if="menu.input" class="input">
-              <input value="${game.round}" placeholder="${game.round}" name="restoreForcedInput" type="number" min="1" max="${game.round}" />
-            </div>
-          `,
-          api: async function () {
-            await api.action
-              .call({
-                path: 'game.api.restoreForced',
-                args: [{ round: this.inputData['restoreForcedInput'] }],
-              })
-              .catch(prettyAlert);
-          }
-        },
         leaveGame: async () => {
           await api.action
             .call({ path: 'game.api.leave', args: [] })
@@ -211,26 +202,17 @@ export default {
       };
     },
     menuButtonsMap() {
-      const { restoreForced, leaveGame } = this.tutorialActions;
+      const { leaveGame } = this.tutorialActions;
 
       return {
         cancel: () => ({ text: 'Спасибо, ничего не нужно', action: 'exit', exit: true }),
         restore: () => ({
-          text: 'Восстановить игру',
-          action: {
-            text: 'Какой раунд игры восстановить?',
-            pos: 'bottom-left',
-            html: restoreForced.html,
-            buttons: [
-              { text: 'Назад в меню', action: 'init' },
-              { text: 'Выполнить', action: restoreForced.api },
-            ],
-          },
+          text: 'Восстановить игру', action: { tutorial: 'game-tutorial-restoreForced' }
         }),
         tutorials: ({ showList = [] } = {}) => ({
           text: 'Покажи доступные обучения',
           action: {
-            text: showList.length ? 'Нажмите на нужное обучение в списке, чтобы запустить его повторно:' : 'Нет доступных обучений',
+            text: showList.length ? 'Нажми на нужное обучение в списке, чтобы запустить его повторно:' : 'Нет доступных обучений',
             showList,
             buttons: [
               { text: 'Назад в меню', action: 'init' },

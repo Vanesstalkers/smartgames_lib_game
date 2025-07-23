@@ -87,7 +87,7 @@
           //
           items: { [gameConfig]: settings },
         } = {},
-      } = domain.game.configs.gamesFilled();
+      } = lib.game.actions.getFilledGamesConfigs();
 
       if (!settings)
         throw new Error(
@@ -95,6 +95,7 @@
         );
 
       const gameData = {
+        newGame: true,
         settings: clone(settings),
         addTime: Date.now(),
         ...{ deckType, gameType, gameConfig, gameTimer, templates },
@@ -113,7 +114,7 @@
       return this;
     }
     restart() {
-      this.set({ status: 'IN_PROCESS', statusLabel: `Раунд ${this.round}`, addTime: Date.now() });
+      this.set({ status: 'IN_PROCESS' });
       this.run('initGameProcessEvents');
       lib.timers.timerRestart(this, this.lastRoundTimerConfig);
     }
@@ -153,7 +154,7 @@
               const userName = name || login;
 
               const player = this.getPlayerByUserId(userId);
-              if (player) player.set({ userName, avatarCode }) // мог быть удален
+              if (player) player.set({ userName, avatarCode }); // мог быть удален
 
               userMap[userId] = { userName, avatarCode };
             }
@@ -220,7 +221,7 @@
     }
     toggleEventHandlers(handler, data = {}, initPlayer) {
       if (!this.eventListeners[handler]) return;
-      const eventPlayers = this.eventListeners[handler].map(e => e.player()).filter(_ => _);
+      const eventPlayers = this.eventListeners[handler].map((e) => e.player()).filter((_) => _);
 
       if (!initPlayer) initPlayer = this.roundActivePlayer();
       if (!initPlayer && !eventPlayers.length) return; // ожидание игрока и генерация стартового поля
@@ -232,7 +233,9 @@
         const player = initPlayer || event.player();
         const playerAccessAllowed = event.checkAccess(player);
         if (!playerAccessAllowed) {
-          console.error(`Not playerAccessAllowed for user "${player?.code}" to handler "${handler}"`);
+          console.error(
+            `Not playerAccessAllowed for user "${player?.code}" to handler "${handler}" in "${event.name}" event.`
+          );
           result.push({ error: 'access_not_allowed' });
           continue;
         }
@@ -280,7 +283,7 @@
     async showLogs({ userId, sessionId, lastItemTime }) {
       let logs = this.logs();
       if (lastItemTime) {
-        logs = Object.fromEntries(Object.entries(logs).filter(([{ }, { time }]) => time > lastItemTime));
+        logs = Object.fromEntries(Object.entries(logs).filter(([{}, { time }]) => time > lastItemTime));
       }
       await this.broadcastData({ logs }, { customChannel: `session-${sessionId}` });
     }
@@ -334,7 +337,8 @@
 
         const { Viewer: viewerClass } = this.defaultClasses();
         const viewer = new viewerClass({ _id: viewerId, userId }, { parent: this });
-        viewer.set({ userId, userName });
+        viewer.set({ userId, userName, eventData: { controlBtn: { label: 'Выйти из игры', leaveGame: true } } });
+
         this.logs({ msg: `Наблюдатель присоединился к игре.` });
 
         await this.saveChanges();
@@ -396,7 +400,8 @@
 
       if (roundActivePlayer?.eventData?.extraTurn) {
         roundActivePlayer.set({ eventData: { extraTurn: null } });
-        if (roundActivePlayer.eventData.skipTurn ||
+        if (
+          roundActivePlayer.eventData.skipTurn ||
           roundActivePlayer.ready !== true // игрок мог выйти
         ) {
           // актуально только для событий в течение хода игрока, инициированных не им самим
@@ -410,7 +415,7 @@
         }
       }
 
-      const playerList = this.players().filter(p => p.ready);
+      const playerList = this.players().filter((p) => p.ready);
       const activePlayerIndex = playerList.findIndex((player) => player === roundActivePlayer);
       const newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
       this.roundActivePlayer(newActivePlayer);
@@ -448,10 +453,14 @@
     getActivePlayers() {
       return this.players().filter((player) => player.active);
     }
-    activatePlayers({ publishText, setData, disableSkipRoundCheck = false }) {
+    activatePlayers({ notifyUser, setData, disableSkipTurnCheck = false }) {
       for (const player of this.players()) {
-        if (!disableSkipRoundCheck && player.skipRoundCheck()) continue;
-        player.activate({ setData, publishText });
+        if (!disableSkipTurnCheck && player.eventData.skipTurn) {
+          this.logs({ msg: `Игрок {{player}} пропускает ход.`, userId: player.userId });
+          player.set({ eventData: { skipTurn: null } });
+          continue;
+        }
+        player.activate({ setData, notifyUser });
       }
     }
     checkAllPlayersFinishRound() {
@@ -582,8 +591,8 @@
       const { userId, viewerMode } = accessConfig;
       const storeData = data.store
         ? {
-          store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }),
-        }
+            store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }),
+          }
         : {};
       return { ...data, ...storeData };
     }
@@ -627,7 +636,7 @@
           if (!player.timerEndTime) continue; // сюда попадут "потерянные tick-и" при завершении игры и восстановлении игры
 
           if (player.timerEndTime < Date.now()) {
-            this.toggleEventHandlers('PLAYER_TIMER_END');
+            this.toggleEventHandlers('PLAYER_TIMER_END', {}, player);
             await this.saveChanges();
           }
         }
@@ -680,7 +689,7 @@
       obj[GAME_SYMBOL] = this;
       if (!obj._data) obj._data = {};
 
-      return this.rounds[this.round] = new Proxy(obj, {
+      return (this.rounds[this.round] = new Proxy(obj, {
         set(target, prop, value) {
           if (prop === '_data' || prop === GAME_SYMBOL) return false;
 
@@ -708,7 +717,7 @@
           if (prop in target) delete target[prop];
 
           return true;
-        }
-      });
+        },
+      }));
     }
   };

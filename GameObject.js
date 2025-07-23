@@ -300,7 +300,6 @@
       }
     }
 
-    // в init(...) могут понадобиться обработчики (например, NO_AVAILABLE_PORTS)
     if (event.init) {
       const { resetEvent } = event.init() || {};
       if (resetEvent) {
