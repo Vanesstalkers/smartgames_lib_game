@@ -17,11 +17,8 @@
         <div :class="['chat', 'gui-btn', showChat ? 'active' : '', unreadMessages ? 'unread-messages' : '']"
           v-on:click="toggleChat" />
         <div :class="['log', 'gui-btn', showLog ? 'active' : '']" v-on:click="toggleLog" />
-        <div :class="['move', 'gui-btn']" v-on:click="
-          resetPlanePosition();
-        resetMouseEventsConfig();
-        updatePlaneScale();
-        " />
+        <div :class="['move', 'gui-btn']"
+          v-on:click="resetPlanePosition(); resetMouseEventsConfig(); updatePlaneScale()" />
       </div>
     </GUIWrapper>
 
