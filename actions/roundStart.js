@@ -18,12 +18,12 @@
   // обновляем логи
   for (const logEvent of newRoundLogEvents) this.logs(logEvent);
   this.set({ statusLabel: statusLabel || `Раунд ${newRoundNumber}`, round: newRoundNumber, roundStep });
-  
+
   if (forcedEndRound) return this.run('roundEnd');
 
   this.set({ roundStepsMap: { [roundStep]: true } }); // !!! переделать на {[newRoundNumber]: { [roundStep]: true }} (+ не забыть фронт)
   this.dumpState(); // вся структура roundEnd/roundStart/roundSteps сделана ради этой строчки
-  
+
   const timerConfig = timerRestart === true ? this.lastRoundTimerConfig : timerRestart;
   lib.timers.timerRestart(this, timerConfig);
 });

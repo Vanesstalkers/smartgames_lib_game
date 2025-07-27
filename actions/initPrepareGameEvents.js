@@ -10,10 +10,7 @@
           return { resetEvent: true };
         }
 
-        game.set({ statusLabel: 'Ожидание готовности игроков', status: 'PREPARE_START' });
         this.waitForPlayersReady = game.players().map((player) => {
-          lib.timers.timerRestart(game, { time: 30 });
-
           player.set({
             staticHelper: { text: `Для начала игры нажми кнопку "Готов" и\r\nожидай остальных игроков` },
             eventData: { playDisabled: null, controlBtn: { label: 'Готов', triggerEvent: true } },
@@ -21,17 +18,17 @@
 
           return player.id();
         });
+
+        game.set({ statusLabel: 'Ожидание готовности игроков', status: 'PREPARE_START' });
+        lib.timers.timerRestart(game, { time: 30 });
+
+        for (const player of game.players({ ai: true })) this.utils.setPlayerReady.call(this, player);
       },
       handlers: {
         TRIGGER({ initPlayer }) {
           const { game } = this.eventContext();
 
-          initPlayer.set(
-            { timerEndTime: null, staticHelper: null, eventData: { controlBtn: null } },
-            { reset: ['eventData.controlBtn'] }
-          );
-
-          this.waitForPlayersReady = this.waitForPlayersReady.filter((playerId) => playerId !== initPlayer.id());
+          this.utils.setPlayerReady.call(this, initPlayer);
           if (this.waitForPlayersReady.length > 0) return { preventListenerRemove: true };
 
           lib.timers.timerDelete(game);
@@ -55,6 +52,16 @@
           }
 
           this.destroy();
+        },
+      },
+      utils: {
+        setPlayerReady(player) {
+          player.set(
+            { timerEndTime: null, staticHelper: null, eventData: { controlBtn: null } },
+            { reset: ['eventData.controlBtn'] }
+          );
+
+          this.waitForPlayersReady = this.waitForPlayersReady.filter((playerId) => playerId !== player.id());
         },
       },
     },

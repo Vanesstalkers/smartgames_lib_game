@@ -80,7 +80,10 @@
       return super.select(query);
     }
 
-    async create({ deckType, gameType, gameConfig, gameTimer, templates } = {}, { initPlayerWaitEvents = true } = {}) {
+    async create(
+      { deckType, gameType, gameConfig, gameTimer, difficulty, templates } = {},
+      { initPlayerWaitEvents = true } = {}
+    ) {
       const { structuredClone: clone } = lib.utils;
       const {
         [gameType]: {
@@ -98,7 +101,7 @@
         newGame: true,
         settings: clone(settings),
         addTime: Date.now(),
-        ...{ deckType, gameType, gameConfig, gameTimer, templates },
+        ...{ deckType, gameType, gameConfig, gameTimer, difficulty, templates },
       };
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
@@ -292,9 +295,11 @@
       return this.settings.singlePlayer;
     }
 
-    players() {
+    players({ ai = false } = {}) {
       const store = this.getStore();
-      return Object.keys(this.playerMap).map((_id) => store.player[_id]);
+      const result = Object.keys(this.playerMap).map((_id) => store.player[_id]);
+      if (ai) return result.filter((player) => player.ai);
+      return result;
     }
     getPlayerByUserId(id) {
       return this.players().find((player) => player.userId === id);
@@ -314,6 +319,14 @@
 
         // инициатором события был установлен первый player в списке, который совпадает с активным игроком на старте игры
         this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
+
+        if (this.gameConfig === 'ai') {
+          const player = this.getFreePlayerSlot();
+          player.set({ ai: true, aiActions: [], ready: true, userId: 'fake', userName: 'fakeName', avatarCode: 'fakeAvatar' });
+          this.logs({ msg: `Игрок-компьютер {{player}} присоединился к игре.`, userId: 'fake' });
+          this.toggleEventHandlers('PLAYER_JOIN', { targetId: player.id() }, player);
+        }
+
         await this.saveChanges();
 
         lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'joinGame', {

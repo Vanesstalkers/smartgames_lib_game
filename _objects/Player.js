@@ -15,6 +15,8 @@
     ]);
 
     const {
+      ai,
+      aiActions,
       userId,
       userName,
       eventData = {},
@@ -27,6 +29,7 @@
     this.set({
       ready: false, // при восстановлении игры нужна повторная обработка initPlayerWaitEvents
       ...{ userId, userName, eventData, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
+      ...(ai ? { ai, aiActions } : {}),
     });
   }
 
