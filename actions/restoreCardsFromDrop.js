@@ -4,8 +4,7 @@
 
   if (!deck || !deckDrop) throw new Error('Не найдены колоды для восстановления карт');
 
-  let playedCards = deckDrop.select('Card');
-  if (deck.cardGroups) playedCards = playedCards.filter(({ group }) => deck.cardGroups.includes(group));
+  const playedCards = deckDrop.select('Card');
 
   for (const card of playedCards) {
     if (card.restoreAvailable()) card.moveToTarget(deck);
