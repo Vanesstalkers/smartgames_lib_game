@@ -4,6 +4,7 @@
   #game;
   #player;
   #allowedPlayers;
+  #publicHandlers;
   #init;
   #handlers;
   constructor({ init, handlers, ...data }) {
@@ -40,6 +41,10 @@
     if (data) this.#allowedPlayers = data;
     return this.#allowedPlayers;
   }
+  publicHandlers(data) {
+    if (data) this.#publicHandlers = data;
+    return this.#publicHandlers;
+  }
   set(val, config = {}) {
     lib.utils.mergeDeep({
       masterObj: this,
@@ -52,8 +57,10 @@
     return this.#source.title || this.#source.name || this.#source.code;
   }
 
-  checkAccess(player) {
-    return this.#player === player || this.#allowedPlayers.includes(player);
+  checkAccess(player, { handler }) {
+    if (this.#publicHandlers.includes(handler)) return true;
+    if (this.#player === player || this.#allowedPlayers.includes(player)) return true;
+    return false;
   }
   eventContext() {
     return {

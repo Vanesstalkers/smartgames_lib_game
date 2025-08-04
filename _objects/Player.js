@@ -82,8 +82,10 @@
     if (setData) this.set(setData);
     if (notifyUser) this.notifyUser(notifyUser);
   }
-  deactivate() {
+  deactivate({ setData = {}, notifyUser } = {}) {
     this.set({ active: false, eventData: { actionsDisabled: null } });
+    if (setData) this.set(setData);
+    if (notifyUser) this.notifyUser(notifyUser);
   }
 
   updateUser(data = {}) {

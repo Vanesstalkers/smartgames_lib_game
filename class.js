@@ -234,7 +234,7 @@
         if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
 
         const player = initPlayer || event.player();
-        const playerAccessAllowed = event.checkAccess(player);
+        const playerAccessAllowed = event.checkAccess(player, { handler });
         if (!playerAccessAllowed) {
           console.error(
             `Not playerAccessAllowed for user "${player?.code}" to handler "${handler}" in "${event.name}" event.`
@@ -295,14 +295,14 @@
       return this.settings.singlePlayer;
     }
 
-    players({ ai = false } = {}) {
+    players({ ai = false, readyOnly = true } = {}) {
       const store = this.getStore();
       const result = Object.keys(this.playerMap).map((_id) => store.player[_id]);
       if (ai) return result.filter((player) => player.ai);
-      return result;
+      return readyOnly ? result.filter((player) => player.ready) : result;
     }
     getPlayerByUserId(id) {
-      return this.players().find((player) => player.userId === id);
+      return this.players({ readyOnly: false }).find((player) => player.userId === id);
     }
 
     async playerJoin({ playerId, userId, userName, userAvatar }) {
@@ -314,7 +314,7 @@
         const gameId = this.id();
         playerId = player.id();
 
-        player.set({ ready: true, userId, userName, avatarCode: userAvatar });
+        player.set({ userId, userName, avatarCode: userAvatar });
         this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
 
         // инициатором события был установлен первый player в списке, который совпадает с активным игроком на старте игры
@@ -322,7 +322,14 @@
 
         if (this.gameConfig === 'ai') {
           const player = this.getFreePlayerSlot();
-          player.set({ ai: true, aiActions: [], ready: true, userId: 'fake', userName: 'fakeName', avatarCode: 'fakeAvatar' });
+          player.set({
+            ai: true,
+            aiActions: [],
+            ready: true,
+            userId: 'fake',
+            userName: 'fakeName',
+            avatarCode: 'fakeAvatar',
+          });
           this.logs({ msg: `Игрок-компьютер {{player}} присоединился к игре.`, userId: 'fake' });
           this.toggleEventHandlers('PLAYER_JOIN', { targetId: player.id() }, player);
         }
@@ -428,7 +435,7 @@
         }
       }
 
-      const playerList = this.players().filter((p) => p.ready);
+      const playerList = this.players();
       const activePlayerIndex = playerList.findIndex((player) => player === roundActivePlayer);
       const newActivePlayer = playerList[(activePlayerIndex + 1) % playerList.length];
       this.roundActivePlayer(newActivePlayer);
@@ -458,13 +465,13 @@
       this.logs({ msg: `Игрок {{player}} победил в игре.`, userId: player.userId });
     }
     getFreePlayerSlot() {
-      return this.players().find((player) => !player.ready);
+      return this.players({ readyOnly: false }).find((player) => !player.userId);
     }
     getActivePlayer() {
-      return this.players().find((player) => player.active);
+      return this.players({ readyOnly: false }).find((player) => player.active);
     }
     getActivePlayers() {
-      return this.players().filter((player) => player.active);
+      return this.players({ readyOnly: false }).filter((player) => player.active);
     }
     activatePlayers({ notifyUser, setData, disableSkipTurnCheck = false }) {
       for (const player of this.players()) {

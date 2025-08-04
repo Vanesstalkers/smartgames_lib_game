@@ -266,7 +266,7 @@
     if (!event) return null;
     return event();
   }
-  initEvent(eventData, { game, player, allowedPlayers = [] } = {}) {
+  initEvent(eventData, { game, player, allowedPlayers = [], publicHandlers = [] } = {}) {
     if (typeof eventData === 'string') {
       const eventName = eventData;
       eventData = this.getEvent(eventName);
@@ -282,6 +282,7 @@
     event.game(game);
     event.player(player);
     event.allowedPlayers(allowedPlayers);
+    event.publicHandlers(publicHandlers);
 
     this.addEvent(event);
 
