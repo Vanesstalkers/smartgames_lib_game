@@ -13,7 +13,7 @@
   if (winningPlayer) this.setWinner({ player: winningPlayer });
 
   const playerEndGameStatus = {};
-  for (const player of this.players()) {
+  for (const player of this.players({ readyOnly: false })) {
     const { userId } = player;
     const endGameStatus = canceledByUser
       ? userId === canceledByUser

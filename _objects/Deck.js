@@ -204,10 +204,15 @@
     }
   }
   moveRandomItems({ count, target }) {
+    const items = [];
     for (let i = 0; i < count; i++) {
       const item = this.getRandomItem();
-      if (item) item.moveToTarget(target);
+      if (item) {
+        item.moveToTarget(target);
+        items.push(item);
+      }
     }
+    return items;
   }
   getAllItems() {
     return this.select(this.getItemClass().name);
