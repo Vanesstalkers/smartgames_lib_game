@@ -41,7 +41,7 @@
       if (!this.isGame() && newObject) {
         this.markNew({
           saveToDB: true,
-          changes: { masterObject: {} } // без этого объекты, созданные в ходе игры, попадут на фронт не целиком 
+          changes: { masterObject: {} }, // без этого объекты, созданные в ходе игры, попадут на фронт не целиком
         });
       }
     }
@@ -274,6 +274,7 @@
     }
     if (!eventData) throw new Error(`event not found (event=${eventName})`);
 
+    if (this.matches({ className: 'Player' })) player = this;
     if (!game) game = this.isGame() ? this : this.game();
 
     let event = new lib.game.GameEvent(eventData);
@@ -334,6 +335,6 @@
    * @returns {boolean} true если есть активное событие замены костяшек
    */
   hasDiceReplacementEvent() {
-    return this.eventData.activeEvents.some(event => event.name === 'diceReplacementEvent');
+    return this.eventData.activeEvents.some((event) => event.name === 'diceReplacementEvent');
   }
 });
