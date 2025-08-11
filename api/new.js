@@ -17,6 +17,12 @@ async (
     });
     const gameId = game.id();
 
+    // const g = new lib.game.class();
+    // const p = g.players()[0];
+
+    // const gg = new domain.game.class();
+    // const pp = gg.players().list[0];
+
     for (const session of user.sessions()) {
       // на случай повторного вызова api до обработки playerJoin
       // (session.saveChanges будет выполнен в user.joinGame)
