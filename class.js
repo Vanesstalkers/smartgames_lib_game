@@ -709,7 +709,7 @@
       obj[GAME_SYMBOL] = this;
       if (!obj._data) obj._data = {};
 
-      return (this.rounds[this.round] = new Proxy(obj, {
+      const round = new Proxy(obj, {
         set(target, prop, value) {
           if (prop === '_data' || prop === GAME_SYMBOL) return false;
 
@@ -738,6 +738,33 @@
 
           return true;
         },
-      }));
+      });
+
+      Object.defineProperty(round, 'save', {
+        value: () => {
+          const currentValue = lib.utils.structuredClone(round);
+          const previousValue = round._previousValue || {};
+          round._previousValue = currentValue;
+          this.set({ rounds: { [this.round]: round } }, { masterObject: previousValue });
+        },
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
+
+      Object.defineProperty(round, '_previousValue', {
+        value: {},
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      });
+
+      return (this.rounds[this.round] = round);
+    }
+    async saveChanges() {
+      const round = this.rounds[this.round];
+      round.save();
+
+      await super.saveChanges();
     }
   };
