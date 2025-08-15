@@ -171,7 +171,7 @@
     }
   }
   removeAllItems() {
-    for (const item of this.getAllItems()) {
+    for (const item of this.items()) {
       this.removeItem(item);
     }
   }
@@ -194,7 +194,7 @@
     this.#updatedItems[item._id][item.fakeId[this.id()]] = action;
   }
   moveAllItems({ target, setData, emitEvent, markNew, markDelete }) {
-    for (const item of this.getAllItems()) {
+    for (const item of this.items()) {
       if (emitEvent) {
         for (const event of item.eventData.activeEvents) event.emit(emitEvent);
       }
@@ -214,19 +214,19 @@
     }
     return items;
   }
-  getAllItems() {
+  items() {
     return this.select(this.getItemClass().name);
   }
-  items() {
-    return this.getAllItems();
+  getFirstItem() {
+    return this.items()[0];
   }
   getRandomItem({ skipArray = [] } = {}) {
-    const items = this.getAllItems().filter(({ _id }) => !skipArray.includes(_id));
+    const items = this.items().filter(({ _id }) => !skipArray.includes(_id));
     const item = items[Math.floor(Math.random() * items.length)];
     return item;
   }
   updateAllItems(updateData) {
-    for (const item of this.getAllItems()) {
+    for (const item of this.items()) {
       item.set(lib.utils.clone(updateData));
     }
   }

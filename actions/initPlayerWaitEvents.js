@@ -8,6 +8,9 @@
       init() {
         const { game, player } = this.eventContext();
         this.realStatusLabel = game.statusLabel;
+        this.activePlayers = game
+          .getActivePlayers()
+          .map((player) => ({ player, controlBtn: player.eventData.controlBtn }));
         game.set({ statusLabel: 'Ожидание игроков', status: 'WAIT_FOR_PLAYERS' });
       },
       handlers: {
@@ -53,6 +56,10 @@
           }
 
           this.emit('RESET');
+
+          // восстанавливаем активных игроков (ативация сбросилась после нажатия кнопки "Готов")
+          for (const { player, controlBtn } of this.activePlayers)
+            player.activate({ setData: { eventData: { controlBtn } } });
 
           if (game.restorationMode) return game.restart();
 
