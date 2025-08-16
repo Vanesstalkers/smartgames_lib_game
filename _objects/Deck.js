@@ -7,8 +7,8 @@
     super(data, { col: 'deck', parent });
     this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData']);
 
-    const { type, subtype, placement, itemType, settings, access, itemMap } = data;
-    this.set({ type, subtype, placement, itemType, settings, access, itemMap });
+    const { type, subtype, placement, itemType, settings, access, itemMap, parentDeckId } = data;
+    this.set({ type, subtype, placement, itemType, settings, access, itemMap, parentDeckId });
   }
   prepareBroadcastData({ data, player, viewerMode }) {
     let preparedData = {};
@@ -136,6 +136,7 @@
     } else {
       item.setParent(this);
     }
+    if (!item.sourceDeckId) item.set({ sourceDeckId: parentId });
 
     const linkVal = {
       /* addTime: Date.now() */
@@ -193,22 +194,25 @@
     if (!this.#updatedItems[item._id]) this.#updatedItems[item._id] = {};
     this.#updatedItems[item._id][item.fakeId[this.id()]] = action;
   }
-  moveAllItems({ target, setData, emitEvent, markNew, markDelete }) {
+  moveAllItems({ target, setData, emitEvent, markNew, markDelete, toDeck, toDrop }) {
     for (const item of this.items()) {
       if (emitEvent) {
         for (const event of item.eventData.activeEvents) event.emit(emitEvent);
       }
-      if (setData) item.set(setData);
-      item.moveToTarget(target, { markDelete });
+
+      if (toDeck) item.moveToDeck({ setData });
+      else if (toDrop) item.moveToDrop({ setData });
+      else item.moveToTarget(target, { markDelete, setData });
+
       if (markNew) item.markNew();
     }
   }
-  moveRandomItems({ count, target }) {
+  moveRandomItems({ count, target, setData }) {
     const items = [];
     for (let i = 0; i < count; i++) {
       const item = this.getRandomItem();
       if (item) {
-        item.moveToTarget(target);
+        item.moveToTarget(target, { setData });
         items.push(item);
       }
     }
