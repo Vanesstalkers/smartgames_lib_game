@@ -81,7 +81,7 @@
     }
 
     async create(
-      { deckType, gameType, gameConfig, gameTimer, difficulty, templates } = {},
+      { deckType, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame } = {},
       { initPlayerWaitEvents = true } = {}
     ) {
       const { structuredClone: clone } = lib.utils;
@@ -101,7 +101,7 @@
         newGame: true,
         settings: clone(settings),
         addTime: Date.now(),
-        ...{ deckType, gameType, gameConfig, gameTimer, difficulty, templates },
+        ...{ deckType, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame },
       };
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;

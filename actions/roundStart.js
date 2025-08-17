@@ -17,7 +17,8 @@
 
   // обновляем логи
   for (const logEvent of newRoundLogEvents) this.logs(logEvent);
-  this.set({ statusLabel: statusLabel || `Раунд ${newRoundNumber}`, round: newRoundNumber, roundStep });
+  this.set({ statusLabel: statusLabel || `Раунд ${newRoundNumber}`, round: newRoundNumber });
+  if (roundStep) this.set({ roundStep });
 
   if (forcedEndRound) return this.run('roundEnd');
 

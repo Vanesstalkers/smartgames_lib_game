@@ -63,6 +63,11 @@
     const idx = players.indexOf(this);
     return players[(idx + 1) % players.length];
   }
+  prevPlayer() {
+    const players = this.game().players();
+    const idx = players.indexOf(this);
+    return players[(idx - 1 + players.length) % players.length];
+  }
   returnTableCardsToHand() {
     for (const deck of this.select({ className: 'Deck', attr: { placement: 'table' } })) {
       const cards = deck.select('Card');
