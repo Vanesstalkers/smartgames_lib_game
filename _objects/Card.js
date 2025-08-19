@@ -35,6 +35,13 @@
     const currentParent = this.getParent();
     currentParent.removeItem(this); // сначала удаляем
 
+    const fields = this.publicStaticFields();
+    if (setData && fields?.length) {
+      for (const key of fields) {
+        if (setData[key] !== undefined) this.set({ [key]: setData[key] });
+      }
+    }
+
     const moveResult = target.addItem(this);
 
     if (moveResult) {

@@ -1,5 +1,15 @@
 (data) => {
-  const fields = ['round', 'status', 'deckType', 'gameType', 'gameConfig', 'gameTimer', 'playerMap'];
+  const fields = [
+    'round',
+    'status',
+    'deckType',
+    'gameType',
+    'gameConfig',
+    'gameTimer',
+    'playerMap',
+    'maxPlayersInGame',
+    'minPlayersToStart',
+  ];
   const result = {};
 
   for (const field of fields) {

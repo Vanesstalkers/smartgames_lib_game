@@ -143,7 +143,7 @@
     }; // addTime может понадобиться в будущем, если nodejs начнет сортировать ключи в объектах по названию (например, тогда перестанет работать порядок переноса item-ов из одной deck в другую)
     const fields = item.publicStaticFields();
     if (fields?.length) {
-      for (const key of fields) linkVal[key] = item[key];
+      for (const key of fields) if (item[key] !== undefined) linkVal[key] = item[key];
     }
     this.set({ itemMap: { [item._id]: linkVal } });
 

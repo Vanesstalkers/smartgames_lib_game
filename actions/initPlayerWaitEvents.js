@@ -36,7 +36,10 @@
           const { game } = this.eventContext();
 
           player.set(
-            { ready: true, timerEndTime: null, staticHelper: null, eventData: { controlBtn: null } },
+            {
+              money: game.settings.playerStartMoney,
+              ...{ ready: true, timerEndTime: null, staticHelper: null, eventData: { controlBtn: null } },
+            },
             { reset: ['eventData.controlBtn'] }
           );
           player.deactivate();
@@ -45,18 +48,19 @@
           player.removeEvent(this);
           player.removeEventWithTriggerListener();
 
-          if (this.data.readyPlayers.length < game.maxPlayersInGame) return { preventListenerRemove: true };
-
-          for (const player of game.players({ readyOnly: false })) {
-            if (!player.ready) {
-              player.deactivate({
-                notifyUser: 'Игра началась без тебя. Для более удобного просмотра перейди в режим наблюдателя.',
-                setData: { eventData: { controlBtn: { leaveGame: true } } },
-              });
+          if (this.data.readyPlayers.length === game.maxPlayersInGame) {
+            for (const player of game.players({ readyOnly: false })) {
+              if (!player.ready) {
+                player.deactivate({
+                  notifyUser: 'Игра началась без тебя. Для более удобного просмотра перейди в режим наблюдателя.',
+                  setData: { eventData: { controlBtn: { leaveGame: true } } },
+                });
+              }
             }
-          }
 
-          this.emit('RESET');
+            return this.emit('RESET');
+          }
+          if (this.data.readyPlayers.length < game.minPlayersToStart) return { preventListenerRemove: true };
 
           if (game.restorationMode) {
             // восстанавливаем активных игроков (активация сбросилась после нажатия кнопки "Готов")
@@ -66,11 +70,13 @@
             return game.restart();
           }
 
-          try {
-            game.run('initPrepareGameEvents');
-          } catch (err) {
-            // может не быть обработчика
-            game.run('startGame');
+          if (game.status === 'WAIT_FOR_PLAYERS') {
+            try {
+              game.run('initPrepareGameEvents');
+            } catch (err) {
+              // может не быть обработчика
+              game.run('startGame');
+            }
           }
         },
         RESET() {

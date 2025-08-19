@@ -81,7 +81,7 @@
     }
 
     async create(
-      { deckType, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame } = {},
+      { deckType, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame, minPlayersToStart } = {},
       { initPlayerWaitEvents = true } = {}
     ) {
       const { structuredClone: clone } = lib.utils;
@@ -97,11 +97,14 @@
           `Not found initial game data (deckType='${deckType}', gameType='${gameType}', gameConfig='${gameConfig}').`
         );
 
+      maxPlayersInGame = maxPlayersInGame?.val || settings.playerList.length;
+      if (!minPlayersToStart) minPlayersToStart = settings.minPlayersToStart;
+
       const gameData = {
         newGame: true,
         settings: clone(settings),
         addTime: Date.now(),
-        ...{ deckType, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame },
+        ...{ deckType, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame, minPlayersToStart },
       };
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
@@ -171,18 +174,19 @@
       await this.saveChanges();
     }
 
-    /**
-     * Обработчики, вынесенные в отдельные файлы (папка actions)
-     */
     run(actionPath, data, initPlayer) {
       const [actionName, actionDir] = actionPath.split('.').reverse();
 
       let action;
       if (actionDir) {
-        action = lib.game.actions?.[actionName];
-      } else {
-        action = domain.game.actions?.[actionName];
+        if (actionDir === 'domain') action = domain.game.actions?.[actionName];
         if (!action) action = lib.game.actions?.[actionName];
+      } else {
+        action =
+          domain.game.actions[this.gameType]?.[actionName] ||
+          domain.game[this.gameType]?.actions?.[actionName] ||
+          domain.game.actions[actionName] ||
+          lib.game.actions[actionName];
       }
 
       if (!action) throw new Error(`action "${actionName}" not found`);
