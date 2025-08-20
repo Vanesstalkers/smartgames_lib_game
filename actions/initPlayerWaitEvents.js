@@ -36,10 +36,7 @@
           const { game } = this.eventContext();
 
           player.set(
-            {
-              money: game.settings.playerStartMoney,
-              ...{ ready: true, timerEndTime: null, staticHelper: null, eventData: { controlBtn: null } },
-            },
+            { ready: true, timerEndTime: null, staticHelper: null, eventData: { controlBtn: null } },
             { reset: ['eventData.controlBtn'] }
           );
           player.deactivate();
@@ -48,18 +45,6 @@
           player.removeEvent(this);
           player.removeEventWithTriggerListener();
 
-          if (this.data.readyPlayers.length === game.maxPlayersInGame) {
-            for (const player of game.players({ readyOnly: false })) {
-              if (!player.ready) {
-                player.deactivate({
-                  notifyUser: 'Игра началась без тебя. Для более удобного просмотра перейди в режим наблюдателя.',
-                  setData: { eventData: { controlBtn: { leaveGame: true } } },
-                });
-              }
-            }
-
-            return this.emit('RESET');
-          }
           if (this.data.readyPlayers.length < game.minPlayersToStart) return { preventListenerRemove: true };
 
           if (game.restorationMode) {
@@ -77,6 +62,19 @@
               // может не быть обработчика
               game.run('startGame');
             }
+          }
+
+          if (this.data.readyPlayers.length === game.maxPlayersInGame) {
+            for (const player of game.players({ readyOnly: false })) {
+              if (!player.ready) {
+                player.deactivate({
+                  notifyUser: 'Игра началась без тебя. Для более удобного просмотра перейди в режим наблюдателя.',
+                  setData: { eventData: { controlBtn: { leaveGame: true } } },
+                });
+              }
+            }
+
+            return this.emit('RESET');
           }
         },
         RESET() {

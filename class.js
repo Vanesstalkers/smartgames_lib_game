@@ -98,7 +98,7 @@
         );
 
       maxPlayersInGame = maxPlayersInGame?.val || settings.playerList.length;
-      if (!minPlayersToStart) minPlayersToStart = settings.minPlayersToStart;
+      if (!minPlayersToStart) minPlayersToStart = settings.minPlayersToStart || settings.playerList.length;
 
       const gameData = {
         newGame: true,
