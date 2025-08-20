@@ -1,31 +1,53 @@
 <template>
-  <div v-if="gameDataLoaded" id="game" :type="game.gameType" :config="game.gameConfig" :class="[
-    debug ? 'debug' : '',
-    state.isMobile ? 'mobile-view' : '',
-    state.isLandscape ? 'landscape-view' : 'portrait-view',
-    gameState.viewerMode ? 'viewer-mode' : '',
-  ]" @wheel.prevent="zoomGamePlane">
+  <div
+    v-if="gameDataLoaded"
+    id="game"
+    :type="game.gameType"
+    :config="game.gameConfig"
+    :class="[
+      debug ? 'debug' : '',
+      state.isMobile ? 'mobile-view' : '',
+      state.isLandscape ? 'landscape-view' : 'portrait-view',
+      gameState.viewerMode ? 'viewer-mode' : '',
+    ]"
+    @wheel.prevent="zoomGamePlane"
+  >
     <slot name="helper-guru" :menuWrapper="menuWrapper" :menuButtonsMap="menuButtonsMap">
-      <tutorial :game="game" class="scroll-off"
-        :customMenu="menuWrapper({ buttons: Object.values(menuButtonsMap()).map(button => button()) })" />
+      <tutorial :game="game" class="scroll-off" :customMenu="customMenu({ menuWrapper, menuButtonsMap })" />
     </slot>
 
-    <GUIWrapper :pos="['top', 'left']"
+    <GUIWrapper
+      :pos="['top', 'left']"
       :offset="{ top: 20, left: state.isMobile ? 60 : [60, 80, 110, 130, 160, 190][state.guiScale] }"
-      :contentClass="['gui-small']" :wrapperStyle="{ zIndex: 1 }">
+      :contentClass="['gui-small']"
+      :wrapperStyle="{ zIndex: 1 }"
+    >
       <div class="game-controls" style="display: flex">
-        <div :class="['chat', 'gui-btn', showChat ? 'active' : '', unreadMessages ? 'unread-messages' : '']"
-          v-on:click="toggleChat" />
+        <div
+          :class="['chat', 'gui-btn', showChat ? 'active' : '', unreadMessages ? 'unread-messages' : '']"
+          v-on:click="toggleChat"
+        />
         <div :class="['log', 'gui-btn', showLog ? 'active' : '']" v-on:click="toggleLog" />
-        <div :class="['move', 'gui-btn']"
-          v-on:click="resetPlanePosition(); resetMouseEventsConfig(); updatePlaneScale()" />
+        <div
+          :class="['move', 'gui-btn']"
+          v-on:click="
+            resetPlanePosition();
+            resetMouseEventsConfig();
+            updatePlaneScale();
+          "
+        />
       </div>
     </GUIWrapper>
 
     <div :class="['chat-content', 'scroll-off', showChat ? 'visible' : '']">
       <slot name="chat" :isVisible="showChat" :hasUnreadMessages="hasUnreadMessages">
-        <chat :defActiveChannel="`game-${gameState.gameId}`" :userData="userData" :isVisible="showChat"
-          :hasUnreadMessages="hasUnreadMessages" :channels="chatChannels" />
+        <chat
+          :defActiveChannel="`game-${gameState.gameId}`"
+          :userData="userData"
+          :isVisible="showChat"
+          :hasUnreadMessages="hasUnreadMessages"
+          :channels="chatChannels"
+        />
       </slot>
     </div>
 
@@ -41,10 +63,13 @@
       <div class="img" :style="state.shownCard" />
     </div>
 
-    <div id="gamePlane" :style="{
-      ...gamePlaneCustomStyleData, // например, центровка по координатам блоков в release
-      ...gamePlaneControlStyle, // mouse-events + принудительный сдвиг (например, для корпоративных игр)
-    }">
+    <div
+      id="gamePlane"
+      :style="{
+        ...gamePlaneCustomStyleData, // например, центровка по координатам блоков в release
+        ...gamePlaneControlStyle, // mouse-events + принудительный сдвиг (например, для корпоративных игр)
+      }"
+    >
       <slot name="gameplane" :gamePlaneScale="gamePlaneScale" />
     </div>
 
@@ -55,8 +80,12 @@
     <GUIWrapper class="session-player" :pos="['bottom', 'right']">
       <slot name="player" />
     </GUIWrapper>
-    <GUIWrapper class="players" :pos="state.isMobile && state.isPortrait ? ['top', 'right'] : ['bottom', 'left']"
-      :offset="state.isMobile && state.isPortrait ? { top: 200 } : {}" :contentClass="['gui-small']">
+    <GUIWrapper
+      class="players"
+      :pos="state.isMobile && state.isPortrait ? ['top', 'right'] : ['bottom', 'left']"
+      :offset="state.isMobile && state.isPortrait ? { top: 200 } : {}"
+      :contentClass="['gui-small']"
+    >
       <slot name="opponents" />
     </GUIWrapper>
   </div>
@@ -88,7 +117,6 @@ export default {
     },
   },
   data() {
-
     const gamePlaneScaleMax = this.planeScaleMax || 1.0;
     const gamePlaneScale = Math.min(window.innerWidth / this.defaultScaleMinVisibleWidth, gamePlaneScaleMax);
     const gamePlaneScaleMin = Math.min(this.planeScaleMin || 0.3, gamePlaneScale);
@@ -104,11 +132,9 @@ export default {
       planeScaleNeedUpdated: 0,
       tutorialActions: {
         leaveGame: async () => {
-          await api.action
-            .call({ path: 'game.api.leave', args: [] })
-            .catch(prettyAlert);
-        }
-      }
+          await api.action.call({ path: 'game.api.leave', args: [] }).catch(prettyAlert);
+        },
+      },
     };
   },
   setup: function () {
@@ -192,53 +218,26 @@ export default {
   },
   methods: {
     menuWrapper({ buttons }) {
-      return {
-        text: `Чем могу помочь, ${this.userData.name || this.userData.login}?`,
-        bigControls: true,
-        buttons
-      };
+      return tutorial.menuWrapper(this.userData)({ buttons });
     },
     menuButtonsMap() {
-      const { leaveGame } = this.tutorialActions;
+      return tutorial.menuButtonsMap(this.tutorialActions);
+    },
+    customMenu() {
+      const menuWrapper = tutorial.menuWrapper(this.userData);
+      const menuButtonsMap = tutorial.menuButtonsMap(this.tutorialActions);
 
-      return {
-        cancel: () => ({ text: 'Спасибо, ничего не нужно', action: 'exit', exit: true }),
-        restore: () => ({
-          text: 'Восстановить игру', action: { tutorial: 'game-tutorial-restoreForced' }
-        }),
-        tutorials: ({ showList = [] } = {}) => ({
-          text: 'Покажи доступные обучения',
-          action: {
-            text: showList.length ? 'Нажми на нужное обучение в списке, чтобы запустить его повторно:' : 'Нет доступных обучений',
-            showList,
-            buttons: [
-              { text: 'Назад в меню', action: 'init' },
-              { text: 'Спасибо', action: 'exit', exit: true },
-            ],
-          },
-        }),
-        helperLinks: () => ({
-          text: 'Активировать подсказки', action: async function () {
-            await api.action
-              .call({
-                path: 'helper.api.restoreLinks',
-                args: [{ inGame: true }],
-              })
-              .then(() => {
-                this.menu = null;
-                {
-                  // перерисовываем helper-а, чтобы отобразились подсказки
-                  this.resetFlag = true;
-                  setTimeout(() => {
-                    this.resetFlag = false;
-                  }, 100);
-                }
-              })
-              .catch(prettyAlert);
-          }
-        }),
-        leave: () => ({ text: 'Выйти из игры', action: leaveGame }),
-      };
+      const { cancel, restore, tutorials, helperLinks, leave } = menuButtonsMap;
+      const fillTutorials = tutorials({
+        showList: [
+          { title: 'Стартовое приветствие игры', action: { tutorial: 'game-tutorial-start' } },
+          { title: 'Управление игровым полем', action: { tutorial: 'game-tutorial-gamePlane' } },
+        ],
+      });
+
+      return menuWrapper({
+        buttons: [cancel(), restore(), fillTutorials, helperLinks({ inGame: true }), leave()],
+      });
     },
     updatePlaneScale() {
       this.state.gamePlaneNeedUpdate = false;
@@ -343,7 +342,7 @@ export default {
       this.unreadMessages = count;
     },
   },
-  async created() { },
+  async created() {},
   async mounted() {
     this.$on('resetPlanePosition', this.resetPlanePosition);
 
@@ -491,7 +490,7 @@ export default {
   left: 0px;
   background-image: url(@/assets/clear-grey-back.png);
 
-  >.img {
+  > .img {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -499,7 +498,7 @@ export default {
     height: 100%;
   }
 
-  >.close {
+  > .close {
     background-image: url(@/assets/close.png);
     background-color: black;
     cursor: pointer;
