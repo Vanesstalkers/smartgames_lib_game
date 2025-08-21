@@ -1,12 +1,19 @@
 <template>
-  <div v-if="card._id || cardData" :name="card.name" :class="[
-    'card-event',
-    card.played ? 'played' : '',
-    isSelected ? 'selected' : '',
-    selectable ? 'selectable' : '',
-    locked ? 'locked' : '',
-    card.eventData.cardClass || '',
-  ]" :style="getCustomStyle" v-on:click.stop="toggleSelect">
+  <div
+    v-if="card._id || cardData"
+    :name="card.name"
+    :class="[
+      'card-event',
+      card.name ? 'visible' : '',
+      card.played ? 'played' : '',
+      isSelected ? 'selected' : '',
+      selectable ? 'selectable' : '',
+      locked ? 'locked' : '',
+      card.eventData.cardClass || '',
+    ]"
+    :style="getCustomStyle"
+    v-on:click.stop="toggleSelect"
+  >
     <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
     <div v-if="canPlay && !locked && !preventDoubleClick" v-on:click.stop="callPlayCard" class="play-btn">
       {{ card.eventData.buttonText || 'Разыграть' }}
@@ -42,7 +49,7 @@ export default {
   },
   data() {
     return {
-      preventDoubleClick: false
+      preventDoubleClick: false,
     };
   },
   setup() {
@@ -111,13 +118,23 @@ export default {
     async defaultPlayCard() {
       if (this.card.played) return;
       if (this.locked) return;
-      await this.handleGameApi({
-        name: 'playCard',
-        data: {
-          cardId: this.cardId,
-          targetPlayerId: this.$parent.playerId,
+      await this.handleGameApi(
+        {
+          name: 'playCard',
+          data: {
+            cardId: this.cardId,
+            targetPlayerId: this.$parent.playerId,
+          },
         },
-      }, { onSuccess: () => { this.preventDoubleClick = false }, onError: () => { this.preventDoubleClick = false } });
+        {
+          onSuccess: () => {
+            this.preventDoubleClick = false;
+          },
+          onError: () => {
+            this.preventDoubleClick = false;
+          },
+        }
+      );
     },
     toggleSelect() {
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;
@@ -126,7 +143,7 @@ export default {
       this.$set(this.$root.state, 'shownCard', this.getCustomStyle);
     },
   },
-  mounted() { },
+  mounted() {},
 };
 </script>
 
@@ -236,8 +253,8 @@ export default {
   opacity: 0.7;
 }
 
-.card-event:hover>.card-info-btn,
-#game.mobile-view .card-event.selected>.card-info-btn {
+.card-event:hover > .card-info-btn,
+#game.mobile-view .card-event.selected > .card-info-btn {
   visibility: visible;
 }
 </style>

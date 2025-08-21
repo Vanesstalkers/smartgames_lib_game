@@ -341,10 +341,7 @@
         await this.saveChanges();
 
         lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'joinGame', {
-          gameId,
-          playerId,
-          deckType: this.deckType,
-          gameType: this.gameType,
+          ...{ gameId, playerId, deckType: this.deckType, gameType: this.gameType },
           isSinglePlayer: this.isSinglePlayer(),
         });
       } catch (exception) {

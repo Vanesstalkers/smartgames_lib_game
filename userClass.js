@@ -16,7 +16,7 @@
       await this.broadcastData(data);
     }
     /**
-     * Переопределяем метод, сохранявший данные в БД - оставляем только рассылки и публикацию в lobby.user 
+     * Переопределяем метод, сохранявший данные в БД - оставляем только рассылки и публикацию в lobby.user
      */
     async saveChanges({ saveToLobbyUser = false } = {}) {
       const changes = this.getChanges();
@@ -31,7 +31,15 @@
       this.clearChanges();
     }
 
-    async joinGame({ deckType, gameType, gameId, playerId, viewerId, checkTutorials = true }) {
+    async joinGame({
+      deckType,
+      gameType,
+      gameId,
+      playerId,
+      viewerId,
+      checkTutorials = true,
+      gameStartTutorialName = 'game-tutorial-start',
+    }) {
       for (const session of this.sessions()) {
         session.set({ gameId, playerId, viewerId });
         await session.saveChanges();
@@ -46,7 +54,6 @@
 
         this.set({ currentTutorial, helper });
 
-        const gameStartTutorialName = 'game-tutorial-start';
         if (
           !viewerId && // наблюдателям не нужно обучение
           !helper && // нет активного обучения
@@ -90,7 +97,14 @@
       }
     }
 
-    async gameFinished({ gameId, gameType, playerEndGameStatus, fullPrice, roundCount, preventCalcStats = false } = {}) {
+    async gameFinished({
+      gameId,
+      gameType,
+      playerEndGameStatus,
+      fullPrice,
+      roundCount,
+      preventCalcStats = false,
+    } = {}) {
       const {
         helper: { getTutorial },
         utils: { structuredClone: clone },
