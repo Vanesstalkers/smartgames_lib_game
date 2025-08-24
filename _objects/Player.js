@@ -14,18 +14,8 @@
       ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper'],
     ]);
 
-    const {
-      ai,
-      aiActions,
-      userId,
-      userName,
-      eventData = {},
-      avatarCode,
-      avatarsMap = {},
-      active,
-      timerEndTime,
-      timerUpdateTime,
-    } = data;
+    const { userId, userName, avatarCode, avatarsMap = {} } = data;
+    const { eventData = {}, active, timerEndTime, timerUpdateTime, ai, aiActions } = data;
     this.set({
       ready: false, // при восстановлении игры нужна повторная обработка initPlayerWaitEvents
       ...{ userId, userName, eventData, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
@@ -77,7 +67,7 @@
     }
   }
   triggerEventEnabled({ ignoreEvents = [] } = {}) {
-    const ignore = ignoreEvents.includes(this.#eventWithTriggerListener.name);
+    const ignore = ignoreEvents.includes(this.#eventWithTriggerListener?.name);
     const enabled = this.#eventWithTriggerListener !== null && !ignore;
     return enabled ? this.#eventWithTriggerListener : false;
   }

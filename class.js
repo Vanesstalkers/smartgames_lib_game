@@ -763,8 +763,10 @@
       return (this.rounds[this.round] = round);
     }
     async saveChanges() {
-      const round = this.rounds[this.round];
-      round.save();
+      if (this.rounds) {
+        const round = this.rounds[this.round];
+        round.save();
+      }
 
       await super.saveChanges();
     }
