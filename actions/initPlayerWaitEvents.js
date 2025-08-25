@@ -55,6 +55,8 @@
             return game.restart();
           }
 
+          this.emit('RESET'); // в startGame появится betEvent['TRIGGER'] - оно не должно сброситься через player.removeEventWithTriggerListener()
+
           if (game.status === 'WAIT_FOR_PLAYERS') {
             try {
               game.run('initPrepareGameEvents');
@@ -73,8 +75,6 @@
                 });
               }
             }
-
-            return this.emit('RESET');
           }
         },
         RESET() {
