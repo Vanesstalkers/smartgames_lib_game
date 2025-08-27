@@ -4,8 +4,10 @@
     if (!template) template = domain.game.configs.cardTemplates.random();
     const { path, list } = domain.game.configs.cards();
 
-    const cards = list.map(path)
-      .filter((value, index, array) => array.indexOf(value) === index);
+    const cards = list
+      .map(path)
+      .filter((value, index, array) => array.indexOf(value) === index)
+      .map((path) => `${template}/${path}`);
 
     return { status: 'ok', cards };
   },
