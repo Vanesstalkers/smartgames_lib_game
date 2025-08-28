@@ -60,8 +60,7 @@
   }
   returnTableCardsToHand() {
     for (const deck of this.select({ className: 'Deck', attr: { placement: 'table' } })) {
-      const cards = deck.select('Card');
-      for (const card of cards) {
+      for (const card of deck.items()) {
         if (card.eventData.canReturn) card.returnToHand({ player: this });
       }
     }

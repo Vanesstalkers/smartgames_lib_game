@@ -4,8 +4,8 @@
     this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData']);
     this.publicStaticFields(['group', 'owner']);
 
-    const { title, name, subtype, playOneTime, played, disabled } = data;
-    this.set({ title, name, subtype, playOneTime, played, disabled });
+    const { title, name, subtype, playOneTime, played, disabled, sourceDeckId } = data;
+    this.set({ title, name, subtype, playOneTime, played, disabled, sourceDeckId });
   }
 
   getTitle() {

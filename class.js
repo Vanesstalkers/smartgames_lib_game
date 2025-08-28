@@ -325,7 +325,10 @@
         this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
 
         if (this.gameConfig === 'ai') {
-          const player = this.getFreePlayerSlot();
+          const player = this.restorationMode
+            ? this.players({ readyOnly: false }).find((p) => p.ai)
+            : this.getFreePlayerSlot();
+
           player.set({
             ai: true,
             aiActions: [],
