@@ -87,24 +87,7 @@ export default {
     },
     getCustomStyle() {
       if (this.customStyle) return this.customStyle;
-
-      const {
-        state: { serverOrigin },
-        card,
-        game,
-        cardGroup,
-        imgFullPath,
-        imgExt = 'jpg',
-      } = this;
-      const rootPath = `${serverOrigin}/img/cards/${game.templates.card}`;
-      const { group, name } = card;
-
-      const cardPath = [cardGroup || group, name || 'back-side'].filter((s) => s).join('/');
-      const path = imgFullPath || `${rootPath}/${cardPath}.${imgExt}` || `empty-card.${imgExt}`;
-
-      return {
-        backgroundImage: `url(${path})`,
-      };
+      return this.getCardCustomStyle(this);
     },
   },
   methods: {
