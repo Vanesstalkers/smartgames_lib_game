@@ -4,8 +4,8 @@
     this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData']);
     this.publicStaticFields(['group', 'owner']);
 
-    const { title, name, subtype, playOneTime, played, disabled, sourceDeckId } = data;
-    this.set({ title, name, subtype, playOneTime, played, disabled, sourceDeckId });
+    const { title, name, event, subtype, playOneTime, played, disabled, sourceDeckId } = data;
+    this.set({ title, name, event, subtype, playOneTime, played, disabled, sourceDeckId });
   }
 
   getTitle() {
@@ -72,11 +72,17 @@
 
   play({ player, logMsg } = {}) {
     if (this.played) return;
-    if (!this.getEvent(this.name)) return;
+    const eventName = this.event?.name || this.name;
+    if (!this.getEvent(eventName)) return;
 
     this.game().logs({ msg: logMsg || `Разыграна карта "<a>${this.title}</a>"`, userId: player.userId });
 
-    const event = this.initEvent(this.name, { game: player.game(), player, allowedPlayers: [player] });
+    const event = this.initEvent(eventName, {
+      game: player.game(),
+      player,
+      allowedPlayers: [player],
+      initData: this.event,
+    });
 
     if (event) event.name = this.title;
     if (event !== null && player) player.addEvent(event);

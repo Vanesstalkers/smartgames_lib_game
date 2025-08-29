@@ -77,8 +77,8 @@
   hasHandler(handler) {
     return this.#handlers[handler] ? true : false;
   }
-  init() {
-    if (this.hasInitAction()) return this.#init();
+  init(initData) {
+    if (this.hasInitAction()) return this.#init(initData);
   }
   handlers(name) {
     let result = Object.keys(this.#handlers);

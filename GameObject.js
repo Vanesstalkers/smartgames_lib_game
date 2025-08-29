@@ -266,7 +266,7 @@
     if (!event) return null;
     return event();
   }
-  initEvent(eventData, { game, player, allowedPlayers = [], publicHandlers = [] } = {}) {
+  initEvent(eventData, { game, player, allowedPlayers = [], publicHandlers = [], initData = {} } = {}) {
     if (typeof eventData === 'string') {
       const eventName = eventData;
       eventData = this.getEvent(eventName);
@@ -303,7 +303,7 @@
     }
 
     if (event.init) {
-      const { resetEvent } = event.init() || {};
+      const { resetEvent } = event.init(initData) || {};
       if (resetEvent) {
         event.emit('RESET');
         event = null;
