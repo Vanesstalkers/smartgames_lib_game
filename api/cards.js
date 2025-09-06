@@ -1,12 +1,12 @@
 ({
   access: 'public',
-  method: async (context, { template } = {}) => {
+  method: async (context, { selectGroup, template } = {}) => {
     if (!template) template = domain.game.configs.cardTemplates.random();
     const { path, list } = domain.game.configs.cards();
 
     const cards = list
+      .filter((card) => !selectGroup || card.group === selectGroup)
       .map(path)
-      .filter((value, index, array) => array.indexOf(value) === index)
       .map((path) => `${template}/${path}`);
 
     return { status: 'ok', cards };
