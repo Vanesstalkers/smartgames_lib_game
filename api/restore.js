@@ -1,8 +1,10 @@
-async (context, { deckType, gameType, gameId, needLoadGame }) => { // восстановление игры из lobby
+async (context, { deckType, gameType, gameId, needLoadGame }) => {
+  // восстановление игры из lobby
 
-  const handleError = async (user, message) => {
+  const handleError = async (user) => {
     user.set({
-      gameId: null, playerId: null,
+      gameId: null,
+      playerId: null,
       helper: {
         text: 'Действие отменено (попытка восстановления завершенной игры).',
         buttons: [{ text: 'Понятно, спасибо', action: 'exit' }],
@@ -54,13 +56,10 @@ async (context, { deckType, gameType, gameId, needLoadGame }) => { // восст
   }
 
   const redisData = await db.redis.hget('games', gameId, { json: true });
-  const { id, restorationMode, notFound } = redisData;
 
-  if (notFound) {
-    return handleError(user, 'Попытка восстановления удаленной игры.');
-  }
+  if (!redisData) return handleError(user, 'Попытка восстановления удаленной игры.');
 
-  if (restorationMode) {
+  if (redisData.restorationMode) {
     const game = lib.store('game').get(gameId);
     await joinGame(game, user, playerId, viewerId);
     return { status: 'ok' };

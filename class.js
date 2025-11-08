@@ -25,7 +25,7 @@
     }
 
     set(val, config = {}) {
-      if (!this._col) throw new Error(`set error ('_col' is no defined)`);
+      if (!this._col) throw new Error('set error (\'_col\' is no defined)');
 
       const clonedConfig = lib.utils.structuredClone(config);
       this.setChanges(val, clonedConfig);
@@ -65,7 +65,7 @@
     deleteFromObjectStorage(obj) {
       super.deleteFromObjectStorage(obj);
 
-      const { _id: id, _col: col } = obj;
+      const { _id: id } = obj;
       if (this.store[id]) delete this.store[id];
     }
 
@@ -141,8 +141,7 @@
     }
     async updateGameAtCache(data = {}) {
       const game = await db.redis.hget('games', this.id(), { json: true });
-      if (game.notFound) delete game.notFound;
-      await db.redis.hset('games', this.id(), { ...game, ...data }, { json: true });
+      await db.redis.hset('games', this.id(), { ...(game || {}), ...data }, { json: true });
     }
 
     /**
@@ -152,23 +151,24 @@
     async processData(data) {
       for (const [key, map] of Object.entries(data)) {
         switch (key) {
-          case 'user':
-            const userMap = {};
+        case 'user': {
+          const userMap = {};
 
-            for (const [userId, user] of Object.entries(map)) {
-              const { name, login, avatarCode } = user;
-              const userName = name || login;
+          for (const [userId, user] of Object.entries(map)) {
+            const { name, login, avatarCode } = user;
+            const userName = name || login;
 
-              const player = this.getPlayerByUserId(userId);
-              if (player) player.set({ userName, avatarCode }); // мог быть удален
+            const player = this.getPlayerByUserId(userId);
+            if (player) player.set({ userName, avatarCode }); // мог быть удален
 
-              userMap[userId] = { userName, avatarCode };
-            }
+            userMap[userId] = { userName, avatarCode };
+          }
 
-            this.broadcastData({ user: userMap }, { wrapperDisabled: true });
-            break;
-          default:
-            this.set(data, { removeEmptyObject: true });
+          this.broadcastData({ user: userMap }, { wrapperDisabled: true });
+          break;
+        }
+        default:
+          this.set(data, { removeEmptyObject: true });
         }
       }
       await this.saveChanges();
@@ -235,7 +235,10 @@
 
       const result = [];
       for (const event of this.eventListeners[handler]) {
-        if (!this.eventListeners[handler].includes(event)) return; // событие могло быть удалено в предыдущих итерациях цикла
+        if (!this.eventListeners[handler].includes(event)) {
+          // событие могло быть удалено в предыдущих итерациях цикла
+          return;
+        }
 
         const player = initPlayer || event.player();
         const playerAccessAllowed = event.checkAccess(player, { handler });
@@ -277,9 +280,9 @@
       if (!data.time) data.time = Date.now();
 
       if (data.msg.includes('{{player}}')) {
-        const player = data.userId
-          ? this.players().find(({ userId }) => userId === data.userId)
-          : this.roundActivePlayer();
+        const player = data.userId ?
+          this.players().find((player) => player.userId === data.userId) :
+          this.roundActivePlayer();
         if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `<player>${player.userName}</player>`);
       }
 
@@ -287,10 +290,10 @@
       this.#logs[id] = data;
       if (consoleMsg) console.info(data.msg);
     }
-    async showLogs({ userId, sessionId, lastItemTime }) {
+    async showLogs({ sessionId, lastItemTime }) {
       let logs = this.logs();
       if (lastItemTime) {
-        logs = Object.fromEntries(Object.entries(logs).filter(([{}, { time }]) => time > lastItemTime));
+        logs = Object.fromEntries(Object.entries(logs).filter((item) => item[1].time > lastItemTime));
       }
       await this.broadcastData({ logs }, { customChannel: `session-${sessionId}` });
     }
@@ -319,9 +322,10 @@
         playerId = player.id();
 
         player.set({ userId, userName, avatarCode: userAvatar });
-        this.logs({ msg: `Игрок {{player}} присоединился к игре.`, userId });
+        this.logs({ msg: 'Игрок {{player}} присоединился к игре.', userId });
 
-        // инициатором события был установлен первый player в списке, который совпадает с активным игроком на старте игры
+        /* инициатором события был установлен первый player в списке,
+        который совпадает с активным игроком на старте игры */
         this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
 
         if (this.gameConfig === 'ai') {
@@ -337,7 +341,7 @@
             userName: 'fakeName',
             avatarCode: 'fakeAvatar',
           });
-          this.logs({ msg: `Игрок-компьютер {{player}} присоединился к игре.`, userId: 'fake' });
+          this.logs({ msg: 'Игрок-компьютер {{player}} присоединился к игре.', userId: 'fake' });
           this.toggleEventHandlers('PLAYER_JOIN', { targetId: player.id() }, player);
         }
 
@@ -359,11 +363,11 @@
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
-        const { Viewer: viewerClass } = this.defaultClasses();
-        const viewer = new viewerClass({ _id: viewerId, userId }, { parent: this });
+        const { Viewer: ViewerClass } = this.defaultClasses();
+        const viewer = new ViewerClass({ _id: viewerId, userId }, { parent: this });
         viewer.set({ userId, userName, eventData: { controlBtn: { label: 'Выйти из игры', leaveGame: true } } });
 
-        this.logs({ msg: `Наблюдатель присоединился к игре.` });
+        this.logs({ msg: 'Наблюдатель присоединился к игре.' });
 
         await this.saveChanges();
 
@@ -384,7 +388,7 @@
     }
     async playerLeave({ userId }) {
       if (this.status !== 'FINISHED') {
-        this.logs({ msg: `Игрок {{player}} вышел из игры.`, userId });
+        this.logs({ msg: 'Игрок {{player}} вышел из игры.', userId });
         try {
           this.run('endGame', { canceledByUser: userId });
         } catch (exception) {
@@ -432,7 +436,7 @@
           roundActivePlayer.set({ eventData: { skipTurn: null } });
         } else {
           this.logs({
-            msg: `Игрок {{player}} получает дополнительный ход.`,
+            msg: 'Игрок {{player}} получает дополнительный ход.',
             userId: roundActivePlayer.userId,
           });
           return roundActivePlayer;
@@ -446,7 +450,7 @@
 
       if (newActivePlayer?.eventData?.skipTurn) {
         this.logs({
-          msg: `Игрок {{player}} пропускает ход.`,
+          msg: 'Игрок {{player}} пропускает ход.',
           userId: newActivePlayer.userId,
         });
         newActivePlayer.set({
@@ -466,7 +470,7 @@
     }
     setWinner({ player }) {
       this.set({ winUserId: player.userId });
-      this.logs({ msg: `Игрок {{player}} победил в игре.`, userId: player.userId });
+      this.logs({ msg: 'Игрок {{player}} победил в игре.', userId: player.userId });
     }
     getFreePlayerSlot() {
       return this.players({ readyOnly: false }).find((player) => !player.userId);
@@ -480,7 +484,7 @@
     activatePlayers({ notifyUser, setData, disableSkipTurnCheck = false }) {
       for (const player of this.players()) {
         if (!disableSkipTurnCheck && player.eventData.skipTurn) {
-          this.logs({ msg: `Игрок {{player}} пропускает ход.`, userId: player.userId });
+          this.logs({ msg: 'Игрок {{player}} пропускает ход.', userId: player.userId });
           player.set({ eventData: { skipTurn: null } });
           continue;
         }
@@ -613,11 +617,8 @@
     }
     broadcastDataVueStoreRuleHandler(data, { accessConfig }) {
       const { userId, viewerMode } = accessConfig;
-      const storeData = data.store
-        ? {
-            store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }),
-          }
-        : {};
+      const storeData = data.store ?
+        { store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }) } : {};
       return { ...data, ...storeData };
     }
     async removeGame({ preventDeleteDumps = false } = {}) {
@@ -634,7 +635,7 @@
       }
     }
 
-    onTimerRestart({ timerId, data: { time, extraTime = 0 } = {} }) {
+    onTimerRestart({ data: { time, extraTime = 0 } = {} }) {
       try {
         if (!time) time = this.gameTimer || this.settings.timer.DEFAULT;
         for (const player of this.getActivePlayers()) {
@@ -652,12 +653,15 @@
         } else throw exception;
       }
     }
-    async onTimerTick({ timerId, data: { time = null } = {} }) {
+    async onTimerTick() {
       try {
         if (this.status === 'FINISHED') return lib.timers.timerDelete(this);
 
         for (const player of this.getActivePlayers()) {
-          if (!player.timerEndTime) continue; // сюда попадут "потерянные tick-и" при завершении игры и восстановлении игры
+          if (!player.timerEndTime) {
+            // сюда попадут "потерянные tick-и" при завершении игры и восстановлении игры
+            continue;
+          }
 
           if (player.timerEndTime < Date.now()) {
             this.toggleEventHandlers('PLAYER_TIMER_END', {}, player);
@@ -670,7 +674,7 @@
         } else throw exception;
       }
     }
-    onTimerDelete({ timerId }) {
+    onTimerDelete() {
       for (const player of this.getActivePlayers()) {
         player.set({
           timerEndTime: null,
@@ -688,7 +692,7 @@
       const roundActivePlayer = this.getPlayerByUserId(userId)?.active;
       if (!roundActivePlayer) return; // даем прибавку только игрокам, у которых запущен таймер
 
-      this.logs({ msg: `Игрок {{player}} использовал подсказку и получил прибавку ко времени.`, userId });
+      this.logs({ msg: 'Игрок {{player}} использовал подсказку и получил прибавку ко времени.', userId });
       lib.timers.timerRestart(this, { extraTime: 30 });
       await this.saveChanges();
     }

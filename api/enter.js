@@ -5,7 +5,7 @@ async (context, { gameId }) => {
   if (!gameId || gameId !== user.gameId) throw new Error('Пользователь не участвует в игре');
 
   const gameLoaded = await db.redis.hget('games', gameId, { json: true });
-  if (!gameLoaded.id) {
+  if (!gameLoaded?.id) {
     user.set({ gameId: null, playerId: null, viewerId: null });
     await user.saveChanges({ saveToLobbyUser: true });
     throw new Error('Игра была отменена');
@@ -17,11 +17,11 @@ async (context, { gameId }) => {
   session.subscribe(`game-${gameId}`, {
     rule: 'vue-store',
     userId: user.id(),
-    viewerMode: user.viewerId ? true : false,
+    viewerMode: user.viewerId,
   });
   session.onClose.push(async () => {
-    // проверка на последнего игрока не нужна, потому что игра автоматически завершится через allowedAutoCardPlayRoundStart раундов
-
+    /* проверка на последнего игрока не нужна,
+    потому что игра автоматически завершится через allowedAutoCardPlayRoundStart раундов */
     session.unsubscribe(`game-${gameId}`);
   });
 
