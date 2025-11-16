@@ -11,7 +11,7 @@ async (context, { deckType, gameType, gameId, needLoadGame }) => {
       },
     });
 
-    await user.saveChanges({ saveToLobbyUser: true });
+    await user.saveChanges();
 
     return { status: 'error', logout: true };
   };

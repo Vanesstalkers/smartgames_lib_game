@@ -1,10 +1,5 @@
 () =>
-  class GameUser extends lib.user.class() {
-    initChannel({ col, id } = {}) {
-      this.channelName(`gameuser-${this.id()}`);
-      super.initChannel({ col, id });
-    }
-
+  class GameUser extends lib.lobby.User() {
     /**
      * Сюда попадут рассылки publishData(user...`)
      */
@@ -14,21 +9,6 @@
       if (data._id) delete data._id;
       this.set(data);
       await this.broadcastData(data);
-    }
-    /**
-     * Переопределяем метод, сохранявший данные в БД - оставляем только рассылки и публикацию в lobby.user
-     */
-    async saveChanges({ saveToLobbyUser = false } = {}) {
-      const changes = this.getChanges();
-
-      if (saveToLobbyUser) {
-        await lib.store.broadcaster.publishData.call(this, `user-${this.id()}`, changes);
-        // т.к. gameuser подписан на lobby.user, то триггернется this.processData (избегаем повторного вызова this.broadcastData)
-      } else {
-        this.broadcastData(changes);
-      }
-
-      this.clearChanges();
     }
 
     async joinGame({
@@ -46,7 +26,8 @@
         session.emit('joinGame', { deckType, gameType, gameId, playerId, viewerId });
       }
 
-      let { currentTutorial = {}, helper = null, helperLinks = {}, finishedTutorials = {} } = this;
+      const { finishedTutorials = {} } = this;
+      let { currentTutorial = {}, helper = null, helperLinks = {} } = this;
 
       if (checkTutorials) {
         currentTutorial = null;
@@ -61,7 +42,7 @@
         ) {
           await lib.helper.updateTutorial(this, { tutorial: gameStartTutorialName });
         } else {
-          await this.saveChanges({ saveToLobbyUser: true });
+          await this.saveChanges();
         }
         helperLinks = {
           ...domain.game.tutorial.getHelperLinks(),
@@ -77,7 +58,7 @@
       });
 
       this.set({ gameId, playerId, viewerId });
-      await this.saveChanges({ saveToLobbyUser: true });
+      await this.saveChanges();
     }
     async leaveGame() {
       const { gameId } = this;
@@ -86,7 +67,7 @@
       if (this.currentTutorial?.active) {
         this.set({ currentTutorial: null, helper: null });
       }
-      await this.saveChanges({ saveToLobbyUser: true });
+      await this.saveChanges();
 
       this.unsubscribe(`game-${gameId}`);
       for (const session of this.sessions()) {
@@ -98,7 +79,6 @@
     }
 
     async gameFinished({
-      gameId,
       gameType,
       playerEndGameStatus,
       fullPrice,
@@ -117,7 +97,7 @@
             buttons: [{ text: 'Выйти из игры', action: 'leaveGame' }],
             actions: {
               leaveGame: (async () => {
-                await api.action.call({ path: 'game.api.leave', args: [] }).catch(prettyAlert);
+                await api.action.call({ path: 'game.api.leave', args: [] }).catch(window.prettyAlert);
                 return { exit: true };
               }).toString(), // если без toString(), то нужно вызывать через helper.updateTutorial
             },
@@ -156,6 +136,6 @@
         incomeText += ` (с учетом штрафа ${penaltySum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}₽)`;
       tutorial[endGameStatus].text = tutorial[endGameStatus].text.replace('[[win-money]]', incomeText);
       this.set({ money: (this.money || 0) + income, helper: tutorial[endGameStatus], rankings });
-      await this.saveChanges({ saveToLobbyUser: true });
+      await this.saveChanges();
     }
   };

@@ -329,9 +329,9 @@
         this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
 
         if (this.gameConfig === 'ai') {
-          const player = this.restorationMode
-            ? this.players({ readyOnly: false }).find((p) => p.ai)
-            : this.getFreePlayerSlot();
+          const player = this.restorationMode ?
+            this.players({ readyOnly: false }).find((p) => p.ai) :
+            this.getFreePlayerSlot();
 
           player.set({
             ai: true,
@@ -347,7 +347,7 @@
 
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'joinGame', {
+        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'joinGame', {
           ...{ gameId, playerId, deckType: this.deckType, gameType: this.gameType },
           isSinglePlayer: this.isSinglePlayer(),
         });
@@ -356,7 +356,7 @@
         lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
         });
-        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'logout'); // инициирует hideGameIframe
+        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'logout'); // инициирует hideGameIframe
       }
     }
     async viewerJoin({ viewerId, userId, userName }) {
@@ -371,7 +371,7 @@
 
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'joinGame', {
+        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'joinGame', {
           gameId: this.id(),
           viewerId: viewer.id(),
           deckType: this.deckType,
@@ -397,7 +397,7 @@
           } else throw exception;
         }
       }
-      lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'leaveGame', {});
+      lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'leaveGame', {});
     }
     async viewerLeave({ userId, viewerId }) {
       if (this.status !== 'FINISHED') {
@@ -408,7 +408,7 @@
         this.deleteFromObjectStorage(viewer);
         await this.saveChanges();
       }
-      lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'leaveGame', {});
+      lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'leaveGame', {});
     }
     roundActivePlayer(player) {
       if (player) this.set({ roundActivePlayerId: player.id() });
@@ -532,7 +532,7 @@
           await this.removeGame();
         } else {
           console.error(exception);
-          lib.store.broadcaster.publishAction.call(this, `gameuser-${userId}`, 'broadcastToSessions', {
+          lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {
             data: { message: exception.message, stack: exception.stack },
           });
           await this.saveChanges();

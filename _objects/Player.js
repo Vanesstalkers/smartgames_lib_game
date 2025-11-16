@@ -23,9 +23,8 @@
     });
   }
 
-  prepareBroadcastData({ data, player, viewerMode }) {
+  prepareBroadcastData({ data, player }) {
     const bFields = this.broadcastableFields();
-    let visibleId = this._id;
     let preparedData;
     if (!bFields) {
       preparedData = data;
@@ -40,12 +39,15 @@
       }
     }
 
-    return { visibleId, preparedData };
+    return { preparedData, visibleId: this._id };
   }
 
   game(game) {
     const result = super.game(game);
-    if (game) this.set({ gameId: game.id() }); // внутри .set() есть обращение к .game(), которого могло установиться строчкой выше
+    if (game) {
+      // внутри .set() есть обращение к .game(), которого могло установиться строчкой выше
+      this.set({ gameId: game.id() });
+    }
     return result;
   }
   nextPlayer() {
@@ -87,7 +89,7 @@
   }
   notifyUser(data = {}, config = {}) {
     if (typeof data === 'string') data = { message: data };
-    lib.store.broadcaster.publishAction.call(this.game(), `gameuser-${this.userId}`, 'broadcastToSessions', {
+    lib.store.broadcaster.publishAction.call(this.game(), `user-${this.userId}`, 'broadcastToSessions', {
       data,
       config,
     });

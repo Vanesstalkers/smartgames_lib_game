@@ -21,8 +21,8 @@ async (
   const { lobbyId } = session;
 
   try {
-    const gameClassGetter = domain.game[gameType]?.class || domain.game.class;
-    const game = await new gameClassGetter().create({
+    const GameClassGetter = domain.game[gameType]?.class || domain.game.class;
+    const game = await new GameClassGetter().create({
       ...{ deckType, gameType, gameConfig, gameTimer, gameRoundLimit, difficulty },
       ...{ teamsCount, playerCount, maxPlayersInGame, minPlayersToStart },
     });
@@ -54,7 +54,7 @@ async (
           buttons: [{ text: 'Понятно, спасибо', action: 'exit' }],
         },
       });
-      await user.saveChanges({ saveToLobbyUser: true });
+      await user.saveChanges();
     } else {
       console.error(err);
       context.client.emit('action/emit', {
