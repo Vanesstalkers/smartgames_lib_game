@@ -35,7 +35,7 @@ async (
     }
 
     const publishData = { userId, userName: user.getName() }; // userName нужно для логов
-    lib.store.broadcaster.publishAction.call(session, `game-${gameId}`, 'playerJoin', publishData);
+    await game.playerJoin(publishData);
 
     lib.store.broadcaster.publishAction.call(session, `lobby-${lobbyId}`, 'addGame', {
       gameId,

@@ -321,7 +321,8 @@ export default {
           path: 'game.api.enter',
           args: [{ gameId: this.$route.params.id }],
         })
-        .then(async ({ gameId, playerId, viewerId, serverTime, restorationMode }) => {
+        .then(async (data) => {
+          const { gameId, playerId, viewerId, serverTime, restorationMode } = data;
           const viewerMode = viewerId ? true : false;
           this.gameState.gameId = gameId;
           this.gameState.sessionPlayerId = playerId;
@@ -333,8 +334,9 @@ export default {
           this.addMouseEvents(this);
         })
         .catch((err) => {
+          console.error(err);
           this.$router.push({ path: `/` }).catch((err) => {
-            console.log(err);
+            console.error(err);
           });
         });
     },

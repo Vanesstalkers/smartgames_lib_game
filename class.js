@@ -347,10 +347,12 @@
 
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'joinGame', {
+        const userPublishData = {
           ...{ gameId, playerId, deckType: this.deckType, gameType: this.gameType },
           isSinglePlayer: this.isSinglePlayer(),
-        });
+        };
+        const user = lib.store('user').get(userId);
+        await user.joinGame(userPublishData);
       } catch (exception) {
         console.error(exception);
         lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {

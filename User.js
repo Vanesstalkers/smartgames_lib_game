@@ -20,12 +20,6 @@
       checkTutorials = true,
       gameStartTutorialName = 'game-tutorial-start',
     }) {
-      for (const session of this.sessions()) {
-        session.set({ gameId, playerId, viewerId });
-        await session.saveChanges();
-        session.emit('joinGame', { deckType, gameType, gameId, playerId, viewerId });
-      }
-
       const { finishedTutorials = {} } = this;
       let { currentTutorial = {}, helper = null, helperLinks = {} } = this;
 
@@ -59,6 +53,12 @@
 
       this.set({ gameId, playerId, viewerId });
       await this.saveChanges();
+
+      for (const session of this.sessions()) {
+        session.set({ gameId, playerId, viewerId });
+        await session.saveChanges();
+        session.emit('joinGame', { deckType, gameType, gameId, playerId, viewerId });
+      }
     }
     async leaveGame() {
       const { gameId } = this;

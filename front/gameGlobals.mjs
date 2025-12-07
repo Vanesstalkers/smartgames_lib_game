@@ -1,4 +1,4 @@
-import { reactive, provide, inject } from 'vue';
+import { reactive } from 'vue';
 import { addMouseEvents, removeMouseEvents, resetMouseEventsConfig } from './gameMouseEvents.mjs';
 
 function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } = {}) {
@@ -22,8 +22,8 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
   });
 
   async function handleGameApi(data, { onSuccess, onError } = {}) {
-    if (!onError) onError = prettyAlert;
-    await api.action
+    if (!onError) onError = window.prettyAlert;
+    return await api.action
       .call({ path: 'game.api.action', args: [data] })
       .then(onSuccess)
       .catch(onError);
