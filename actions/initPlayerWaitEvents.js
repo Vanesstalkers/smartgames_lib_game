@@ -25,9 +25,14 @@
           if (player.ai) return this.emit('TRIGGER', {}, player);
 
           player.activate({
-            notifyUser: 'Для начала игры нажми кнопку "Готов" и ожидай остальных игроков',
-            setData: { eventData: { playDisabled: null, controlBtn: { label: 'Готов', triggerEvent: true } } },
+            setData: {
+              eventData: {
+                playDisabled: null,
+                controlBtn: { label: 'Готов', triggerEvent: true, class: 'ready-btn' },
+              },
+            },
           });
+
           player.setEventWithTriggerListener(this);
 
           return { preventListenerRemove: true };

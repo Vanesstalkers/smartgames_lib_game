@@ -10,15 +10,17 @@ async (context, { gameId, viewerMode = false, ...args }) => {
     return { status: 'error', logout: true };
   }
 
+  const game = lib.store('game').get(gameId);
+  const data = { userId, userName: user.getName(), ...args }; // userName нужно для логов
+
   for (const session of user.sessions()) {
     // на случай повторного вызова api до обработки playerJoin
     // (session.saveChanges будет выполнен в user.joinGame)
     session.set({ gameId });
   }
 
-  const action = viewerMode ? 'viewerJoin' : 'playerJoin';
-  const publishData = { userId, userName: user.getName(), ...args }; // userName нужно для логов
-  lib.store.broadcaster.publishAction.call(session, `game-${gameId}`, action, publishData);
+  if (viewerMode) await game.viewerJoin(data);
+  else await game.playerJoin(data);
 
   return { status: 'ok' };
 };

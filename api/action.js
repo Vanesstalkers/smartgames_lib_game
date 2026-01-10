@@ -1,9 +1,9 @@
 async (context, actionData) => {
   const { sessionId } = context.session.state;
   const session = lib.store('session').get(sessionId);
+  const game = lib.store('game').get(session.gameId);
 
-  actionData.sessionUserId = session.userId;
-  lib.store.broadcaster.publishAction.call(session, `game-${session.gameId}`, 'handleAction', actionData);
+  await game.handleAction({ ...actionData, sessionUserId: session.userId });
 
   return { status: 'ok' };
 };

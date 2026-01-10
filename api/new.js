@@ -28,15 +28,6 @@ async (
     });
     const gameId = game.id();
 
-    for (const session of user.sessions()) {
-      // на случай повторного вызова api до обработки playerJoin
-      // (session.saveChanges будет выполнен в user.joinGame)
-      session.set({ gameId });
-    }
-
-    const publishData = { userId, userName: user.getName() }; // userName нужно для логов
-    await game.playerJoin(publishData);
-
     lib.store.broadcaster.publishAction.call(session, `lobby-${lobbyId}`, 'addGame', {
       gameId,
       creator: { userId: user.id(), tgUsername: user.tgUsername },

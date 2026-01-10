@@ -332,6 +332,8 @@ export default {
 
           addEvents(this);
           this.addMouseEvents(this);
+
+          if(state.iframeMode) window.parent.postMessage({ emit: { name: 'enterGame', data: {} } }, '*');
         })
         .catch((err) => {
           console.error(err);

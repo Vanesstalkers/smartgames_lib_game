@@ -84,8 +84,10 @@
     if (notifyUser) this.notifyUser(notifyUser);
   }
 
-  updateUser(data = {}) {
-    lib.store.broadcaster.publishData.call(this.game(), `user-${this.userId}`, data);
+  async updateUser(data = {}) {
+    const user = lib.store('user').get(this.userId);
+    user.set(data);
+    await user.saveChanges();
   }
   notifyUser(data = {}, config = {}) {
     if (typeof data === 'string') data = { message: data };

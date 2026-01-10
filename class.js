@@ -25,7 +25,7 @@
     }
 
     set(val, config = {}) {
-      if (!this._col) throw new Error('set error (\'_col\' is no defined)');
+      if (!this._col) throw new Error("set error ('_col' is no defined)");
 
       const clonedConfig = lib.utils.structuredClone(config);
       this.setChanges(val, clonedConfig);
@@ -148,27 +148,27 @@
      * Сохраняет данные при получении обновлений
      * @param {*} data
      */
-    async processData(data) {
+    async processData(data, broadcaster) {
       for (const [key, map] of Object.entries(data)) {
         switch (key) {
-        case 'user': {
-          const userMap = {};
+          case 'user': {
+            const userMap = {};
 
-          for (const [userId, user] of Object.entries(map)) {
-            const { name, login, avatarCode } = user;
-            const userName = name || login;
+            for (const [userId, user] of Object.entries(map)) {
+              const { name, login, avatarCode } = user;
+              const userName = name || login;
 
-            const player = this.getPlayerByUserId(userId);
-            if (player) player.set({ userName, avatarCode }); // мог быть удален
+              const player = this.getPlayerByUserId(userId);
+              if (player) player.set({ userName, avatarCode }); // мог быть удален
 
-            userMap[userId] = { userName, avatarCode };
+              userMap[userId] = { userName, avatarCode };
+            }
+
+            this.broadcastData({ user: userMap }, { wrapperDisabled: true });
+            break;
           }
-
-          this.broadcastData({ user: userMap }, { wrapperDisabled: true });
-          break;
-        }
-        default:
-          this.set(data, { removeEmptyObject: true });
+          default:
+            this.set(data, { removeEmptyObject: true });
         }
       }
       await this.saveChanges();
@@ -280,9 +280,9 @@
       if (!data.time) data.time = Date.now();
 
       if (data.msg.includes('{{player}}')) {
-        const player = data.userId ?
-          this.players().find((player) => player.userId === data.userId) :
-          this.roundActivePlayer();
+        const player = data.userId
+          ? this.players().find((player) => player.userId === data.userId)
+          : this.roundActivePlayer();
         if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `<player>${player.userName}</player>`);
       }
 
@@ -324,14 +324,20 @@
         player.set({ userId, userName, avatarCode: userAvatar });
         this.logs({ msg: 'Игрок {{player}} присоединился к игре.', userId });
 
+        const user = lib.store('user').get(userId);
+        await user.joinGame({
+          ...{ gameId, playerId, deckType: this.deckType, gameType: this.gameType },
+          isSinglePlayer: this.isSinglePlayer(),
+        });
+
         /* инициатором события был установлен первый player в списке,
         который совпадает с активным игроком на старте игры */
         this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
 
         if (this.gameConfig === 'ai') {
-          const player = this.restorationMode ?
-            this.players({ readyOnly: false }).find((p) => p.ai) :
-            this.getFreePlayerSlot();
+          const player = this.restorationMode
+            ? this.players({ readyOnly: false }).find((p) => p.ai)
+            : this.getFreePlayerSlot();
 
           player.set({
             ai: true,
@@ -346,19 +352,11 @@
         }
 
         await this.saveChanges();
-
-        const userPublishData = {
-          ...{ gameId, playerId, deckType: this.deckType, gameType: this.gameType },
-          isSinglePlayer: this.isSinglePlayer(),
-        };
-        const user = lib.store('user').get(userId);
-        await user.joinGame(userPublishData);
       } catch (exception) {
         console.error(exception);
         lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {
           data: { message: exception.message, stack: exception.stack },
         });
-        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'logout'); // инициирует hideGameIframe
       }
     }
     async viewerJoin({ viewerId, userId, userName }) {
@@ -373,7 +371,8 @@
 
         await this.saveChanges();
 
-        lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'joinGame', {
+        const user = lib.store('user').get(userId);
+        await user.joinGame({
           gameId: this.id(),
           viewerId: viewer.id(),
           deckType: this.deckType,
@@ -399,7 +398,9 @@
           } else throw exception;
         }
       }
-      lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'leaveGame', {});
+
+      const user = lib.store('user').get(userId);
+      await user.leaveGame();
     }
     async viewerLeave({ userId, viewerId }) {
       if (this.status !== 'FINISHED') {
@@ -410,7 +411,9 @@
         this.deleteFromObjectStorage(viewer);
         await this.saveChanges();
       }
-      lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'leaveGame', {});
+
+      const user = lib.store('user').get(userId);
+      await user.leaveGame();
     }
     roundActivePlayer(player) {
       if (player) this.set({ roundActivePlayerId: player.id() });
@@ -619,8 +622,9 @@
     }
     broadcastDataVueStoreRuleHandler(data, { accessConfig }) {
       const { userId, viewerMode } = accessConfig;
-      const storeData = data.store ?
-        { store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }) } : {};
+      const storeData = data.store
+        ? { store: this.prepareBroadcastData({ userId, viewerMode, data: lib.utils.structuredClone(data.store) }) }
+        : {};
       return { ...data, ...storeData };
     }
     async removeGame({ preventDeleteDumps = false } = {}) {
@@ -687,7 +691,7 @@
     async playerUseTutorial({ userId, usedLink }) {
       if (usedLink) {
         this.getPlayerByUserId(userId).notifyUser(
-          'Для повторного использования подсказки <a>зажми Ctrl</a> и выбери её снова'
+          'Для повторного использования подсказки <a>зажми Alt</a> и выбери её снова'
         );
       }
 

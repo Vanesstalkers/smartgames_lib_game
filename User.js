@@ -3,7 +3,7 @@
     /**
      * Сюда попадут рассылки publishData(user...`)
      */
-    async processData(data) {
+    async processData(data, broadcaster) {
       const wrappedData = data.user?.[this.id()];
       if (wrappedData) data = wrappedData;
       if (data._id) delete data._id;
@@ -35,16 +35,14 @@
           !finishedTutorials[gameStartTutorialName] // обучение не было пройдено ранее
         ) {
           await lib.helper.updateTutorial(this, { tutorial: gameStartTutorialName });
-        } else {
-          await this.saveChanges();
         }
+
         helperLinks = {
           ...domain.game.tutorial.getHelperLinks(),
           ...helperLinks,
         };
 
         this.set({ helperLinks });
-        await this.saveChanges();
       }
 
       this.set({
