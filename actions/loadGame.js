@@ -9,18 +9,18 @@ async ({ gameType, gameId, lobbyId, query = {} }) => {
       fromDB: { id: gameId, query, fromDump: true, processData },
     })
     .then(async (game) => {
-      const { deckType, gameType, gameConfig, gameTimer, playerMap } = game;
+      const { gameCode, gameType, gameConfig, gameTimer, playerMap } = game;
 
       await lib.store.broadcaster.publishAction.call(game, `lobby-${lobbyId}`, 'addGame', {
         restorationMode: true,
-        ...{ gameId, gameTimer, playerMap, deckType, gameType, gameConfig },
+        ...{ gameId, gameTimer, playerMap, gameCode, gameType, gameConfig },
       });
 
       game.restorationMode = true;
 
       await game.updateGameAtCache({
         restorationMode: true,
-        ...{ id: gameId, deckType, gameType, workerId: application.worker.id, port: application.server.port },
+        ...{ id: gameId, gameCode, gameType, workerId: application.worker.id, port: application.server.port },
       });
       game.run('initPlayerWaitEvents');
       game.set({ status: 'RESTORING_GAME' }); // в initPlayerWaitEvents выставляется  {status: 'WAIT_FOR_PLAYERS'}

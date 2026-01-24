@@ -81,7 +81,7 @@
     }
 
     async create(
-      { deckType, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame, minPlayersToStart } = {},
+      { gameCode, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame, minPlayersToStart } = {},
       { initPlayerWaitEvents = true } = {}
     ) {
       const { structuredClone: clone } = lib.utils;
@@ -94,7 +94,7 @@
 
       if (!settings)
         throw new Error(
-          `Not found initial game data (deckType='${deckType}', gameType='${gameType}', gameConfig='${gameConfig}').`
+          `Not found initial game data (gameCode='${gameCode}', gameType='${gameType}', gameConfig='${gameConfig}').`
         );
 
       maxPlayersInGame = maxPlayersInGame?.val || settings.playerList.length;
@@ -104,7 +104,7 @@
         newGame: true,
         settings: clone(settings),
         addTime: Date.now(),
-        ...{ deckType, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame, minPlayersToStart },
+        ...{ gameCode, gameType, gameConfig, gameTimer, difficulty, templates, maxPlayersInGame, minPlayersToStart },
       };
       if (gameTimer)
         gameData.settings.timer = typeof settings.timer === 'function' ? settings.timer(gameTimer) : gameTimer;
@@ -131,7 +131,7 @@
         this.id(),
         {
           id: this.id(),
-          deckType: this.deckType,
+          gameCode: this.gameCode,
           gameType: this.gameType,
           workerId: application.worker.id,
           port: application.server.port,
@@ -326,7 +326,7 @@
 
         const user = lib.store('user').get(userId);
         await user.joinGame({
-          ...{ gameId, playerId, deckType: this.deckType, gameType: this.gameType },
+          ...{ gameId, playerId, gameCode: this.gameCode, gameType: this.gameType },
           isSinglePlayer: this.isSinglePlayer(),
         });
 
@@ -375,7 +375,7 @@
         await user.joinGame({
           gameId: this.id(),
           viewerId: viewer.id(),
-          deckType: this.deckType,
+          gameCode: this.gameCode,
           gameType: this.gameType,
           isSinglePlayer: this.isSinglePlayer(),
           checkTutorials: false,

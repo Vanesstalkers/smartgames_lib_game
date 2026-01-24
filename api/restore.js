@@ -1,4 +1,4 @@
-async (context, { deckType, gameType, gameId, needLoadGame }) => {
+async (context, { gameCode, gameType, gameId, needLoadGame }) => {
   // восстановление игры из lobby
 
   const handleError = async (user) => {
@@ -65,6 +65,6 @@ async (context, { deckType, gameType, gameId, needLoadGame }) => {
     return { status: 'ok' };
   }
 
-  await user.joinGame({ gameId, playerId, viewerId, deckType, gameType, checkTutorials: false });
+  await user.joinGame({ gameId, playerId, viewerId, gameCode, gameType, checkTutorials: false });
   return { status: 'ok' };
 };

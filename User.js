@@ -12,7 +12,7 @@
     }
 
     async joinGame({
-      deckType,
+      gameCode,
       gameType,
       gameId,
       playerId,
@@ -46,7 +46,7 @@
       }
 
       this.set({
-        ...(!this.rankings?.[deckType] ? { rankings: { [deckType]: {} } } : {}),
+        ...(!this.rankings?.[gameCode] ? { rankings: { [gameCode]: {} } } : {}),
       });
 
       this.set({ gameId, playerId, viewerId });
@@ -55,7 +55,7 @@
       for (const session of this.sessions()) {
         session.set({ gameId, playerId, viewerId });
         await session.saveChanges();
-        session.emit('joinGame', { deckType, gameType, gameId, playerId, viewerId });
+        session.emit('joinGame', { gameCode, gameType, gameId, playerId, viewerId });
       }
     }
     async leaveGame() {

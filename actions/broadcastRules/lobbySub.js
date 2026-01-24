@@ -2,7 +2,7 @@
   const fields = [
     'round',
     'status',
-    'deckType',
+    'gameCode',
     'gameType',
     'gameConfig',
     'gameTimer',
