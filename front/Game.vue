@@ -108,28 +108,38 @@ export default {
     chat,
   },
   props: {
-    planeScaleMin: Number,
-    planeScaleMax: Number,
-    defaultScaleMinVisibleWidth: Number,
+    planeScaleMin: {
+      Number,
+      default: 0.3,
+    },
+    planeScaleMax: {
+      type: Number,
+      default: 2,
+    },
+    gamePlaneScaleFactor: {
+      type: Number,
+      default: 0.5,
+    },
+    gamePlaneScaleFactorMobile: {
+      type: Number,
+      default: 0.7,
+    },
     debug: {
       type: Boolean,
       default: false,
     },
   },
   data() {
-    const gamePlaneScaleMax = this.planeScaleMax || 1.0;
-    const gamePlaneScale = Math.min(window.innerWidth / this.defaultScaleMinVisibleWidth, gamePlaneScaleMax);
-    const gamePlaneScaleMin = Math.min(this.planeScaleMin || 0.3, gamePlaneScale);
-
     return {
       showChat: false,
       unreadMessages: 0,
       showLog: false,
       gamePlaneCustomStyleData: {},
-      gamePlaneScale,
-      gamePlaneScaleMin,
-      gamePlaneScaleMax,
+      gamePlaneScale: 1,
+      gamePlaneScaleMin: this.planeScaleMin,
+      gamePlaneScaleMax: this.planeScaleMax,
       planeScaleNeedUpdated: 0,
+      resizeObserver: null,
       tutorialActions: {
         leaveGame: async () => {
           await api.action.call({ path: 'game.api.leave', args: [] }).catch(prettyAlert);
@@ -211,9 +221,7 @@ export default {
       }, 100);
     },
     'state.gamePlaneNeedUpdate': function () {
-      setTimeout(() => {
-        this.updatePlaneScale();
-      }, 100);
+      setTimeout(this.updatePlaneScale, 100);
     },
   },
   methods: {
@@ -241,6 +249,7 @@ export default {
     },
     updatePlaneScale() {
       this.state.gamePlaneNeedUpdate = false;
+
       if (this.$el instanceof HTMLElement) {
         const { innerWidth, innerHeight } = window;
         const isMobile = this.state.isMobile;
@@ -259,10 +268,11 @@ export default {
         let { width, height } = this.$el.querySelector('#gamePlane').getBoundingClientRect();
         width = width / this.gamePlaneScale;
         height = height / this.gamePlaneScale;
+
         const value = Math.min(innerWidth / width, innerHeight / height);
         if (value > 0) {
-          this.gamePlaneScale = value * 0.75;
-          if (isMobile) this.gamePlaneScale *= 0.7;
+          this.gamePlaneScale = value * this.gamePlaneScaleFactor;
+          if (isMobile) this.gamePlaneScale *= this.gamePlaneScaleFactorMobile;
           if (this.gamePlaneScaleMin > value && value > 0.2) this.gamePlaneScaleMin = value;
           if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
           if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;
@@ -333,7 +343,7 @@ export default {
           addEvents(this);
           this.addMouseEvents(this);
 
-          if(state.iframeMode) window.parent.postMessage({ emit: { name: 'enterGame', data: {} } }, '*');
+          if (state.iframeMode) window.parent.postMessage({ emit: { name: 'iframeEnterGame', data: {} } }, '*');
         })
         .catch((err) => {
           console.error(err);
@@ -350,6 +360,14 @@ export default {
   async mounted() {
     this.$on('resetPlanePosition', this.resetPlanePosition);
 
+    // Настраиваем отслеживание изменений window.innerWidth
+    this.$nextTick(() => {
+      this.resizeObserver = () => window.innerWidth > 0 && setTimeout(this.updatePlaneScale, 100);
+      window.addEventListener('resize', this.resizeObserver);
+
+      this.resizeObserver();
+    });
+
     if (this.state.currentLobby && this.state.currentUser) {
       this.callGameEnter();
     } else {
@@ -360,6 +378,12 @@ export default {
   },
   async beforeDestroy() {
     this.$set(this.$root.state, 'viewLoaded', false);
+
+    // Удаляем слушатель resize
+    if (this.resizeObserver) {
+      window.removeEventListener('resize', this.resizeObserver);
+      this.resizeObserver = null;
+    }
 
     removeEvents();
     this.removeMouseEvents();

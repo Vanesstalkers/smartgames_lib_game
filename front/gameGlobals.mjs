@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 import { addMouseEvents, removeMouseEvents, resetMouseEventsConfig } from './gameMouseEvents.mjs';
 
-function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } = {}) {
+function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 200 } = {}) {
   const gameState = reactive({
     gameId: '',
     sessionPlayerId: '',

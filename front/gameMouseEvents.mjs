@@ -133,7 +133,6 @@ function resetMouseEventsConfig({ xOffset = 0, yOffset = 0, rotation = 0 } = {})
   config.xOffset = xOffset;
   config.yOffset = yOffset;
   config.rotation = rotation;
-  config.rotationLast = rotation;
 }
 
 export { addMouseEvents, removeMouseEvents, resetMouseEventsConfig, events, config };
