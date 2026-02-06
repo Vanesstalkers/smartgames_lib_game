@@ -208,7 +208,7 @@
     this.#game = game;
   }
   isGame() {
-    return this instanceof domain.game.class;
+    return this._col === 'game';
   }
   getStore() {
     return this.game().store;

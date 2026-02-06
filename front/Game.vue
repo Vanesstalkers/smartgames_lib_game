@@ -108,6 +108,7 @@ export default {
     chat,
   },
   props: {
+    defaultPlaneScale: Number,
     planeScaleMin: {
       Number,
       default: 0.3,
@@ -140,6 +141,8 @@ export default {
       gamePlaneScaleMax: this.planeScaleMax,
       planeScaleNeedUpdated: 0,
       resizeObserver: null,
+      zoomAccumulatedDelta: 0,
+      zoomLastResetTime: 0,
       tutorialActions: {
         leaveGame: async () => {
           await api.action.call({ path: 'game.api.leave', args: [] }).catch(prettyAlert);
@@ -271,7 +274,7 @@ export default {
 
         const value = Math.min(innerWidth / width, innerHeight / height);
         if (value > 0) {
-          this.gamePlaneScale = value * this.gamePlaneScaleFactor;
+          this.gamePlaneScale = this.defaultPlaneScale || value * this.gamePlaneScaleFactor;
           if (isMobile) this.gamePlaneScale *= this.gamePlaneScaleFactorMobile;
           if (this.gamePlaneScaleMin > value && value > 0.2) this.gamePlaneScaleMin = value;
           if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
@@ -287,9 +290,9 @@ export default {
               });
 
               if (calcFuncResult) {
-                // const { gamePlaneTransformOrigin,  ...calcData } = calcFuncResult;
-                // this.gamePlaneCustomStyleData = calcData;
-                // this.gamePlaneTransformOrigin = gamePlaneTransformOrigin; // позволяет вращать gp-content
+                const { gamePlaneTransformOrigin,  ...calcData } = calcFuncResult;
+                this.gamePlaneCustomStyleData = calcData;
+                this.gamePlaneTransformOrigin = gamePlaneTransformOrigin; // позволяет вращать gp-content
                 this.gamePlaneCustomStyleData = calcFuncResult;
               }
 
@@ -300,7 +303,25 @@ export default {
       }
     },
     zoomGamePlane(event) {
-      this.gamePlaneScale += event.deltaY > 0 ? -0.1 : 0.1;
+      if (!window.absDeltaList) window.absDeltaList = [];
+      window.absDeltaList.push(Math.abs(event.deltaY));
+      const lastFourDeltas = window.absDeltaList.slice(-4);
+      const firstOfLastFourDeltas = lastFourDeltas[0];
+      const lastThreeDeltas = window.absDeltaList.slice(-3);
+
+      if (lastFourDeltas < 4 || lastThreeDeltas.find((_) => _ <= firstOfLastFourDeltas)) {
+        window.lastDelta = window.absDeltaY;
+        return;
+      }
+      window.lastDelta = window.absDeltaY;
+
+      const now = Date.now();
+      if (now - (window.zoomLastUpdateTime || 0) < 300) return; // обеспечивает выполнение по 1 zoom-итерации за раз (за одну прокрутку колесика может подряд прийти несколько десятков событий увеличения/уменьшения zoom)
+      window.zoomLastUpdateTime = now;
+
+      const DELTA = 0.2;
+      this.gamePlaneScale += event.deltaY > 0 ? -DELTA : DELTA;
+
       if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
       if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;
     },
