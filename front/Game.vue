@@ -288,13 +288,8 @@ export default {
                 gamePlaneScale: this.gamePlaneScale,
                 isMobile,
               });
-
-              if (calcFuncResult) {
-                const { gamePlaneTransformOrigin,  ...calcData } = calcFuncResult;
-                this.gamePlaneCustomStyleData = calcData;
-                this.gamePlaneTransformOrigin = gamePlaneTransformOrigin; // позволяет вращать gp-content
-                this.gamePlaneCustomStyleData = calcFuncResult;
-              }
+              
+              if (calcFuncResult) this.gamePlaneCustomStyleData = calcFuncResult;
 
               restoreGamePlaneSettings();
             }
@@ -303,6 +298,8 @@ export default {
       }
     },
     zoomGamePlane(event) {
+      /*       // !!! логика для режима с большим количеством маленьких изменений zoom-а за одну прокрутку колесика
+
       if (!window.absDeltaList) window.absDeltaList = [];
       window.absDeltaList.push(Math.abs(event.deltaY));
       const lastFourDeltas = window.absDeltaList.slice(-4);
@@ -317,7 +314,7 @@ export default {
 
       const now = Date.now();
       if (now - (window.zoomLastUpdateTime || 0) < 300) return; // обеспечивает выполнение по 1 zoom-итерации за раз (за одну прокрутку колесика может подряд прийти несколько десятков событий увеличения/уменьшения zoom)
-      window.zoomLastUpdateTime = now;
+      window.zoomLastUpdateTime = now; */
 
       const DELTA = 0.2;
       this.gamePlaneScale += event.deltaY > 0 ? -DELTA : DELTA;
