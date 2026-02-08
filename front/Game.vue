@@ -288,7 +288,7 @@ export default {
                 gamePlaneScale: this.gamePlaneScale,
                 isMobile,
               });
-              
+
               if (calcFuncResult) this.gamePlaneCustomStyleData = calcFuncResult;
 
               restoreGamePlaneSettings();
@@ -298,15 +298,16 @@ export default {
       }
     },
     zoomGamePlane(event) {
-      /*       // !!! логика для режима с большим количеством маленьких изменений zoom-а за одну прокрутку колесика
-
       if (!window.absDeltaList) window.absDeltaList = [];
       window.absDeltaList.push(Math.abs(event.deltaY));
+      
       const lastFourDeltas = window.absDeltaList.slice(-4);
       const firstOfLastFourDeltas = lastFourDeltas[0];
       const lastThreeDeltas = window.absDeltaList.slice(-3);
+      const h = window.innerHeight / 10;
+      const oneOfManySmallScrollIterations = lastThreeDeltas.find((_) => _ < h); // у chrome на одно wheel-движение приходит до 40 событий
 
-      if (lastFourDeltas < 4 || lastThreeDeltas.find((_) => _ <= firstOfLastFourDeltas)) {
+      if (lastThreeDeltas.find((_) => _ <= firstOfLastFourDeltas) && oneOfManySmallScrollIterations) {
         window.lastDelta = window.absDeltaY;
         return;
       }
@@ -314,7 +315,7 @@ export default {
 
       const now = Date.now();
       if (now - (window.zoomLastUpdateTime || 0) < 300) return; // обеспечивает выполнение по 1 zoom-итерации за раз (за одну прокрутку колесика может подряд прийти несколько десятков событий увеличения/уменьшения zoom)
-      window.zoomLastUpdateTime = now; */
+      window.zoomLastUpdateTime = now;
 
       const DELTA = 0.2;
       this.gamePlaneScale += event.deltaY > 0 ? -DELTA : DELTA;
