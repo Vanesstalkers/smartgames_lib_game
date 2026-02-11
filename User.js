@@ -76,13 +76,7 @@
       }
     }
 
-    async gameFinished({
-      gameType,
-      playerEndGameStatus,
-      fullPrice,
-      roundCount,
-      preventCalcStats = false,
-    } = {}) {
+    async gameFinished({ gameType, playerEndGameStatus, fullPrice, roundCount, preventCalcStats = false } = {}) {
       const {
         helper: { getTutorial },
         utils: { structuredClone: clone },

@@ -300,7 +300,7 @@ export default {
     zoomGamePlane(event) {
       if (!window.absDeltaList) window.absDeltaList = [];
       window.absDeltaList.push(Math.abs(event.deltaY));
-      
+
       const lastFourDeltas = window.absDeltaList.slice(-4);
       const firstOfLastFourDeltas = lastFourDeltas[0];
       const lastThreeDeltas = window.absDeltaList.slice(-3);

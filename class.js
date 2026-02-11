@@ -682,19 +682,10 @@
     }
     onTimerDelete() {
       for (const player of this.getActivePlayers()) {
-        player.set({
-          timerEndTime: null,
-          timerUpdateTime: Date.now(),
-        });
+        player.set({ timerEndTime: null, timerUpdateTime: Date.now() });
       }
     }
     async playerUseTutorial({ userId, usedLink }) {
-      if (usedLink) {
-        this.getPlayerByUserId(userId).notifyUser(
-          'Для повторного использования подсказки <a>зажми Alt</a> и выбери её снова'
-        );
-      }
-
       const roundActivePlayer = this.getPlayerByUserId(userId)?.active;
       if (!roundActivePlayer) return; // даем прибавку только игрокам, у которых запущен таймер
 
