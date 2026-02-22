@@ -120,7 +120,9 @@
       return this;
     }
     restart() {
-      this.set({ status: 'IN_PROCESS' });
+      const statusLabel = this.round != null ? `Раунд ${this.round}` : this.statusLabel;
+      this.set({ status: 'IN_PROCESS', statusLabel });
+
       this.run('initGameProcessEvents');
       lib.timers.timerRestart(this, this.lastRoundTimerConfig);
     }
@@ -630,7 +632,7 @@
 
     getBroadcastRule(ruleHandler) {
       const splittedPath = ['game', 'actions', 'broadcastRules', ruleHandler];
-      
+
       let method = lib.utils.getDeep(domain, splittedPath);
       if (!method) method = lib.utils.getDeep(lib, splittedPath);
       if (typeof method !== 'function') throw 'not_found';

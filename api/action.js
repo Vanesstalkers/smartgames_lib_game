@@ -6,6 +6,9 @@ async (context, actionData) => {
   if (!game || game.status === 'FINISHED') {
     throw new Error('Действие невозможно, так как игра завершена');
   }
+  if (game.status === 'RESTORING_GAME') {
+    throw new Error('Действие невозможно, так как игра еще не восстановлена');
+  }
 
   await game.handleAction({ ...actionData, sessionUserId: session.userId });
 

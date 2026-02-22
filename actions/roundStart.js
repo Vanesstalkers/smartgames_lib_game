@@ -1,4 +1,4 @@
-(function () {
+(function ({ preventDumpState = false } = {}) {
   const roundStepsFunc =
     domain.game.actions[this.gameType]?.roundSteps ||
     domain.game[this.gameType]?.actions?.roundSteps ||
@@ -23,7 +23,8 @@
   if (forcedEndRound) return this.run('roundEnd');
 
   this.set({ roundStepsMap: { [roundStep]: true } }); // !!! переделать на {[newRoundNumber]: { [roundStep]: true }} (+ не забыть фронт)
-  this.dumpState(); // вся структура roundEnd/roundStart/roundSteps сделана ради этой строчки
+
+  if (!preventDumpState) this.dumpState();
 
   const timerConfig = timerRestart === true ? this.lastRoundTimerConfig : timerRestart;
   lib.timers.timerRestart(this, timerConfig);
