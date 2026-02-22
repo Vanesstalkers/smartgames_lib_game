@@ -627,6 +627,17 @@
         : {};
       return { ...data, ...storeData };
     }
+
+    getBroadcastRule(ruleHandler) {
+      const splittedPath = ['game', 'actions', 'broadcastRules', ruleHandler];
+      
+      let method = lib.utils.getDeep(domain, splittedPath);
+      if (!method) method = lib.utils.getDeep(lib, splittedPath);
+      if (typeof method !== 'function') throw 'not_found';
+
+      return method;
+    }
+
     async removeGame({ preventDeleteDumps = false } = {}) {
       await db.redis.hdel('games', this.id());
       await this.saveChanges();
