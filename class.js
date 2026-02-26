@@ -591,7 +591,7 @@
      * Дополнительные обработчики для store.broadcastData
      */
     broadcastDataBeforeHandler(data, config = {}) {
-      const { customChannel } = config;
+      const { customChannel, wrapperDisabled } = config;
 
       for (const key of this.preventBroadcastFields()) {
         if (data[key]) delete data[key];
@@ -603,9 +603,11 @@
           for (const _id of Object.keys(this.#broadcastObject[col])) {
             const objectData =
               this.#broadcastObject[col][_id] === null ? null : lib.utils.structuredClone(this.store[col][_id]);
+
+            const source = { store: { [col]: { [_id]: objectData } } };
             lib.utils.mergeDeep({
               target: data,
-              source: { store: { [col]: { [_id]: objectData } } },
+              source: wrapperDisabled ? this.wrapPublishData(source) : source, // в рассылаемых данных есть не игровые объекты (например, user) и глобальная обертка {game: {[id]: {...}}} не будет применена
             });
           }
         }
