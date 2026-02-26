@@ -25,7 +25,7 @@
 ### Поиск или создание слота игрока
 
 1. **restoredPlayer** (передан `playerId`): игрок берётся по `this.get(playerId)` (супер-игра хранит всех игроков в своём store).
-2. **Новый игрок**: вызывается **getFreePlayerSlot({ game: this.get(teamId) })**. Если `game` не передан, выбирается команда с минимальным числом игроков (`getAllGames().sort(...)[0]`). Слот создаётся через `game.run('addPlayer', { ...playerTemplates['default'], _code: playerCount + 1 })` — в под-игру добавляется новый игрок.
+2. **Новый игрок**: вызывается **getFreePlayerSlot({ game: this.get(teamId) })**. В супер-игре проверяется лимит **maxPlayersInGame**; если `game` не передан, выбирается команда с минимальным числом игроков (`getAllGames().sort(...)[0]`). Поиск свободного слота выполняется **в под-игре**: вызывается **game.getFreePlayerSlot()** из логики lib.game.class (поиск существующего слота — игрок без `userId`); если слот не найден, в под-игре создаётся новый через `game.run('addPlayer', { ...playerTemplates['default'], _code: playerCount + 1 })`.
 
 Если свободных мест нет (`maxPlayersInGame` достигнут или слот не найден), выбрасывается ошибка «Свободных мест не осталось».
 

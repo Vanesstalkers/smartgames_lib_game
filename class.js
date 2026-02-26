@@ -65,8 +65,8 @@
     deleteFromObjectStorage(obj) {
       super.deleteFromObjectStorage(obj);
 
-      const { _id: id } = obj;
-      if (this.store[id]) delete this.store[id];
+      const { _id: id, _col: col } = obj;
+      if (this.store[col]?.[id]) delete this.store[col][id];
     }
 
     defaultClasses(map) {
