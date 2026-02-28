@@ -327,10 +327,7 @@
         this.logs({ msg: 'Игрок {{player}} присоединился к игре.', userId });
 
         const user = lib.store('user').get(userId);
-        await user.joinGame({
-          ...{ gameId, playerId, gameCode: this.gameCode, gameType: this.gameType },
-          isSinglePlayer: this.isSinglePlayer(),
-        });
+        await user.joinGame({ gameId, playerId });
 
         /* инициатором события был установлен первый player в списке,
         который совпадает с активным игроком на старте игры */
@@ -374,14 +371,7 @@
         await this.saveChanges();
 
         const user = lib.store('user').get(userId);
-        await user.joinGame({
-          gameId: this.id(),
-          viewerId: viewer.id(),
-          gameCode: this.gameCode,
-          gameType: this.gameType,
-          isSinglePlayer: this.isSinglePlayer(),
-          checkTutorials: false,
-        });
+        await user.joinGame({ gameId: this.id(), viewerId: viewer.id(), checkTutorials: false });
       } catch (exception) {
         console.error(exception);
         lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {

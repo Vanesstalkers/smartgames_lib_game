@@ -294,6 +294,15 @@
       });
     }
 
+    const handlers = event.handlers();
+    for (const handler of handlers) {
+      if (handler === 'TRIGGER') {
+        player?.setEventWithTriggerListener(event);
+      } else {
+        game.addEventListener({ handler, event });
+      }
+    }
+
     if (event.init) {
       try {
         const { resetEvent } = event.init(initData) || {};
@@ -305,17 +314,6 @@
         event.emit('RESET');
         event = null;
         throw error;
-      }
-    }
-
-    if (event) {
-      const handlers = event.handlers();
-      for (const handler of handlers) {
-        if (handler === 'TRIGGER') {
-          player?.setEventWithTriggerListener(event);
-        } else {
-          game.addEventListener({ handler, event });
-        }
       }
     }
 

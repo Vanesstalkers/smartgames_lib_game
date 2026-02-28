@@ -48,8 +48,9 @@ async (context, { gameCode, gameType, gameId, needLoadGame }) => {
     return handleError(user);
   }
 
-  const { playerId, viewerId } = user;
   const { lobbyId } = session;
+  let { playerId, viewerId } = user;
+  if (!playerId && user.lastGames?.length) playerId = user.lastGames.find((g) => g.gameId === gameId)?.playerId;
 
   if (needLoadGame) {
     return loadAndJoinGame(gameType, gameId, lobbyId, user, playerId, viewerId);
@@ -65,6 +66,6 @@ async (context, { gameCode, gameType, gameId, needLoadGame }) => {
     return { status: 'ok' };
   }
 
-  await user.joinGame({ gameId, playerId, viewerId, gameCode, gameType, checkTutorials: false });
+  await user.joinGame({ gameId, playerId, viewerId, checkTutorials: false });
   return { status: 'ok' };
 };

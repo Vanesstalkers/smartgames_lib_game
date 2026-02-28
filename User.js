@@ -1,5 +1,7 @@
 () =>
   class GameUser extends lib.lobby.User() {
+    lastGames = [];
+
     /**
      * Сюда попадут рассылки publishData(user...`)
      */
@@ -12,14 +14,18 @@
     }
 
     async joinGame({
-      gameCode,
-      gameType,
       gameId,
       playerId,
       viewerId,
       checkTutorials = true,
       gameStartTutorialName = 'game-tutorial-start',
     }) {
+      const game = lib.store('game').get(gameId);
+      const gameCode = game.gameCode;
+      const gameType = game.gameType;
+      const gameConfig = game.gameConfig;
+      const addTime = game.addTime;
+
       const { finishedTutorials = {} } = this;
       let { currentTutorial = {}, helper = null, helperLinks = {} } = this;
 
@@ -49,7 +55,10 @@
         ...(!this.rankings?.[gameCode] ? { rankings: { [gameCode]: {} } } : {}),
       });
 
-      this.set({ gameId, playerId, viewerId });
+      this.set({
+        ...{ gameId, playerId, viewerId },
+        lastGames: this.lastGames.concat({ gameId, gameCode, gameType, gameConfig, addTime, playerId }).slice(-20),
+      });
       await this.saveChanges();
 
       for (const session of this.sessions()) {
