@@ -9,7 +9,7 @@
     }
 
     for (let game of lib.game.flush.list) {
-      for (const objMap of Object.values(game.store)) {
+      for (const objMap of Object.values(game.store || {})) {
         for (const obj of Object.values(objMap)) {
           for (let key in obj) {
             delete obj[key];

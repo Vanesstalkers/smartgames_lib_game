@@ -293,20 +293,29 @@
         this.destroy();
       });
     }
-    const handlers = event.handlers();
-    for (const handler of handlers) {
-      if (handler === 'TRIGGER') {
-        player?.setEventWithTriggerListener(event);
-      } else {
-        game.addEventListener({ handler, event });
+
+    if (event.init) {
+      try {
+        const { resetEvent } = event.init(initData) || {};
+        if (resetEvent) {
+          event.emit('RESET');
+          event = null;
+        }
+      } catch (error) {
+        event.emit('RESET');
+        event = null;
+        throw error;
       }
     }
 
-    if (event.init) {
-      const { resetEvent } = event.init(initData) || {};
-      if (resetEvent) {
-        event.emit('RESET');
-        event = null;
+    if (event) {
+      const handlers = event.handlers();
+      for (const handler of handlers) {
+        if (handler === 'TRIGGER') {
+          player?.setEventWithTriggerListener(event);
+        } else {
+          game.addEventListener({ handler, event });
+        }
       }
     }
 
