@@ -87,7 +87,6 @@
 
     async gameFinished({ gameType, playerEndGameStatus, fullPrice, roundCount, preventCalcStats = false } = {}) {
       const {
-        helper: { getTutorial },
         utils: { structuredClone: clone },
       } = lib;
 
@@ -130,7 +129,7 @@
       rankings[gameType].totalTime = totalTime + roundCount;
       rankings[gameType].avrTime = Math.floor(rankings[gameType].totalTime / rankings[gameType].win);
 
-      const { steps } = getTutorial('game-tutorial-finished');
+      const { steps } = this.getTutorial('game-tutorial-finished');
       const tutorial = clone(steps, { convertFuncToString: true });
       let incomeText = `${income.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} ₽`;
       if (penaltySum > 0)
@@ -138,5 +137,41 @@
       tutorial[endGameStatus].text = tutorial[endGameStatus].text.replace('[[win-money]]', incomeText);
       this.set({ money: (this.money || 0) + income, helper: tutorial[endGameStatus], rankings });
       await this.saveChanges();
+    }
+
+    async updateTutorial(data) {
+      const { tutorial, usedLink } = data;
+
+      if (typeof tutorial === 'object') {
+        const { cardId } = tutorial;
+        if (cardId != null) {
+          const game = lib.store('game').get(this.gameId);
+          const card = game.get(cardId);
+          if (!card) return;
+
+          const cardTutorialGenerator =
+            domain.game.tutorial.cardTutorialGenerator || lib.game.tutorial.cardTutorialGenerator;
+
+          const helper = cardTutorialGenerator.call(game, { card });
+          if (helper) {
+            this.set({ helper }, { reset: ['helper', 'helper.actions'], removeEmptyObject: true });
+            await this.saveChanges();
+          }
+        }
+        return;
+      }
+
+      lib.helper.updateTutorial(this, data);
+
+      if (this.gameId && usedLink && (this.helperLinks[usedLink]?.used || 0) < 2) {
+        lib.store.broadcaster.publishAction.call(this, `game-${this.gameId}`, 'playerUseTutorial', {
+          userId: this.id(),
+          usedLink,
+        });
+      }
+    }
+
+    getTutorial(formattedPath) {
+      return lib.helper.getTutorial(formattedPath);
     }
   };
