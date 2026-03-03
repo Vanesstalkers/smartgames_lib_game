@@ -8,7 +8,7 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 200 } =
     sessionViewerId: '',
     viewerMode: false,
     serverTimeDiff: 0,
-    shownCard: '',
+    shownCard: { id: null, code: null, style: {} },
     cardWorkerAction: {},
   });
 

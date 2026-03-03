@@ -58,9 +58,9 @@
       </div>
     </div>
 
-    <div v-if="state.shownCard" class="shown-card scroll-off" v-on:click.stop="closeCardInfo">
+    <div v-if="state.shownCard?.code" class="shown-card scroll-off" v-on:click.stop="closeCardInfo">
       <div class="close" v-on:click.stop="closeCardInfo" />
-      <div class="img" :style="state.shownCard" />
+      <div class="img" :style="state.shownCard.style" />
     </div>
 
     <div
@@ -153,6 +153,7 @@ export default {
   setup: function () {
     return inject('gameGlobals', prepareGameGlobals);
   },
+
   computed: {
     state() {
       return this.$root.state || {};
@@ -207,6 +208,10 @@ export default {
     },
   },
   watch: {
+    'state.shownCard.id': function (cardId) {
+      if (!cardId) return;
+      api.action.call({ path: 'helper.api.action', args: [{ tutorial: { cardId } }] }).catch(prettyAlert);
+    },
     gameDataLoaded: function () {
       this.$set(this.$root.state, 'viewLoaded', true);
       this.resetPlanePosition();
@@ -325,7 +330,7 @@ export default {
     },
 
     closeCardInfo() {
-      this.$set(this.$root.state, 'shownCard', '');
+      this.$set(this.$root.state, 'shownCard', { code: null, style: {} });
     },
     toggleChat() {
       this.showLog = false;
@@ -379,6 +384,11 @@ export default {
   async mounted() {
     this.$on('resetPlanePosition', this.resetPlanePosition);
 
+    this.escKeyHandler = (e) => {
+      if (e.key === 'Escape' && this.state.shownCard?.code) this.closeCardInfo();
+    };
+    window.addEventListener('keydown', this.escKeyHandler);
+
     // Настраиваем отслеживание изменений window.innerWidth
     this.$nextTick(() => {
       this.resizeObserver = () => window.innerWidth > 0 && setTimeout(this.updatePlaneScale, 100);
@@ -396,6 +406,10 @@ export default {
     }
   },
   async beforeDestroy() {
+    if (this.escKeyHandler) {
+      window.removeEventListener('keydown', this.escKeyHandler);
+      this.escKeyHandler = null;
+    }
     this.$set(this.$root.state, 'viewLoaded', false);
 
     // Удаляем слушатель resize

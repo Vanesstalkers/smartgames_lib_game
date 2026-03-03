@@ -122,8 +122,8 @@ export default {
     toggleSelect() {
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;
     },
-    showInfo(name) {
-      this.$set(this.$root.state, 'shownCard', this.getCustomStyle);
+    showInfo() {
+      this.$set(this.$root.state, 'shownCard', { id: this.cardId, code: this.card.name, style: this.getCustomStyle });
     },
   },
   mounted() {},

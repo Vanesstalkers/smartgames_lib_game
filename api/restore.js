@@ -1,4 +1,4 @@
-async (context, { gameCode, gameType, gameId, needLoadGame }) => {
+async (context, { gameType, gameId, needLoadGame }) => {
   // восстановление игры из lobby
 
   const handleError = async (user) => {
