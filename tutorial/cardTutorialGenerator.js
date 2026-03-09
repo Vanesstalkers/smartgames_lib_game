@@ -1,14 +1,14 @@
 ({ card, eventGetter } = {}) => {
-  const cardMeta = domain.game.configs.cards().find((c) => c.name === card.name);
-  const title = cardMeta?.title || card.name;
-
   let eventDef = null;
-  if (!eventGetter) eventGetter = domain.game.events?.card?.[card.code];
+  if (!eventGetter) eventGetter = domain.game.events?.card?.[card.name];
   if (eventGetter && typeof eventGetter === 'function') eventDef = eventGetter.call(card);
-  if (!eventDef?.text) return null;
 
+  const tutorialText = eventDef?.tutorial?.text;
+  if (!tutorialText) return null;
+
+  const text = typeof tutorialText === 'function' ? tutorialText(card) : tutorialText;
   return {
-    text: `Карта <a>${title}</a>\n${String(eventDef.text).trim()}`,
+    text: String(text).trim(),
     pos: 'bottom-w100',
     buttons: [{ text: 'Спасибо', action: 'exit', exit: true }],
   };

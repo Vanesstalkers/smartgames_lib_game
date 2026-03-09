@@ -285,12 +285,25 @@
         const player = data.userId
           ? this.players().find((player) => player.userId === data.userId)
           : this.roundActivePlayer();
-        if (player?.userName) data.msg = data.msg.replace(/{{player}}/g, `<player>${player.userName}</player>`);
+
+        if (player) {
+          let playerName = player.userName;
+
+          if (!playerName && player.userId) {
+            const user = lib.store('user').get(player.userId);
+            if (user) playerName = user.getName?.() ?? user.login ?? user.name;
+          }
+
+          if (playerName) {
+            data.msg = data.msg.replace(/{{player}}/g, `<player>${playerName}</player>`);
+          }
+        }
       }
 
       const id = (Date.now() + Math.random()).toString().replace('.', '_');
       this.#logs[id] = data;
-      if (consoleMsg) console.info(data.msg);
+      
+      if (consoleMsg) console.info(data.msg.replace(/<\/?player>/g, ''));
     }
     async showLogs({ sessionId, lastItemTime }) {
       let logs = this.logs();
