@@ -7,7 +7,7 @@ async (context, { gameId, viewerMode = false, ...args }) => {
     lib.store.broadcaster.publishAction.call(session, `user-${userId}`, 'broadcastToSessions', {
       data: { message: 'Уже подключен к другой игре. Требуется повторить попытку подключения.' },
     });
-    return { status: 'error', logout: true };
+    return { status: 'error', returnToLobby: true };
   }
 
   const game = lib.store('game').get(gameId);
@@ -20,7 +20,10 @@ async (context, { gameId, viewerMode = false, ...args }) => {
   }
 
   if (viewerMode) await game.viewerJoin(data);
-  else await game.playerJoin(data);
+  else {
+    const { playerId, teamId } = (await game.playerJoin(data)) || {};
+    await user.joinGame({ gameId, playerId, teamId });
+  }
 
   return { status: 'ok' };
 };

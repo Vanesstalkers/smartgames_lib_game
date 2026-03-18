@@ -13,24 +13,25 @@ async (context, { gameType, gameId, needLoadGame }) => {
 
     await user.saveChanges();
 
-    return { status: 'error', logout: true };
+    return { status: 'error', returnToLobby: true };
   };
 
-  const joinGame = async (game, user, playerId, viewerId) => {
-    const joinData = { userId: user.id(), playerId, viewerId };
+  const joinGame = async ({ game, user, playerId, viewerId, teamId } = {}) => {
+    const joinData = { userId: user.id(), playerId, viewerId, teamId };
 
     if (viewerId) {
       await game.viewerJoin(joinData);
     } else {
-      await game.playerJoin(joinData);
+      const { playerId } = (await game.playerJoin(joinData)) || {};
+      await user.joinGame({ restoreAction: true, gameId: game.id(), playerId });
     }
   };
 
-  const loadAndJoinGame = async (gameType, gameId, lobbyId, user, playerId, viewerId) => {
+  const loadAndJoinGame = async ({ gameType, gameId, lobbyId, user, playerId, viewerId, teamId } = {}) => {
     try {
       const loadGameAction = domain.game.actions.loadGame || lib.game.actions.loadGame;
       const game = await loadGameAction({ gameType, gameId, lobbyId });
-      await joinGame(game, user, playerId, viewerId);
+      await joinGame({ game, user, playerId, viewerId, teamId });
       return { status: 'ok' };
     } catch (err) {
       if (err === 'not_found') {
@@ -49,11 +50,11 @@ async (context, { gameType, gameId, needLoadGame }) => {
   }
 
   const { lobbyId } = session;
-  let { playerId, viewerId } = user;
+  let { playerId, viewerId, teamId } = user;
   if (!playerId && user.lastGames?.length) playerId = user.lastGames.find((g) => g.gameId === gameId)?.playerId;
 
   if (needLoadGame) {
-    return loadAndJoinGame(gameType, gameId, lobbyId, user, playerId, viewerId);
+    return loadAndJoinGame({ gameType, gameId, lobbyId, user, playerId, viewerId, teamId });
   }
 
   const redisData = await db.redis.hget('games', gameId, { json: true });
@@ -62,10 +63,15 @@ async (context, { gameType, gameId, needLoadGame }) => {
 
   if (redisData.restorationMode) {
     const game = lib.store('game').get(gameId);
-    await joinGame(game, user, playerId, viewerId);
+    await joinGame({ game, user, playerId, viewerId, teamId });
     return { status: 'ok' };
   }
 
-  await user.joinGame({ gameId, playerId, viewerId, checkTutorials: false });
+  try {
+    await user.joinGame({ gameId, playerId, viewerId, teamId, checkTutorials: false });
+  } catch (err) {
+    if (err === 'bad_game_data') return handleError(user, 'Некорректные данные игры');
+    throw err;
+  }
   return { status: 'ok' };
 };

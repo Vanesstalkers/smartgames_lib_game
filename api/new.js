@@ -53,6 +53,6 @@ async (
         data: { message: err.message, stack: err.stack },
       });
     }
-    return { status: 'error', logout: true };
+    return { status: 'error', returnToLobby: true };
   }
 };

@@ -355,8 +355,14 @@ export default {
           path: 'game.api.enter',
           args: [{ gameId: this.$route.params.id }],
         })
-        .then(async (data) => {
+        .then(async (data = {}) => {
           const { gameId, playerId, viewerId, serverTime, restorationMode } = data;
+
+          if (!gameId) {
+            this.$router.push({ path: `/` }).catch((err) => console.error(err));
+            return;
+          }
+
           const viewerMode = viewerId ? true : false;
           this.gameState.gameId = gameId;
           this.gameState.sessionPlayerId = playerId;

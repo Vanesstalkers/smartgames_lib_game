@@ -302,7 +302,7 @@
 
       const id = (Date.now() + Math.random()).toString().replace('.', '_');
       this.#logs[id] = data;
-      
+
       if (consoleMsg) console.info(data.msg.replace(/<\/?player>/g, ''));
     }
     async showLogs({ sessionId, lastItemTime }) {
@@ -333,18 +333,13 @@
 
         const player = playerId ? this.get(playerId) : this.getFreePlayerSlot();
         if (!player) throw new Error('Свободных мест не осталось');
-        const gameId = this.id();
-        playerId = player.id();
 
         player.set({ userId, userName, avatarCode: userAvatar });
         this.logs({ msg: 'Игрок {{player}} присоединился к игре.', userId });
 
-        const user = lib.store('user').get(userId);
-        await user.joinGame({ gameId, playerId });
-
         /* инициатором события был установлен первый player в списке,
         который совпадает с активным игроком на старте игры */
-        this.toggleEventHandlers('PLAYER_JOIN', { targetId: playerId }, player);
+        this.toggleEventHandlers('PLAYER_JOIN', { targetId: player.id() }, player);
 
         if (this.gameConfig === 'ai') {
           const player = this.restorationMode
@@ -364,6 +359,8 @@
         }
 
         await this.saveChanges();
+
+        return { playerId: player.id() };
       } catch (exception) {
         console.error(exception);
         lib.store.broadcaster.publishAction.call(this, `user-${userId}`, 'broadcastToSessions', {
@@ -396,7 +393,8 @@
       if (this.status !== 'FINISHED') {
         this.logs({ msg: 'Игрок {{player}} вышел из игры.', userId });
         try {
-          this.run('endGame', { canceledByUser: userId });
+          const player = this.getPlayerByUserId(userId);
+          if (player) this.run('endGame', { canceledByUser: userId });
         } catch (exception) {
           if (exception instanceof lib.game.endGameException) {
             await this.removeGame();

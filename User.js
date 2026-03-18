@@ -16,7 +16,9 @@
     async joinGame({
       gameId,
       playerId,
+      teamId,
       viewerId,
+      restoreAction = false,
       checkTutorials = true,
       gameStartTutorialName = 'game-tutorial-start',
     }) {
@@ -26,45 +28,48 @@
       const gameConfig = game.gameConfig;
       const addTime = game.addTime;
 
-      const { finishedTutorials = {} } = this;
-      let { currentTutorial = {}, helper = null, helperLinks = {} } = this;
+      if (!gameCode || !gameType || !gameConfig) throw 'bad_game_data';
 
-      if (checkTutorials) {
-        currentTutorial = null;
-        helper = null;
+      if (restoreAction === false) {
+        const { finishedTutorials = {} } = this;
+        let { currentTutorial = {}, helper = null, helperLinks = {} } = this;
 
-        this.set({ currentTutorial, helper });
+        if (checkTutorials) {
+          currentTutorial = null;
+          helper = null;
 
-        if (
-          !viewerId && // наблюдателям не нужно обучение
-          !helper && // нет активного обучения
-          !finishedTutorials[gameStartTutorialName] // обучение не было пройдено ранее
-        ) {
-          await lib.helper.updateTutorial(this, { tutorial: gameStartTutorialName });
+          this.set({ currentTutorial, helper });
+
+          if (
+            !viewerId && // наблюдателям не нужно обучение
+            !helper && // нет активного обучения
+            !finishedTutorials[gameStartTutorialName] // обучение не было пройдено ранее
+          ) {
+            await lib.helper.updateTutorial(this, { tutorial: gameStartTutorialName });
+          }
+
+          helperLinks = {
+            ...domain.game.tutorial.getHelperLinks(),
+            ...helperLinks,
+          };
+
+          this.set({ helperLinks });
         }
 
-        helperLinks = {
-          ...domain.game.tutorial.getHelperLinks(),
-          ...helperLinks,
-        };
-
-        this.set({ helperLinks });
+        this.set({
+          ...(!this.rankings?.[gameCode] ? { rankings: { [gameCode]: {} } } : {}),
+          lastGames: this.lastGames.concat({ gameId, gameCode, gameType, gameConfig, addTime, playerId }).slice(-20),
+        });
       }
 
-      this.set({
-        ...(!this.rankings?.[gameCode] ? { rankings: { [gameCode]: {} } } : {}),
-      });
-
-      this.set({
-        ...{ gameId, playerId, viewerId },
-        lastGames: this.lastGames.concat({ gameId, gameCode, gameType, gameConfig, addTime, playerId }).slice(-20),
-      });
+      this.set({ gameId, playerId, viewerId, teamId });
       await this.saveChanges();
 
       for (const session of this.sessions()) {
         session.set({ gameId, playerId, viewerId });
         await session.saveChanges();
-        session.emit('joinGame', { gameCode, gameType, gameId, playerId, viewerId });
+
+        session.emit('joinGame', { gameCode, gameType, gameId });
       }
     }
     async leaveGame() {
