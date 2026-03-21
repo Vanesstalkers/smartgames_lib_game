@@ -12,13 +12,12 @@ async (context, { round, roundStep } = {}) => {
     const query = { round: parseInt(round) || game.round };
     if (game.roundStep) query.roundStep = { $in: [roundStep || game.roundStep, 'ROUND_START'] };
 
-    const findResult = await db.mongo.find(
+    const [dumpData] = await db.mongo.find(
       game.col() + '_dump',
       { _gameid: db.mongo.ObjectID(game.id()), ...query },
       { limit: 1 }
-    );
+    ) || [];
 
-    const [dumpData] = findResult;
     if (!dumpData) throw new Error('Копия для восстановления не найдена');
 
     // Очистка текущей игры

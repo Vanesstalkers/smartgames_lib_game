@@ -1,4 +1,4 @@
-(function ({ preventDumpState = false } = {}) {
+(function ({ preventDumpState = false, preventNotifyUser = false } = {}) {
   const roundStepsFunc =
     domain.game.actions[this.gameType]?.roundSteps ||
     domain.game[this.gameType]?.actions?.roundSteps ||
@@ -28,4 +28,12 @@
 
   const timerConfig = timerRestart === true ? this.lastRoundTimerConfig : timerRestart;
   lib.timers.timerRestart(this, timerConfig);
+
+  if (!preventNotifyUser) {
+    const player = this.roundActivePlayer();
+
+    let message = `Новый раунд`;
+    if (!this.isSinglePlayer()) message += '. Ваш ход.';
+    player.notifyUser({ message }, { hideTime: 3000, hideIcon: true });
+  }
 });
