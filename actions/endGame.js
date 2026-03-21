@@ -41,7 +41,7 @@
     gameId: this.id(),
     gameCode: this.gameCode,
     playerEndGameStatus,
-    fullPrice: this.getFullPrice(),
+    gameAward: this.run('getGameAward'),
     roundCount: this.round,
   });
 

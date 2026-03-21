@@ -90,7 +90,7 @@
       }
     }
 
-    async gameFinished({ gameType, playerEndGameStatus, fullPrice, roundCount, preventCalcStats = false } = {}) {
+    async gameFinished({ gameType, playerEndGameStatus, gameAward, roundCount, preventCalcStats = false } = {}) {
       const {
         utils: { structuredClone: clone },
       } = lib;
@@ -124,7 +124,7 @@
       let penaltySum = 0;
       if (endGameStatus === 'win') {
         penaltySum = 0;
-        income = fullPrice * 1000 - penaltySum;
+        income = gameAward * 1000 - penaltySum;
         rankings[gameType].money = money + income;
         if (income < 0) income = 0; // в рейтинги отрицательный результата пишем
         rankings[gameType].penalty = penalty + penaltySum;
