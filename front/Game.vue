@@ -125,6 +125,10 @@ export default {
       type: Number,
       default: 0.7,
     },
+    gamePlaneFillWidth: {
+      type: Number,
+      default: 0,
+    },
     debug: {
       type: Boolean,
       default: false,
@@ -167,7 +171,6 @@ export default {
 
       const { gamePlaneTranslateX, gamePlaneTranslateY } = this.gameCustom;
       transform.push('translate(' + gamePlaneTranslateX + 'px, ' + gamePlaneTranslateY + 'px)');
-
       return { transform: transform.join(' '), scale: this.gamePlaneScale };
     },
     game() {
@@ -273,31 +276,52 @@ export default {
           this.gameCustom.gamePlaneTranslateY = gamePlaneTranslateY;
         };
 
-        let { width, height } = this.$el.querySelector('#gamePlane').getBoundingClientRect();
+        const $gamePlane = this.$el.querySelector('#gamePlane');
+        let { width, height } = $gamePlane.getBoundingClientRect();
         width = width / this.gamePlaneScale;
         height = height / this.gamePlaneScale;
 
         const value = Math.min(innerWidth / width, innerHeight / height);
         if (value > 0) {
-          this.gamePlaneScale = this.defaultPlaneScale || value * this.gamePlaneScaleFactor;
-          if (isMobile) this.gamePlaneScale *= this.gamePlaneScaleFactorMobile;
-          if (this.gamePlaneScaleMin > value && value > 0.2) this.gamePlaneScaleMin = value;
-          if (this.gamePlaneScale < this.gamePlaneScaleMin) this.gamePlaneScale = this.gamePlaneScaleMin;
-          if (this.gamePlaneScale > this.gamePlaneScaleMax) this.gamePlaneScale = this.gamePlaneScaleMax;
+          this.gamePlaneScale = 1;
+          this.$nextTick(() => {
+            const fillScale = Array.from($gamePlane.childNodes)
+              .reduce((acc, child) => acc.concat(Array.from(child.childNodes)), [])
+              .reduce(
+                (acc, child) => {
+                  const { left, right } = child.getBoundingClientRect();
+                  return {
+                    left: !acc.left || left < acc.left ? left : acc.left,
+                    right: !acc.right || right > acc.right ? right : acc.right,
+                  };
+                },
+                { left: null, right: null }
+              );
 
-          this.gamePlaneCustomStyleData = {}; // сбрасываем сдвиги gamePlane, т.к. в calcFunc используется getBoundingClientRect()
-          this.$nextTick(function () {
-            const calcFunc = this.calcGamePlaneCustomStyleData;
-            if (typeof calcFunc === 'function') {
-              const calcFuncResult = calcFunc.call(this, {
-                gamePlaneScale: this.gamePlaneScale,
-                isMobile,
-              });
+            let newGamePlaneScale = this.gamePlaneFillWidth
+              ? this.gamePlaneFillWidth / ((fillScale.right - fillScale.left) / innerWidth)
+              : this.defaultPlaneScale || value * this.gamePlaneScaleFactor;
 
-              if (calcFuncResult) this.gamePlaneCustomStyleData = calcFuncResult;
+            if (isMobile) newGamePlaneScale *= this.gamePlaneScaleFactorMobile;
+            if (this.gamePlaneScaleMin > value && value > 0.2) this.gamePlaneScaleMin = value;
+            if (newGamePlaneScale < this.gamePlaneScaleMin) newGamePlaneScale = this.gamePlaneScaleMin;
+            if (newGamePlaneScale > this.gamePlaneScaleMax) newGamePlaneScale = this.gamePlaneScaleMax;
 
-              restoreGamePlaneSettings();
-            }
+            this.$set(this, 'gamePlaneScale', newGamePlaneScale);
+
+            this.gamePlaneCustomStyleData = {}; // сбрасываем сдвиги gamePlane, т.к. в calcFunc используется getBoundingClientRect()
+            this.$nextTick(function () {
+              const calcFunc = this.calcGamePlaneCustomStyleData;
+              if (typeof calcFunc === 'function') {
+                const calcFuncResult = calcFunc.call(this, {
+                  gamePlaneScale: newGamePlaneScale,
+                  isMobile,
+                });
+                if (calcFuncResult) this.gamePlaneCustomStyleData = calcFuncResult;
+
+                restoreGamePlaneSettings();
+              }
+            });
           });
         }
       }

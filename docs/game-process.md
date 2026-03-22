@@ -296,7 +296,7 @@
   - Вызывается `toggleEventHandlers('END_ROUND')` (обработчики могут проверять `game.status === 'FINISHED'`).
   - При наличии победителя — `setWinner({ player: winningPlayer })`, в лог пишется сообщение о победе.
   - Для каждого игрока выставляется `endGameStatus` (win/lose/cancel) и кнопка «Выйти из игры».
-  - Публикуется действие `broadcastAction('gameFinished', { gameId, playerEndGameStatus, ... })`.
+  - Публикуется действие `broadcastAction('gameFinished', { gameId, userEndGameStatusMap, ... })`.
   - Выбрасывается `lib.game.endGameException` — выше по коду (например, в handleAction или в removeGame) это обрабатывается и вызывается `removeGame()` (удаление из кэша Redis, уведомление пользователей и т.д.).
 
 После этого игра исчезает из активных, клиенты получают финальное состояние и могут выйти со страницы (game.api.leave).

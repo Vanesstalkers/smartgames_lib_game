@@ -283,7 +283,7 @@
 
       if (data.msg.includes('{{player}}')) {
         const player = data.userId
-          ? this.players().find((player) => player.userId === data.userId)
+          ? this.players({ readyOnly: false }).find((player) => player.userId === data.userId)
           : this.roundActivePlayer();
 
         if (player) {

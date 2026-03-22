@@ -12,7 +12,7 @@
 
   if (winningPlayer) this.setWinner({ player: winningPlayer });
 
-  const playerEndGameStatus = {};
+  const userEndGameStatusMap = {};
   for (const player of this.players({ readyOnly: false })) {
     const { userId } = player;
     const endGameStatus = canceledByUser
@@ -30,17 +30,17 @@
       eventData: { playDisabled: null, controlBtn: { label: 'Выйти из игры', leaveGame: true } },
     });
 
-    playerEndGameStatus[userId] = endGameStatus;
+    userEndGameStatusMap[userId] = endGameStatus;
   }
 
-  this.set({ playerEndGameStatus });
+  this.set({ userEndGameStatusMap });
 
   if (customFinalize) return; // для кастомных endGame-обработчиков
 
   this.broadcastAction('gameFinished', {
     gameId: this.id(),
     gameCode: this.gameCode,
-    playerEndGameStatus,
+    userEndGameStatusMap,
     gameAward: this.run('getGameAward'),
     roundCount: this.round,
   });
