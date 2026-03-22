@@ -30,10 +30,10 @@
   lib.timers.timerRestart(this, timerConfig);
 
   if (!preventNotifyUser) {
-    const player = this.roundActivePlayer();
-
     let message = `Новый раунд`;
     if (!this.isSinglePlayer()) message += '. Ваш ход.';
-    player.notifyUser({ message }, { hideTime: 3000, hideIcon: true });
+    for (const player of this.getActivePlayers()) {
+      player.notifyUser({ message }, { deleteTime: 3000, hideIcon: true });
+    }
   }
 });
