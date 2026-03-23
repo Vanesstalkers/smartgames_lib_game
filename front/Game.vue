@@ -289,14 +289,14 @@ export default {
               .reduce((acc, child) => acc.concat(Array.from(child.childNodes)), [])
               .reduce(
                 (acc, child) => {
+                  if(typeof child?.getBoundingClientRect !== 'function') return acc;
+
                   const { left, right } = child.getBoundingClientRect();
                   return {
-                    left: !acc.left || left < acc.left ? left : acc.left,
-                    right: !acc.right || right > acc.right ? right : acc.right,
+                      left: !acc.left || left < acc.left ? left : acc.left,
+                      right: !acc.right || right > acc.right ? right : acc.right,
                   };
-                },
-                { left: null, right: null }
-              );
+                }, { left: null, right: null });
 
             let newGamePlaneScale = this.gamePlaneFillWidth
               ? this.gamePlaneFillWidth / ((fillScale.right - fillScale.left) / innerWidth)
