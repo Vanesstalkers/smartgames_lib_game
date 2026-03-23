@@ -13,20 +13,13 @@
       await this.broadcastData(data);
     }
 
-    async joinGame({
-      gameId,
-      playerId,
-      teamId,
-      viewerId,
-      restoreAction = false,
-      checkTutorials = true,
-      gameStartTutorialName = 'game-tutorial-start',
-    }) {
+    async joinGame({ gameId, playerId, teamId, viewerId, restoreAction = false, checkTutorials = true }) {
       const game = lib.store('game').get(gameId);
       const gameCode = game.gameCode;
       const gameType = game.gameType;
       const gameConfig = game.gameConfig;
       const addTime = game.addTime;
+      const tutorial = game.startTutorialName;
 
       if (!gameCode || !gameType || !gameConfig) throw 'bad_game_data';
 
@@ -43,9 +36,10 @@
           if (
             !viewerId && // наблюдателям не нужно обучение
             !helper && // нет активного обучения
-            !finishedTutorials[gameStartTutorialName] // обучение не было пройдено ранее
+            tutorial &&
+            !finishedTutorials[tutorial] // обучение не было пройдено ранее
           ) {
-            await lib.helper.updateTutorial(this, { tutorial: gameStartTutorialName });
+            await lib.helper.updateTutorial(this, { tutorial });
           }
 
           helperLinks = {

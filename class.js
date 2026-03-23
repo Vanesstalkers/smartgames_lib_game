@@ -7,6 +7,7 @@
     #broadcastObject = {};
     #broadcastDataAfterHandlers = {};
     #objectsDefaultClasses = {};
+    startTutorialName = 'game-tutorial-start';
 
     constructor(storeData = {}, gameObjectData = {}) {
       if (!storeData.col) storeData.col = 'game';
