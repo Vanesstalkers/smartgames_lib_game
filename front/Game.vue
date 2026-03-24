@@ -9,7 +9,9 @@
       state.isMobile ? 'mobile-view' : '',
       state.isLandscape ? 'landscape-view' : 'portrait-view',
       gameState.viewerMode ? 'viewer-mode' : '',
+      backgroundReady ? 'bg-ready' : '',
     ]"
+    :style="{ '--game-bg-url': `url(${gameBackgroundUrl})` }"
     @wheel.prevent="zoomGamePlane"
   >
     <slot name="helper-guru" :menuWrapper="menuWrapper" :menuButtonsMap="menuButtonsMap">
@@ -100,6 +102,7 @@ import { addEvents, removeEvents } from './gameEvents.mjs';
 import GUIWrapper from '@/components/gui-wrapper.vue';
 import tutorial from '~/lib/helper/front/helper.vue';
 import chat from '~/lib/chat/front/chat.vue';
+import gameBgUrl from './assets/bg-game.png';
 
 export default {
   components: {
@@ -147,6 +150,8 @@ export default {
       resizeObserver: null,
       zoomAccumulatedDelta: 0,
       zoomLastResetTime: 0,
+      backgroundReady: false,
+      gameBackgroundUrl: gameBgUrl,
       tutorialActions: {
         leaveGame: async () => {
           await api.action.call({ path: 'game.api.leave', args: [] }).catch(prettyAlert);
@@ -412,6 +417,12 @@ export default {
   },
   async created() {},
   async mounted() {
+    const backgroundImage = new Image();
+    backgroundImage.src = this.gameBackgroundUrl;
+    backgroundImage.onload = () => {
+      this.backgroundReady = true;
+    };
+
     this.$on('resetPlanePosition', this.resetPlanePosition);
 
     this.escKeyHandler = (e) => {
@@ -461,6 +472,37 @@ export default {
 #game {
   height: 100%;
   width: 100%;
+  overflow: hidden;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &::before {
+    background-image: url('assets/bg-game-lqip.png');
+  }
+
+  &::after {
+    background-image: var(--game-bg-url);
+    opacity: 0;
+    transition: opacity 360ms ease-in-out;
+  }
+
+  &.bg-ready::after {
+    opacity: 1;
+  }
+
+  > * {
+    z-index: 1;
+  }
 
   &.mobile-view {
     touch-action: none;
