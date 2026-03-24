@@ -22,7 +22,7 @@
       :pos="['top', 'left']"
       :offset="{ top: 20, left: state.isMobile ? 60 : [60, 80, 110, 130, 160, 190][state.guiScale] }"
       :contentClass="['gui-small']"
-      :wrapperStyle="{ zIndex: 1 }"
+      :wrapperStyle="{ zIndex: 5 }"
     >
       <div class="game-controls" style="display: flex">
         <div
@@ -294,14 +294,16 @@ export default {
               .reduce((acc, child) => acc.concat(Array.from(child.childNodes)), [])
               .reduce(
                 (acc, child) => {
-                  if(typeof child?.getBoundingClientRect !== 'function') return acc;
+                  if (typeof child?.getBoundingClientRect !== 'function') return acc;
 
                   const { left, right } = child.getBoundingClientRect();
                   return {
-                      left: !acc.left || left < acc.left ? left : acc.left,
-                      right: !acc.right || right > acc.right ? right : acc.right,
+                    left: !acc.left || left < acc.left ? left : acc.left,
+                    right: !acc.right || right > acc.right ? right : acc.right,
                   };
-                }, { left: null, right: null });
+                },
+                { left: null, right: null }
+              );
 
             let newGamePlaneScale = this.gamePlaneFillWidth
               ? this.gamePlaneFillWidth / ((fillScale.right - fillScale.left) / innerWidth)
@@ -701,7 +703,7 @@ export default {
 }
 
 .chat-content {
-  z-index: 3;
+  z-index: 3 !important;
   position: absolute;
   left: 40px;
   top: 60px;
@@ -728,7 +730,7 @@ export default {
   position: fixed;
   left: 40px;
   top: 60px;
-  z-index: 2;
+  z-index: 2 !important;
   width: calc(100% - 100px);
   height: calc(100% - 100px);
   margin: 30px;
