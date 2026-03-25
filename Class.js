@@ -1,5 +1,5 @@
 () =>
-  class Game extends lib.store.class(lib.game.GameObject, { broadcastEnabled: true }) {
+  class Game extends lib.store.Class(lib.game.GameObject, { broadcastEnabled: true }) {
     #logs = {};
     store = {};
     playerMap = {};
