@@ -202,6 +202,7 @@ export default {
     cursor: pointer;
     background: #3f51b5de;
     color: white;
+    text-shadow: none;
     font-size: 16px;
     padding: 8px 0px;
     width: 100%;

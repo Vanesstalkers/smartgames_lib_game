@@ -21,7 +21,7 @@ async (
   const { lobbyId } = session;
 
   try {
-    const GameClassGetter = domain.game[gameType]?.class || domain.game.class;
+    const GameClassGetter = domain.game[gameType]?.class || domain.game.Class;
     const game = await new GameClassGetter().create({
       ...{ gameCode, gameType, gameConfig, gameTimer, gameRoundLimit, difficulty },
       ...{ teamsCount, playerCount, maxPlayersInGame, minPlayersToStart },
