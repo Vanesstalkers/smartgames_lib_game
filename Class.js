@@ -158,13 +158,13 @@
             const userMap = {};
 
             for (const [userId, user] of Object.entries(map)) {
-              const { name, login, avatarCode } = user;
+              const { name, login, avatarCode, avatarUrl } = user;
               const userName = name || login;
 
               const player = this.getPlayerByUserId(userId);
-              if (player) player.set({ userName, avatarCode }); // мог быть удален
+              if (player) player.set({ userName, avatarCode, avatarUrl }); // мог быть удален
 
-              userMap[userId] = { userName, avatarCode };
+              userMap[userId] = { userName, avatarCode, avatarUrl };
             }
 
             this.broadcastData({ user: userMap }, { wrapperDisabled: true });
@@ -328,14 +328,14 @@
       return this.players({ readyOnly: false }).find((player) => player.userId === id);
     }
 
-    async playerJoin({ playerId, userId, userName, userAvatar }) {
+    async playerJoin({ playerId, userId, userName, userAvatar, userAvatarUrl }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
         const player = playerId ? this.get(playerId) : this.getFreePlayerSlot();
         if (!player) throw new Error('Свободных мест не осталось');
 
-        player.set({ userId, userName, avatarCode: userAvatar });
+        player.set({ userId, userName, avatarCode: userAvatar, avatarUrl: userAvatarUrl });
         this.logs({ msg: 'Игрок {{player}} присоединился к игре.', userId });
 
         /* инициатором события был установлен первый player в списке,

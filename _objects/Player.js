@@ -10,15 +10,15 @@
     this.preventSaveFields(['decks']);
 
     this.broadcastableFields([
-      ...['_id', 'code', 'gameId', 'userId', 'userName', 'avatarCode', 'avatarsMap', 'active', 'ready'],
+      ...['_id', 'code', 'gameId', 'userId', 'userName', 'avatarCode', 'avatarUrl', 'active', 'ready'],
       ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper'],
     ]);
 
-    const { userId, userName, avatarCode, avatarsMap = {} } = data;
+    const { userId, userName, avatarCode, avatarUrl, avatarsMap = {} } = data;
     const { eventData = {}, active, timerEndTime, timerUpdateTime, ai, aiActions } = data;
     this.set({
       ready: false, // при восстановлении игры нужна повторная обработка initPlayerWaitEvents
-      ...{ userId, userName, eventData, avatarCode, avatarsMap, active, timerEndTime, timerUpdateTime },
+      ...{ userId, userName, eventData, avatarCode, avatarUrl, avatarsMap, active, timerEndTime, timerUpdateTime },
       ...(ai ? { ai, aiActions } : {}),
     });
   }
