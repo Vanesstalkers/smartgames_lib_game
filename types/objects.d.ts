@@ -148,6 +148,23 @@ export type DicecubeInstance = GameObjectInstance & {
 
 export type DicecubeConstructor = new (data: any, options: { parent: GameObjectInstance }) => DicecubeInstance;
 
+/**
+ * Инстанс `Roulette` после `new Roulette(data, { parent })`.
+ * Сектора значения `value`: 0…36 (37 позиций).
+ */
+export type RouletteInstance = GameObjectInstance & {
+  /** ключ из `sectors` (строка/число как пришло с сервера) */
+  value?: string | number;
+  /** порядок секторов по кругу; синхронизируется с фронтом для угла колеса */
+  sectors?: Array<string | number>;
+  subtype?: string;
+  lastRollTime?: number;
+  settings?: { parentRouletteKey?: string; [key: string]: any };
+  spin(): void;
+};
+
+export type RouletteConstructor = new (data: any, options: { parent: GameObjectInstance }) => RouletteInstance;
+
 /** Миксин `lib.game.decorators['@hasDicecube'].decorate()` у игры (напр. `domain.game.Class`) */
 export type GameHasDicecubeApi = {
   addDicecube(
@@ -167,6 +184,23 @@ export type GameHasDicecubeApi = {
   dicecubeMap?: Record<string, Record<string, never> | object>;
 };
 
+/** Миксин `lib.game.decorators['@hasRoulette'].decorate()` у игры (напр. `domain.game.Class`) */
+export type GameHasRouletteApi = {
+  addRoulette(
+    data: Record<string, any>,
+    options?: {
+      rouletteKey?: string;
+      rouletteClass?: RouletteConstructor;
+      parentDirectLink?: boolean;
+    }
+  ): RouletteInstance;
+  deleteRoulette(wheel: RouletteInstance): void;
+  /** вызывает `spin()` у всех рулеток из `rouletteMap` — `value` / `lastRollTime` уходят в store и на фронт после saveChanges */
+  rollAllRoulettes(): void;
+  roulettes?: Record<string, RouletteInstance>;
+  rouletteMap?: Record<string, Record<string, never> | object>;
+};
+
 /**
  * Рантайм: поля — **классы** `(class X extends GameObject { ... })`, не фабрики вида `() => class`.
  * Использовать: `const C = lib.game._objects.Deck; new C(data, { parent })`.
@@ -176,5 +210,6 @@ export interface GameObjectsModule {
   Deck: DeckConstructor;
   Dicecube: DicecubeConstructor;
   Player: PlayerConstructor;
+  Roulette: RouletteConstructor;
   Viewer: ViewerConstructor;
 }
