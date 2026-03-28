@@ -134,12 +134,47 @@ export type ViewerInstance = GameObjectInstance & {
 export type ViewerConstructor = new (data: any, options: { parent: GameObjectInstance }) => ViewerInstance;
 
 /**
+ * Инстанс `Dicecube` после `new Dicecube(data, { parent })`.
+ */
+export type DicecubeInstance = GameObjectInstance & {
+  /** очки грани, только 1–6 */
+  value?: number;
+  subtype?: string;
+  /** меняется при каждом `roll()` — клиент по нему запускает анимацию броска */
+  lastRollTime?: number;
+  settings?: { parentDiceKey?: string; [key: string]: any };
+  roll(): void;
+};
+
+export type DicecubeConstructor = new (data: any, options: { parent: GameObjectInstance }) => DicecubeInstance;
+
+/** Миксин `lib.game.decorators['@hasDicecube'].decorate()` у игры (напр. `domain.game.Class`) */
+export type GameHasDicecubeApi = {
+  addDicecube(
+    data: Record<string, any>,
+    options?: {
+      diceKey?: string;
+      dicecubeClass?: DicecubeConstructor;
+      parentDirectLink?: boolean;
+    }
+  ): DicecubeInstance;
+  deleteDicecube(cube: DicecubeInstance): void;
+  /** вызывает `roll()` у всех кубиков из `dicecubes` */
+  rollAllDicecubes(): void;
+  /** быстрый доступ по `subtype` при `parentDirectLink` */
+  dicecubes?: Record<string, DicecubeInstance>;
+  /** плейсхолдер id → `{}`, ключ задаётся через `diceKey` (по умолчанию `dicecubeMap`) */
+  dicecubeMap?: Record<string, Record<string, never> | object>;
+};
+
+/**
  * Рантайм: поля — **классы** `(class X extends GameObject { ... })`, не фабрики вида `() => class`.
  * Использовать: `const C = lib.game._objects.Deck; new C(data, { parent })`.
  */
 export interface GameObjectsModule {
   Card: CardConstructor;
   Deck: DeckConstructor;
+  Dicecube: DicecubeConstructor;
   Player: PlayerConstructor;
   Viewer: ViewerConstructor;
 }

@@ -15,8 +15,8 @@
       if (storeData.id) storeData._id = storeData.id;
       super(storeData, gameObjectData);
 
-      const { Card, Deck, Player, Viewer } = lib.game._objects;
-      this.defaultClasses({ Card, Deck, Player, Viewer });
+      const { Card, Deck, Dicecube, Player, Viewer } = lib.game._objects;
+      this.defaultClasses({ Card, Deck, Dicecube, Player, Viewer });
 
       this.preventSaveFields(['eventData.activeEvents']);
     }

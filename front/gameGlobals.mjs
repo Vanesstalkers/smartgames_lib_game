@@ -18,6 +18,10 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
     gamePlaneTranslateY: 0,
     gamePlaneRotation: 0,
     gamePlaneTransformOrigin: {},
+    /** сколько кубиков сейчас крутят анимацию броска */
+    diceRollActiveCount: 0,
+    /** увеличивается, когда все активные броски завершились (для UI, напр. income-counter) */
+    diceRollSettledSeq: 0,
     ...gameCustomArgs,
   });
 
