@@ -1,7 +1,7 @@
 async ({ gameType, gameId, lobbyId, query = {} }) => {
   if (!query._id) query._id = gameId;
 
-  const GameClassGetter = domain.game[gameType]?.class || domain.game.Class;
+  const GameClassGetter = domain.game[gameType]?.Class || domain.game.Class;
   const processData = ({ loadedInstance: game, loadedData }) => game.run('fillGameData', loadedData);
 
   return await new GameClassGetter({ id: gameId })
