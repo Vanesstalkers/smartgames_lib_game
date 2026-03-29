@@ -193,6 +193,19 @@ export type RouletteInstance = GameObjectInstance & {
   subtype?: string;
   lastRollTime?: number;
   settings?: { parentRouletteKey?: string; [key: string]: any };
+  /** у доменной рулетки с колодой фишек */
+  deckMap?: Record<string, Record<string, never> | object>;
+  decks?: Record<string, DeckInstance>;
+  addDeck?(
+    data: Record<string, any>,
+    options?: {
+      deckMapName?: string;
+      deckClass?: DeckConstructor;
+      deckItemClass?: ChipConstructor | CardConstructor;
+      parentDirectLink?: boolean;
+    }
+  ): DeckInstance;
+  deleteDeck?(deck: DeckInstance): void;
   spin(): void;
 };
 

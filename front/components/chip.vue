@@ -75,7 +75,16 @@ export default {
       return this.subtype;
     },
     frameIndex() {
-      const v = this.usesStore ? this.chip?.value : this.value;
+      let v;
+      if (!this.usesStore) {
+        v = this.value;
+      } else if (this.chipId) {
+        const raw = this.chip?.value;
+        const num = Number(raw);
+        v = Number.isFinite(num) ? num : this.value;
+      } else {
+        v = this.chip?.value;
+      }
       return clampFrame(v, this.spriteFrameCount);
     },
     rootStyle() {

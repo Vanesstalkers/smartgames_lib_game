@@ -158,22 +158,23 @@
 
     return item;
   }
-  removeItem(itemToRemove) {
+  removeItem(itemToRemove, { markDelete = false } = {}) {
     this.set({ itemMap: { [itemToRemove._id]: null } });
     this.deleteFromObjectStorage(itemToRemove);
 
     const game = this.game();
     if (!game.checkChangesDisabled()) {
       // фейковые изменения (скорее всего расчет доступных зон) - данные для фронта обновлять не нужно
+      if (markDelete) itemToRemove.markDelete();
       this.markItemUpdated({
         item: itemToRemove,
         action: itemToRemove.visible ? 'removeVisible' : 'remove',
       });
     }
   }
-  removeAllItems() {
+  removeAllItems({ markDelete = false } = {}) {
     for (const item of this.items()) {
-      this.removeItem(item);
+      this.removeItem(item, { markDelete });
     }
   }
   setItemVisible(item) {
