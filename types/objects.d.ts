@@ -149,6 +149,39 @@ export type DicecubeInstance = GameObjectInstance & {
 export type DicecubeConstructor = new (data: any, options: { parent: GameObjectInstance }) => DicecubeInstance;
 
 /**
+ * Инстанс `Chip` после `new Chip(data, { parent })`.
+ * Элемент колоды (`Deck` с `deckItemClass: Chip`); перемещения как у `Card`.
+ */
+export type ChipInstance = GameObjectInstance & {
+  /** кадр в горизонтальном спрайте на фронте (1…N) */
+  value?: number;
+  subtype?: string;
+  title?: string;
+  name?: string;
+  event?: { name?: string; [key: string]: any };
+  playOneTime?: boolean;
+  played?: number | null;
+  disabled?: boolean;
+  sourceDeckId?: string;
+  group?: string;
+  owner?: string;
+  getTitle(): string;
+  moveToDeck(data?: { setData?: Record<string, any> }): void;
+  moveToDrop(data?: { setData?: Record<string, any> }): void;
+  moveToTarget(
+    target: GameObjectInstance,
+    opts?: { markDelete?: boolean; setData?: Record<string, any>; setVisible?: boolean }
+  ): any;
+  getEvent(eventName?: string): (() => any) | null;
+  restoreAvailable(): boolean;
+  play(data?: { player: GameObjectInstance; logMsg?: string }): void;
+  returnToHand(data: { player: GameObjectInstance & { decks?: Record<string, DeckInstance> } }): void;
+  setFrame(frameIndex: number): void;
+};
+
+export type ChipConstructor = new (data: any, options: { parent: GameObjectInstance }) => ChipInstance;
+
+/**
  * Инстанс `Roulette` после `new Roulette(data, { parent })`.
  * Сектора значения `value`: 0…36 (37 позиций).
  */
@@ -207,6 +240,7 @@ export type GameHasRouletteApi = {
  */
 export interface GameObjectsModule {
   Card: CardConstructor;
+  Chip: ChipConstructor;
   Deck: DeckConstructor;
   Dicecube: DicecubeConstructor;
   Player: PlayerConstructor;
