@@ -17,6 +17,21 @@
         :style="arrowStyle"
       />
       <div v-else class="roulette-ball" :style="ballStyle" />
+      <div
+        v-if="hasStopSlot"
+        v-show="stopSlotUiVisible"
+        class="roulette-stop-anchor"
+        :style="stopAnchorStyle"
+      >
+        <slot
+          name="stop"
+          :sector-index="displaySector"
+          :sector-key="displaySectorKeyText"
+          :sector-angle-deg="displaySectorAngleDeg"
+          :sectors-list="sectorsList"
+          :is-spinning="isSpinning"
+        />
+      </div>
     </div>
     <div v-if="showSectorKey" class="roulette-sector-key">{{ displaySectorKeyText }}</div>
   </div>
@@ -34,6 +49,8 @@ const FALLBACK_SECTOR_KEYS = Array.from({ length: 37 }, (_, i) => String(i));
 const WHEEL_TRANSITION = 'transform 0.85s ease-out';
 const SPIN_DURATION_MS = 1000;
 const SPIN_TICK_MS = 55;
+/** Пауза после остановки спина, прежде чем снова показать слот `stop`. */
+const STOP_SLOT_SHOW_DELAY_MS = 1000;
 const BALL_RADIUS_RATIO = 0.38;
 /** Ширина стрелки относительно стороны квадрата рулетки (pivot по центру ассета). */
 const ARROW_WIDTH_RATIO = 0.92;
@@ -75,6 +92,30 @@ export default {
       type: Boolean,
       default: true,
     },
+    /**
+     * Радиус точки «стопа» для слота `stop` как доля от `size` (как у шарика — на ободе).
+     * Совпадает с `BALL_RADIUS_RATIO`, если не задано иное.
+     */
+    stopRadiusRatio: {
+      type: Number,
+      default: BALL_RADIUS_RATIO,
+    },
+    /**
+     * Дополнительный сдвиг якоря слота `stop` от центра, в долях `size` (наружу от обода).
+     * Чтобы плашка целиком оказалась снаружи круга колеса.
+     */
+    stopOutwardOffsetRatio: {
+      type: Number,
+      default: 0,
+    },
+    /**
+     * Симметричный «запас» вокруг колеса (px): увеличивает корневой блок и даёт padding,
+     * чтобы содержимое слота `stop`, выпирающее за квадрат колеса, не обрезалось предками.
+     */
+    stopSlotGutterPx: {
+      type: Number,
+      default: 0,
+    },
     size: {
       type: Number,
       default: 400,
@@ -86,6 +127,9 @@ export default {
       isSpinning: false,
       spinIntervalId: null,
       rollDepthApplied: false,
+      /** Слот `stop`: видим после спина и с задержкой `STOP_SLOT_SHOW_DELAY_MS`. */
+      stopSlotUiVisible: true,
+      stopSlotRevealTimeoutId: null,
     };
   },
   setup() {
@@ -124,11 +168,15 @@ export default {
     },
     rootStyle() {
       const s = this.size;
+      const g = Math.max(0, this.stopSlotGutterPx || 0);
       return {
-        width: `${s}px`,
+        width: `${s + 2 * g}px`,
+        boxSizing: 'border-box',
+        padding: `${g}px`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        overflow: 'visible',
       };
     },
     wheelHostStyle() {
@@ -137,6 +185,7 @@ export default {
         width: `${s}px`,
         height: `${s}px`,
         flexShrink: 0,
+        overflow: 'visible',
       };
     },
     /** Ключ сектора, который сейчас соответствует углу (в т.ч. во время анимации). */
@@ -200,8 +249,38 @@ export default {
         transition: this.isSpinning ? 'none' : WHEEL_TRANSITION,
       };
     },
+    /** Слот `stop`: есть ли переданное содержимое (Vue 2: scoped и обычный именованный слот). */
+    hasStopSlot() {
+      const ss = this.$scopedSlots && this.$scopedSlots.stop;
+      const s = this.$slots && this.$slots.stop;
+      return Boolean(ss || s);
+    },
+    /** Та же привязка к сектору, что у шарика: центр → поворот на сектор → сдвиг на обод (+ наружу). */
+    stopAnchorStyle() {
+      const theta = this.displaySectorAngleDeg;
+      const r = this.size * this.stopRadiusRatio + this.size * (this.stopOutwardOffsetRatio || 0);
+      return {
+        transform: `translate(-50%, -50%) rotate(${theta}deg) translate(0, ${-r}px)`,
+        transition: this.isSpinning ? 'none' : WHEEL_TRANSITION,
+      };
+    },
   },
   watch: {
+    isSpinning(newVal, oldVal) {
+      this.clearStopSlotRevealTimeout();
+      if (newVal) {
+        this.stopSlotUiVisible = false;
+        return;
+      }
+      if (oldVal) {
+        this.stopSlotRevealTimeoutId = setTimeout(() => {
+          this.stopSlotRevealTimeoutId = null;
+          this.stopSlotUiVisible = true;
+        }, STOP_SLOT_SHOW_DELAY_MS);
+      } else {
+        this.stopSlotUiVisible = true;
+      }
+    },
     lastRollTime: {
       handler(newTime, oldTime) {
         if (oldTime === undefined) {
@@ -219,12 +298,20 @@ export default {
     },
   },
   beforeDestroy() {
+    this.clearStopSlotRevealTimeout();
     this.stopSpinAnimation();
   },
   beforeUnmount() {
+    this.clearStopSlotRevealTimeout();
     this.stopSpinAnimation();
   },
   methods: {
+    clearStopSlotRevealTimeout() {
+      if (this.stopSlotRevealTimeoutId != null) {
+        clearTimeout(this.stopSlotRevealTimeoutId);
+        this.stopSlotRevealTimeoutId = null;
+      }
+    },
     releaseDiceRollDepth() {
       if (!this.rollDepthApplied) return;
       this.rollDepthApplied = false;
@@ -282,6 +369,7 @@ export default {
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
+  overflow: visible;
 
   &--spinning .roulette-wheel {
     filter: brightness(1.04);
@@ -344,6 +432,18 @@ export default {
     0 1px 3px rgba(0, 0, 0, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.9);
   z-index: 1;
+  pointer-events: none;
+}
+
+.roulette-stop-anchor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
   pointer-events: none;
 }
 </style>
