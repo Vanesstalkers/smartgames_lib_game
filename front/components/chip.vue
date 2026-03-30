@@ -1,8 +1,7 @@
 <template>
   <div
-    v-if="!usesStore || chip._id"
-    class="chip"
-    :class="customClass"
+    v-if="!usesStore || chip._id || chipId === 'fake'"
+    :class="['chip', ...customClass, chipId === 'fake' ? 'fake' : '']"
     :subtype="displaySubtype || undefined"
     :style="rootStyle"
   >
@@ -132,5 +131,11 @@ export default {
   background-position: 0 0;
   border-radius: 8px;
   pointer-events: none;
+}
+
+.chip.fake {
+  .chip-face {
+    background-image: none !important;
+  }
 }
 </style>
