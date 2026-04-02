@@ -622,7 +622,7 @@ export default {
 
 .shown-card {
   position: fixed !important;
-  z-index: 9999;
+  z-index: 9999 !important;
   width: 100%;
   height: 100%;
   top: 0px;

@@ -88,7 +88,7 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
       imgFullPath,
       imgExt = 'jpg',
     } = component;
-    const rootPath = `${serverOrigin}/img/cards/${game.templates.card}`;
+    const rootPath = `${serverOrigin}/img/cards/${game?.templates?.card || 'default'}`;
     const { group, name } = card;
 
     const cardPath = [cardGroup || group, name || 'back-side'].filter((s) => s).join('/');

@@ -120,6 +120,7 @@ export default {
       );
     },
     toggleSelect() {
+      if(!this.cardId) return;
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;
     },
     showInfo() {
