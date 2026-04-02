@@ -392,7 +392,6 @@ export default {
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
-  pointer-events: none;
   word-break: break-word;
 }
 
@@ -405,7 +404,6 @@ export default {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  pointer-events: none;
 }
 
 .roulette-arrow {
@@ -416,7 +414,6 @@ export default {
   object-fit: contain;
   transform-origin: center center;
   z-index: 1;
-  pointer-events: none;
   user-select: none;
 }
 
@@ -432,7 +429,6 @@ export default {
     0 1px 3px rgba(0, 0, 0, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.9);
   z-index: 1;
-  pointer-events: none;
 }
 
 .roulette-stop-anchor {
@@ -444,6 +440,5 @@ export default {
   align-items: center;
   justify-content: center;
   transform-origin: center center;
-  pointer-events: none;
 }
 </style>

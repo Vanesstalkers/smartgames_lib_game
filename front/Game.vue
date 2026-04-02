@@ -513,6 +513,10 @@ export default {
   .selectable {
     cursor: pointer;
     box-shadow: inset 0 0 20px 8px yellow;
+
+    &.card-event {
+      box-shadow: inset 0 0 20px 8px yellow !important;
+    }
   }
 
   .session-player {

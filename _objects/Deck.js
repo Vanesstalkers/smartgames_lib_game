@@ -158,7 +158,7 @@
 
     return item;
   }
-  removeItem(itemToRemove, { markDelete = false } = {}) {
+  removeItem(itemToRemove, { markDelete = false, forceDelete = false } = {}) {
     this.set({ itemMap: { [itemToRemove._id]: null } });
     this.deleteFromObjectStorage(itemToRemove);
 
@@ -170,6 +170,7 @@
         item: itemToRemove,
         action: itemToRemove.visible ? 'removeVisible' : 'remove',
       });
+      if(forceDelete) itemToRemove.delete();
     }
   }
   removeAllItems({ markDelete = false } = {}) {

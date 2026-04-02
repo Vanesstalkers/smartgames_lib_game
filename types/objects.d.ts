@@ -181,6 +181,26 @@ export type ChipInstance = GameObjectInstance & {
 
 export type ChipConstructor = new (data: any, options: { parent: GameObjectInstance }) => ChipInstance;
 
+/** Карта с двумя колодами фишек (`inner` / `outer`) — `domain.game._objects.CompanyCard`. */
+export type CompanyCardInstance = CardInstance & {
+  deckMap?: Record<string, Record<string, never> | object>;
+  decks?: Record<string, DeckInstance>;
+  addDeck?(
+    data: Record<string, any>,
+    options?: {
+      deckMapName?: string;
+      deckClass?: DeckConstructor;
+      deckItemClass?: ChipConstructor | CardConstructor;
+      parentDirectLink?: boolean;
+    }
+  ): DeckInstance;
+  deleteDeck?(deck: DeckInstance): void;
+  /** создаёт колоды inner/outer при отсутствии; доводит каждую до 3 фишек */
+  restoreResources(): void;
+};
+
+export type CompanyCardConstructor = new (data: any, options: { parent: GameObjectInstance }) => CompanyCardInstance;
+
 /**
  * Инстанс `Roulette` после `new Roulette(data, { parent })`.
  * Сектора значения `value`: 0…36 (37 позиций).
@@ -254,6 +274,7 @@ export type GameHasRouletteApi = {
 export interface GameObjectsModule {
   Card: CardConstructor;
   Chip: ChipConstructor;
+  CompanyCard?: CompanyCardConstructor;
   Deck: DeckConstructor;
   Dicecube: DicecubeConstructor;
   Player: PlayerConstructor;

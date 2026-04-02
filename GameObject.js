@@ -87,6 +87,10 @@
   markDelete(config) {
     this.game().markDelete(this, config);
   }
+  delete(){
+    this.deleteFromParentsObjectStorage();
+    this.markDelete();
+  }
 
   default_customObjectCode({ codeTemplate, replacementFragment }, data) {
     return codeTemplate.replace(replacementFragment, data._code);

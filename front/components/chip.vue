@@ -1,9 +1,10 @@
 <template>
   <div
     v-if="!usesStore || chip._id || chipId === 'fake'"
-    :class="['chip', ...customClass, chipId === 'fake' ? 'fake' : '']"
+    :class="['chip', customClass, chipId === 'fake' ? 'fake' : '', selectable ? 'selectable' : '']"
     :subtype="displaySubtype || undefined"
     :style="rootStyle"
+    v-on:click.stop="chooseChip"
   >
     <div class="chip-face" :style="faceStyle" />
   </div>
@@ -53,6 +54,10 @@ export default {
     spriteFrameCount: {
       type: Number,
       default: 1,
+    },
+    onClick: {
+      type: Function,
+      default: null,
     },
   },
   setup() {
@@ -112,6 +117,20 @@ export default {
         backgroundPosition: `${xPct}% 0`,
       };
     },
+    selectable() {
+      return this.sessionPlayerIsActive() && this.chip?.eventData?.selectable;
+    },
+  },
+  methods: {
+    chooseChip() {
+      if (!this.selectable) return;
+      
+      if (this.onClick) {
+        this.onClick({ chipId: this.chipId, chip: this.chip });
+        return;
+      }
+      this.handleGameApi({ name: 'eventTrigger', data: { eventData: { targetId: this.chipId } } });
+    },
   },
 };
 </script>
@@ -122,15 +141,13 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
 }
 
 .chip-face {
   width: 100%;
   height: 100%;
   background-position: 0 0;
-  border-radius: 8px;
-  pointer-events: none;
+  border-radius: 16px;
 }
 
 .chip.fake {
