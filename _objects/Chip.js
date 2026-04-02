@@ -1,15 +1,15 @@
 (class Chip extends lib.game.GameObject {
   constructor(data, { parent }) {
     super(data, { col: 'chip', parent });
-    this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData', 'subtype', 'value']);
+    this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData', 'subtype', 'value', 'ownerId']);
     this.publicStaticFields(['group', 'owner']);
 
     const { value, title, name, event, subtype } = data;
-    const { playOneTime, played, disabled, sourceDeckId, group, owner } = data;
+    const { playOneTime, played, disabled, sourceDeckId, group, owner, ownerId } = data;
 
     this.set({
       ...{ value, title, name, event, subtype },
-      ...{ playOneTime, played, disabled, sourceDeckId, group, owner }, 
+      ...{ playOneTime, played, disabled, sourceDeckId, group, owner, ownerId },
     });
   }
 

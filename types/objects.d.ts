@@ -101,6 +101,14 @@ export type PlayerInstance = GameObjectInstance &
     aiActions?: unknown[];
     deckMap?: Record<string, any>;
     staticHelper?: unknown;
+    /** Наборы приобретённых сущностей по категориям (напр. после сделки worker deal). */
+    acquired?: {
+      chip?: Record<string, Record<string, never> | object>;
+      service?: Record<string, Record<string, never> | object>;
+      buster?: Record<string, Record<string, never> | object>;
+      store?: Record<string, Record<string, never> | object>;
+      other?: Record<string, Record<string, never> | object>;
+    };
 
     game(game?: GameObjectInstance): GameObjectInstance;
     prepareBroadcastData(data: {
@@ -165,6 +173,8 @@ export type ChipInstance = GameObjectInstance & {
   sourceDeckId?: string;
   group?: string;
   owner?: string;
+  /** id игрока-владельца после сделки (напр. покупатель при worker deal). */
+  ownerId?: string;
   getTitle(): string;
   moveToDeck(data?: { setData?: Record<string, any> }): void;
   moveToDrop(data?: { setData?: Record<string, any> }): void;

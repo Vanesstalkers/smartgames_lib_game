@@ -1,7 +1,14 @@
 <template>
   <div
     v-if="!usesStore || chip._id || chipId === 'fake'"
-    :class="['chip', customClass, chipId === 'fake' ? 'fake' : '', selectable ? 'selectable' : '']"
+    :class="[
+      'chip',
+      customClass,
+      chipId === 'fake' ? 'fake' : '',
+      selectable ? 'selectable' : '',
+      chip?.disabled ? 'disabled' : '',
+      dealHighlighted ? 'deal-highlight' : '',
+    ]"
     :subtype="displaySubtype || undefined"
     :style="rootStyle"
     v-on:click.stop="chooseChip"
@@ -123,6 +130,9 @@ export default {
     selectable() {
       return this.sessionPlayerIsActive() && this.player.eventData.chip?.[this.chipId]?.selectable;
     },
+    dealHighlighted() {
+      return Boolean(this.usesStore && this.chip?.eventData?.workerDealHighlight);
+    },
   },
   methods: {
     chooseChip() {
@@ -155,5 +165,10 @@ export default {
   .chip-face {
     background-image: none !important;
   }
+}
+
+.chip.deal-highlight .chip-face {
+  box-shadow: 0 0 0 3px #f4e205, 0 0 14px 5px rgba(244, 226, 5, 0.55);
+  border-radius: 16px;
 }
 </style>

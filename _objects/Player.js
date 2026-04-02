@@ -11,7 +11,7 @@
 
     this.broadcastableFields([
       ...['_id', 'code', 'gameId', 'userId', 'userName', 'avatarCode', 'avatarUrl', 'active', 'ready'],
-      ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper'],
+      ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper', 'acquired'],
     ]);
 
     const { userId, userName, avatarCode, avatarUrl, avatarsMap = {} } = data;

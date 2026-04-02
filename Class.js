@@ -529,10 +529,14 @@
         }
 
         // !!! защитить методы, которые не должны вызываться с фронта
+        let runResult;
         if (this[eventName]) {
-          this[eventName](eventData, player);
+          runResult = this[eventName](eventData, player);
         } else {
-          this.run(eventName, eventData, player);
+          runResult = this.run(eventName, eventData, player);
+        }
+        if (runResult != null && typeof runResult.then === 'function') {
+          await runResult;
         }
 
         await this.saveChanges();
