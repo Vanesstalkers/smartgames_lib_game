@@ -70,6 +70,9 @@ export default {
     store() {
       return this.getStore();
     },
+    player() {
+      return this.sessionPlayer();
+    },
     chip() {
       if (!this.chipId) return {};
       return this.store.chip?.[this.chipId] || {};
@@ -118,7 +121,7 @@ export default {
       };
     },
     selectable() {
-      return this.sessionPlayerIsActive() && this.chip?.eventData?.selectable;
+      return this.sessionPlayerIsActive() && this.player.eventData.chip?.[this.chipId]?.selectable;
     },
   },
   methods: {
