@@ -126,12 +126,10 @@ export default {
   },
   methods: {
     chooseChip() {
+      if (this.onClick) return this.onClick({ chipId: this.chipId, chip: this.chip });
+
       if (!this.selectable) return;
-      
-      if (this.onClick) {
-        this.onClick({ chipId: this.chipId, chip: this.chip });
-        return;
-      }
+
       this.handleGameApi({ name: 'eventTrigger', data: { eventData: { targetId: this.chipId } } });
     },
   },
