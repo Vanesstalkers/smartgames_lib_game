@@ -160,7 +160,7 @@
         return;
       }
 
-      lib.helper.updateTutorial(this, data);
+      await lib.helper.updateTutorial(this, data);
 
       if (this.gameId && usedLink && (this.helperLinks[usedLink]?.used || 0) < 2) {
         lib.store.broadcaster.publishAction.call(this, `game-${this.gameId}`, 'playerUseTutorial', {

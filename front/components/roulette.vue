@@ -34,6 +34,7 @@
       </div>
     </div>
     <div v-if="showSectorKey" class="roulette-sector-key">{{ displaySectorKeyText }}</div>
+    <slot name="additional" />
   </div>
 </template>
 
@@ -90,7 +91,7 @@ export default {
     /** Показывать под колесом текстовый ключ текущего сектора (`sectorsList[displaySector]`). */
     showSectorKey: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     /**
      * Радиус точки «стопа» для слота `stop` как доля от `size` (как у шарика — на ободе).

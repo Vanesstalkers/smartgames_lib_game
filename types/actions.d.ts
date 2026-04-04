@@ -76,7 +76,11 @@ export interface GameActionsModule {
     }
   ): void;
   getGameAward(this: GameInstance): number;
-  eventTrigger(this: GameInstance, data?: { eventData?: Record<string, any> }, initPlayer?: GameObjectInstance): void;
+  eventTrigger(
+    this: GameInstance,
+    data?: { eventData?: Record<string, any> },
+    initPlayer?: GameObjectInstance
+  ): void | Promise<void>;
   eventReset(this: GameInstance, data?: { eventData?: Record<string, any> }, initPlayer?: GameObjectInstance): void;
   initPlayerWaitEvents(this: GameInstance): void;
   initGameProcessEvents(this: GameInstance): unknown;
