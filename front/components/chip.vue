@@ -156,10 +156,4 @@ export default {
   background-position: 0 0;
   border-radius: 16px;
 }
-
-.chip.fake {
-  .chip-face {
-    background-image: none !important;
-  }
-}
 </style>

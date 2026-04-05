@@ -71,9 +71,10 @@
   }
 
   play({ player, logMsg } = {}) {
-    if (this.played) return;
+    if (this.played) throw new Error('Карта уже была разыграна');
+
     const eventName = this.event?.name || this.name;
-    if (!this.getEvent(eventName)) return;
+    if (!this.getEvent(eventName)) throw new Error('Событие карты не найдено');
 
     this.game().logs({ msg: logMsg || `Разыграна карта "<a>${this.title}</a>"`, userId: player.userId });
 

@@ -18,6 +18,7 @@
     <div v-if="canPlay && !locked && !preventDoubleClick" v-on:click.stop="callPlayCard" class="play-btn">
       {{ card.eventData.buttonText || 'Разыграть' }}
     </div>
+    <slot name="additional" />
   </div>
 </template>
 
@@ -120,7 +121,7 @@ export default {
       );
     },
     toggleSelect() {
-      if(!this.cardId) return;
+      if (!this.cardId) return;
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;
     },
     showInfo() {
