@@ -96,8 +96,15 @@ export default {
       if (this.preventDoubleClick) return;
       this.preventDoubleClick = true;
 
-      if (typeof this.playCard === 'function') this.playCard();
-      else this.defaultPlayCard();
+      if (typeof this.playCard === 'function') {
+        await this.playCard()
+          .then(() => {
+            this.preventDoubleClick = false;
+          })
+          .catch(() => {
+            this.preventDoubleClick = false;
+          });
+      } else this.defaultPlayCard();
     },
     async defaultPlayCard() {
       if (this.card.played) return;

@@ -192,7 +192,7 @@
           lib.game.actions[actionName];
       }
 
-      if (!action) throw new Error(`action "${actionName}" not found`);
+      if (!action) throw 'not_found';
 
       return action.call(this, data, initPlayer);
     }

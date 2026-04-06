@@ -66,8 +66,8 @@
             try {
               game.run('initPrepareGameEvents');
             } catch (err) {
-              // может не быть обработчика
-              game.run('startGame');
+              if (err === 'not_found') game.run('startGame');
+              throw err;
             }
           }
 

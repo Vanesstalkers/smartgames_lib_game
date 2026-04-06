@@ -91,7 +91,7 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
     const rootPath = `${serverOrigin}/img/cards/${game?.templates?.card || 'default'}`;
     const { group, name } = card;
 
-    const cardPath = [cardGroup || group, name || 'back-side'].filter((s) => s).join('/');
+    const cardPath = [cardGroup || group, name.replace('_drop', '') || 'back-side'].filter((s) => s).join('/');
     const path = imgFullPath || `${rootPath}/${cardPath}.${imgExt}` || `empty-card.${imgExt}`;
 
     return {

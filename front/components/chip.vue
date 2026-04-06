@@ -135,7 +135,6 @@ export default {
       if (this.onClick) return this.onClick({ chipId: this.chipId, chip: this.chip });
 
       if (!this.selectable) return;
-
       this.handleGameApi({ name: 'eventTrigger', data: { eventData: { targetId: this.chipId } } });
     },
   },
