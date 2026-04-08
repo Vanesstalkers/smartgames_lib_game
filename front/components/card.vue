@@ -14,7 +14,7 @@
     :style="getCustomStyle"
     v-on:click.stop="toggleSelect"
   >
-    <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo(card.name)" />
+    <div v-if="card.name" class="card-info-btn" v-on:click.stop="showInfo()" />
     <div v-if="canPlay && !locked && !preventDoubleClick" v-on:click.stop="callPlayCard" class="play-btn">
       {{ card.eventData.buttonText || 'Разыграть' }}
     </div>

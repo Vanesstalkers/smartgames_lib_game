@@ -194,6 +194,9 @@
     }
     return null;
   }
+  getPlayer() {
+    return this.findParent({ className: 'Player' });
+  }
   matches({ className } = {}) {
     if (className) {
       let protoChain = this;

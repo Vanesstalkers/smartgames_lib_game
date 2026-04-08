@@ -1,7 +1,7 @@
 (class Card extends lib.game.GameObject {
   constructor(data, { parent }) {
     super(data, { col: 'card', parent });
-    this.broadcastableFields(['_id', 'name', 'played', 'disabled', 'eventData']);
+    this.broadcastableFields(['_id', 'name', 'title', 'played', 'disabled', 'eventData']);
     this.publicStaticFields(['group', 'owner']);
 
     const { title, name, event, subtype, playOneTime, played, disabled, sourceDeckId } = data;
