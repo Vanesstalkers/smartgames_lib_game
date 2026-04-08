@@ -17,12 +17,7 @@
         :style="arrowStyle"
       />
       <div v-else class="roulette-ball" :style="ballStyle" />
-      <div
-        v-if="hasStopSlot"
-        v-show="stopSlotUiVisible"
-        class="roulette-stop-anchor"
-        :style="stopAnchorStyle"
-      >
+      <div v-if="hasStopSlot" v-show="stopSlotUiVisible" class="roulette-stop-anchor" :style="stopAnchorStyle">
         <slot
           name="stop"
           :sector-index="displaySector"
@@ -48,10 +43,13 @@ import rouletteArrow from '../assets/roulette-arrow.png';
 const FALLBACK_SECTOR_KEYS = Array.from({ length: 37 }, (_, i) => String(i));
 
 const WHEEL_TRANSITION = 'transform 0.85s ease-out';
+/** Должно совпадать с длительностью в `WHEEL_TRANSITION` (0.85s). */
+const WHEEL_TRANSITION_MS = 850;
 const SPIN_DURATION_MS = 1000;
 const SPIN_TICK_MS = 55;
+const EMBARGO_FORWARD_DELAY_MS = 1000;
 /** Пауза после остановки спина, прежде чем снова показать слот `stop`. */
-const STOP_SLOT_SHOW_DELAY_MS = 1000;
+const STOP_SLOT_SHOW_DELAY_MS = 0;
 const BALL_RADIUS_RATIO = 0.38;
 /** Ширина стрелки относительно стороны квадрата рулетки (pivot по центру ассета). */
 const ARROW_WIDTH_RATIO = 0.92;
@@ -128,9 +126,15 @@ export default {
       isSpinning: false,
       spinIntervalId: null,
       rollDepthApplied: false,
+      /**
+       * Режим `ball`: накопленный угол колеса (deg) для `transform: rotate`, без скачков «короткой дугой».
+       * Всегда увеличиваем угол по модулю в сторону движения по секторам 0→1→…→(n−1)→0 (по часовой на экране при текущей схеме знаков).
+       */
+      ballWheelRotationDeg: null,
       /** Слот `stop`: видим после спина и с задержкой `STOP_SLOT_SHOW_DELAY_MS`. */
       stopSlotUiVisible: true,
       stopSlotRevealTimeoutId: null,
+      embargoForwardTimeoutId: null,
     };
   },
   setup() {
@@ -163,6 +167,13 @@ export default {
     lastRollTime() {
       const t = this.roulette?.lastRollTime;
       return typeof t === 'number' && Number.isFinite(t) ? t : null;
+    },
+    hasEmbargoAction() {
+      return Boolean(this.roulette?.eventData?.embargoAction);
+    },
+    /** Задан целевой сектор на сервере (`spin({ toValue })`); в `eventData.toValue` — маркер, в `value` — итог. */
+    hasPredeterminedToValue() {
+      return this.roulette?.eventData?.toValue != null;
     },
     isArrowIndicator() {
       return this.indicatorMode === 'arrow';
@@ -218,7 +229,10 @@ export default {
           transition: 'none',
         };
       }
-      const deg = -this.displaySectorAngleDeg;
+      const deg =
+        this.ballWheelRotationDeg != null
+          ? this.ballWheelRotationDeg
+          : -this.displaySectorAngleDeg;
       return {
         backgroundImage: `url(${this.wheelImageResolved})`,
         transform: `rotate(${deg}deg)`,
@@ -267,6 +281,14 @@ export default {
     },
   },
   watch: {
+    displaySector(newVal, oldVal) {
+      if (this.isArrowIndicator) return;
+      const count = this.sectorCount;
+      const step = 360 / count;
+      const f = (newVal - oldVal + count) % count;
+      if (this.ballWheelRotationDeg == null) this.ballWheelRotationDeg = -(oldVal / count) * 360;
+      this.ballWheelRotationDeg -= f * step;
+    },
     isSpinning(newVal, oldVal) {
       this.clearStopSlotRevealTimeout();
       if (newVal) {
@@ -289,21 +311,58 @@ export default {
           return;
         }
         if (newTime == null || newTime === oldTime) return;
-        this.startSpinAnimation(this.targetSectorIndex);
+        const finalIndex = this.hasEmbargoAction
+          ? this.getPrevSectorIndex(this.targetSectorIndex)
+          : this.targetSectorIndex;
+        if (this.hasPredeterminedToValue) {
+          this.clearStopSlotRevealTimeout();
+          this.stopSlotUiVisible = false;
+          this.stopSpinAnimation();
+          this.displaySector = finalIndex;
+          if (this.hasEmbargoAction) {
+            this.embargoForwardTimeoutId = setTimeout(() => {
+              this.embargoForwardTimeoutId = null;
+              this.moveOneSectorForward();
+              this.stopSlotRevealTimeoutId = setTimeout(() => {
+                this.stopSlotRevealTimeoutId = null;
+                this.stopSlotUiVisible = true;
+              }, WHEEL_TRANSITION_MS + STOP_SLOT_SHOW_DELAY_MS);
+            }, EMBARGO_FORWARD_DELAY_MS);
+          } else {
+            this.stopSlotRevealTimeoutId = setTimeout(() => {
+              this.stopSlotRevealTimeoutId = null;
+              this.stopSlotUiVisible = true;
+            }, WHEEL_TRANSITION_MS + STOP_SLOT_SHOW_DELAY_MS);
+          }
+          return;
+        }
+        this.startSpinAnimation(finalIndex, { embargoFinalStep: this.hasEmbargoAction });
       },
       immediate: true,
     },
     rouletteId() {
       this.stopSpinAnimation();
       this.displaySector = this.targetSectorIndex;
+      if (!this.isArrowIndicator) {
+        const count = this.sectorCount;
+        this.ballWheelRotationDeg = -(this.displaySector / count) * 360;
+      }
     },
+  },
+  mounted() {
+    if (!this.isArrowIndicator && this.ballWheelRotationDeg == null) {
+      const count = this.sectorCount;
+      this.ballWheelRotationDeg = -(this.displaySector / count) * 360;
+    }
   },
   beforeDestroy() {
     this.clearStopSlotRevealTimeout();
+    this.clearEmbargoForwardTimeout();
     this.stopSpinAnimation();
   },
   beforeUnmount() {
     this.clearStopSlotRevealTimeout();
+    this.clearEmbargoForwardTimeout();
     this.stopSpinAnimation();
   },
   methods: {
@@ -312,6 +371,18 @@ export default {
         clearTimeout(this.stopSlotRevealTimeoutId);
         this.stopSlotRevealTimeoutId = null;
       }
+    },
+    clearEmbargoForwardTimeout() {
+      if (this.embargoForwardTimeoutId != null) {
+        clearTimeout(this.embargoForwardTimeoutId);
+        this.embargoForwardTimeoutId = null;
+      }
+    },
+    getPrevSectorIndex(index) {
+      const count = this.sectorCount;
+      if (!count) return 0;
+      const current = clampSectorIndex(index, count);
+      return (current - 1 + count) % count;
     },
     releaseDiceRollDepth() {
       if (!this.rollDepthApplied) return;
@@ -328,12 +399,24 @@ export default {
         clearInterval(this.spinIntervalId);
         this.spinIntervalId = null;
       }
+      this.clearEmbargoForwardTimeout();
       if (this.isSpinning) {
         this.releaseDiceRollDepth();
       }
       this.isSpinning = false;
     },
-    startSpinAnimation(finalIndex) {
+    /**
+     * Плавно сдвигает рулетку на один сектор вперёд.
+     * Можно вызывать извне через `ref`.
+     */
+    moveOneSectorForward() {
+      if (this.isSpinning) return;
+      const count = this.sectorCount;
+      if (!count) return;
+      const current = clampSectorIndex(this.displaySector, count);
+      this.displaySector = (current + 1) % count;
+    },
+    startSpinAnimation(finalIndex, { embargoFinalStep = false } = {}) {
       this.stopSpinAnimation();
       this.isSpinning = true;
       this.rollDepthApplied = true;
@@ -346,17 +429,32 @@ export default {
 
       this.spinIntervalId = setInterval(() => {
         const elapsed = Date.now() - start;
-        if (elapsed >= SPIN_DURATION_MS) {
+        const cur = this.displaySector;
+
+        if (elapsed < SPIN_DURATION_MS) {
+          this.displaySector = (cur + 1) % count;
+          return;
+        }
+
+        // Основное время вышло: не прыгать на `target` сразу — иначе при target «раньше» по кругу
+        // (например 11→10) шарик/якорь на один кадр движутся назад. Доезжаем только шагами +1.
+        if (cur === target) {
           if (this.spinIntervalId != null) {
             clearInterval(this.spinIntervalId);
             this.spinIntervalId = null;
           }
-          this.displaySector = target;
           this.releaseDiceRollDepth();
           this.isSpinning = false;
+          if (embargoFinalStep) {
+            this.embargoForwardTimeoutId = setTimeout(() => {
+              this.embargoForwardTimeoutId = null;
+              this.moveOneSectorForward();
+            }, EMBARGO_FORWARD_DELAY_MS);
+          }
           return;
         }
-        this.displaySector = Math.floor(Math.random() * count);
+
+        this.displaySector = (cur + 1) % count;
       }, SPIN_TICK_MS);
     },
   },

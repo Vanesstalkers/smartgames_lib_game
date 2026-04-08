@@ -78,17 +78,22 @@
 
     this.game().logs({ msg: logMsg || `Разыграна карта "<a>${this.title}</a>"`, userId: player.userId });
 
-    const event = this.initEvent(eventName, {
-      game: player.game(),
-      player,
-      allowedPlayers: [player],
-      initData: this.event,
-    });
-
-    if (event) event.name = this.title;
-    if (event !== null && player) player.addEvent(event);
-
     this.set({ played: Date.now() });
+
+    try {
+      const event = this.initEvent(eventName, {
+        game: player.game(),
+        player,
+        allowedPlayers: [player],
+        initData: this.event,
+      });
+
+      if (event) event.name = this.title;
+      if (event !== null && player) player.addEvent(event);
+    } catch (error) {
+      this.set({ played: null });
+      throw error;
+    }
   }
 
   returnToHand({ player }) {

@@ -7,8 +7,8 @@
     super(data, { col: 'deck', parent });
     this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData']);
 
-    const { type, subtype, placement, itemType, settings, access, itemMap, parentDeckId, dropDeckId } = data;
-    this.set({ type, subtype, placement, itemType, settings, access, itemMap, parentDeckId, dropDeckId });
+    const { title, type, subtype, placement, itemType, settings, access, itemMap, parentDeckId, dropDeckId } = data;
+    this.set({ title, type, subtype, placement, itemType, settings, access, itemMap, parentDeckId, dropDeckId });
   }
   prepareBroadcastData({ data, player, viewerMode }) {
     let preparedData = {};
@@ -125,7 +125,7 @@
   itemsCount() {
     return Object.keys(this.itemMap).length;
   }
-  addItem(item) {
+  addItem(item = {}) {
     const parentId = this.id();
     const itemClass = this.getItemClass();
     const newObjectCreation = item.constructor != itemClass ? true : false; // тут может прийти объект с первичным набором атрибутов
@@ -170,7 +170,7 @@
         item: itemToRemove,
         action: itemToRemove.visible ? 'removeVisible' : 'remove',
       });
-      if(forceDelete) itemToRemove.delete();
+      if (forceDelete) itemToRemove.delete();
     }
   }
   removeAllItems({ markDelete = false } = {}) {
