@@ -70,7 +70,7 @@
     }
   }
 
-  play({ player, logMsg } = {}) {
+  play({ player, logMsg, onSuccess } = {}) {
     if (this.played) throw new Error('Карта уже была разыграна');
 
     const eventName = this.event?.name || this.name;
@@ -87,9 +87,12 @@
         allowedPlayers: [player],
         initData: this.event,
       });
+      event.setHandler('FAILED', () => this.set({ played: null }));
 
       if (event) event.name = this.title;
       if (event !== null && player) player.addEvent(event);
+
+      return event;
     } catch (error) {
       this.set({ played: null });
       throw error;

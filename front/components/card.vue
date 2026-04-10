@@ -240,10 +240,22 @@ export default {
   background-size: contain;
   cursor: pointer;
   visibility: hidden;
-}
+  filter: drop-shadow(2px 4px 6px black);
 
-.card-info-btn:hover {
-  opacity: 0.7;
+  opacity: 0.8;
+  &:hover {
+    opacity: 1;
+    margin-top: -2px;
+    margin-left: -2px;
+    filter: drop-shadow(3px 5px 6px black);
+
+    &:active {
+      margin-top: 0px;
+      margin-left: 0px;
+      filter: drop-shadow(2px 4px 6px black);
+      opacity: 0.8;
+    }
+  }
 }
 
 .card-event:hover > .card-info-btn,

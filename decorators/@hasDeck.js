@@ -33,6 +33,7 @@
       const { parentDeckContainer } = deckToDelete.settings;
       this.set({ [parentDeckContainer]: { [deckToDelete._id]: null } });
       if (deckToDelete.subtype) delete this.decks[deckToDelete.subtype];
+      deckToDelete.delete();
     },
   }),
 });
