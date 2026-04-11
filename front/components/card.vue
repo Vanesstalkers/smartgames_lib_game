@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="card._id || cardData"
+    :id="card._id"
     :name="card.name"
     :class="[
       'card-event',

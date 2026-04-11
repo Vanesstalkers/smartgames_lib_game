@@ -1,34 +1,39 @@
 ({
-  decorate: () => ({
-    addDicecube(data, { diceKey = 'dicecubeMap', dicecubeClass, parentDirectLink = true } = {}) {
-      const defaultClasses = this.defaultClasses ? this.defaultClasses() : this.game().defaultClasses();
-      const { Dicecube: defaultDicecubeClass } = defaultClasses;
-      if (!dicecubeClass) dicecubeClass = defaultDicecubeClass;
+  decorate: (obj) => {
+    obj.preventSaveFields(['dicecubes']);
+    obj.preventBroadcastFields(['dicecubes']);
 
-      if (!data.settings) data.settings = {};
-      data.settings.parentDiceKey = diceKey;
+    Object.assign(obj, {
+      addDicecube(data, { diceKey = 'dicecubeMap', dicecubeClass, parentDirectLink = true } = {}) {
+        const defaultClasses = this.defaultClasses ? this.defaultClasses() : this.game().defaultClasses();
+        const { Dicecube: defaultDicecubeClass } = defaultClasses;
+        if (!dicecubeClass) dicecubeClass = defaultDicecubeClass;
 
-      const cube = new dicecubeClass(data, { parent: this });
+        if (!data.settings) data.settings = {};
+        data.settings.parentDiceKey = diceKey;
 
-      this.set({ [diceKey]: { [cube._id]: {} }, dicecubes: {} });
-      if (parentDirectLink && cube.subtype) {
-        if (!this.dicecubes) this.dicecubes = {};
-        this.dicecubes[cube.subtype] = cube;
-      }
-      return cube;
-    },
-    deleteDicecube(cube) {
-      cube.deleteFromParentsObjectStorage();
+        const cube = new dicecubeClass(data, { parent: this });
 
-      const { parentDiceKey } = cube.settings;
-      this.set({ [parentDiceKey]: { [cube._id]: null } });
+        this.set({ [diceKey]: { [cube._id]: {} }, dicecubes: {} });
+        if (parentDirectLink && cube.subtype) {
+          if (!this.dicecubes) this.dicecubes = {};
+          this.dicecubes[cube.subtype] = cube;
+        }
+        return cube;
+      },
+      deleteDicecube(cube) {
+        cube.deleteFromParentsObjectStorage();
 
-      if (cube.subtype) delete this.dicecubes[cube.subtype];
-    },
-    rollAllDicecubes() {
-      for (const cube of Object.values(this.dicecubes)) {
-        cube.roll();
-      }
-    },
-  }),
+        const { parentDiceKey } = cube.settings;
+        this.set({ [parentDiceKey]: { [cube._id]: null } });
+
+        if (cube.subtype) delete this.dicecubes[cube.subtype];
+      },
+      rollAllDicecubes() {
+        for (const cube of Object.values(this.dicecubes)) {
+          cube.roll();
+        }
+      },
+    });
+  },
 });

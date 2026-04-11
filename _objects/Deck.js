@@ -7,8 +7,9 @@
     super(data, { col: 'deck', parent });
     this.broadcastableFields(['_id', 'code', 'type', 'subtype', 'placement', 'itemMap', 'eventData']);
 
-    const { title, type, subtype, placement, itemType, settings, access, itemMap, parentDeckId, dropDeckId } = data;
-    this.set({ title, type, subtype, placement, itemType, settings, access, itemMap, parentDeckId, dropDeckId });
+    const { title, name, type, subtype, placement, itemType, settings, access, itemMap, parentDeckId, dropDeckId } =
+      data;
+    this.set({ title, name, type, subtype, placement, itemType, settings, access, itemMap, parentDeckId, dropDeckId });
   }
   prepareBroadcastData({ data, player, viewerMode }) {
     let preparedData = {};

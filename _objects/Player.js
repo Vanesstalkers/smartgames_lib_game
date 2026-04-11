@@ -3,15 +3,11 @@
 
   constructor(data, { parent }) {
     super(data, { col: 'player', parent });
-    Object.assign(this, {
-      ...lib.game.decorators['@hasDeck'].decorate(),
-    });
-
-    this.preventSaveFields(['decks']);
+    lib.game.decorators['@hasDeck'].decorate(this);
 
     this.broadcastableFields([
       ...['_id', 'code', 'gameId', 'userId', 'userName', 'avatarCode', 'avatarUrl', 'active', 'ready'],
-      ...['timerEndTime', 'timerUpdateTime', 'eventData', 'deckMap', 'staticHelper', 'acquired'],
+      ...['timerEndTime', 'timerUpdateTime', 'eventData', 'staticHelper', 'acquired'],
     ]);
 
     const { userId, userName, avatarCode, avatarUrl, avatarsMap = {} } = data;

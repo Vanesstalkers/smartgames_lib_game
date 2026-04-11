@@ -1,35 +1,40 @@
 ({
-  decorate: () => ({
-    addRoulette(data, { rouletteKey = 'rouletteMap', rouletteClass, parentDirectLink = true } = {}) {
-      const defaultClasses = this.defaultClasses ? this.defaultClasses() : this.game().defaultClasses();
-      const { Roulette: defaultRouletteClass } = defaultClasses;
-      if (!rouletteClass) rouletteClass = defaultRouletteClass;
+  decorate: (obj) => {
+    obj.preventSaveFields(['roulettes']);
+    obj.preventBroadcastFields(['roulettes']);
 
-      if (!data.settings) data.settings = {};
-      data.settings.parentRouletteKey = rouletteKey;
+    Object.assign(obj, {
+      addRoulette(data, { rouletteKey = 'rouletteMap', rouletteClass, parentDirectLink = true } = {}) {
+        const defaultClasses = this.defaultClasses ? this.defaultClasses() : this.game().defaultClasses();
+        const { Roulette: defaultRouletteClass } = defaultClasses;
+        if (!rouletteClass) rouletteClass = defaultRouletteClass;
 
-      const wheel = new rouletteClass(data, { parent: this });
+        if (!data.settings) data.settings = {};
+        data.settings.parentRouletteKey = rouletteKey;
 
-      this.set({ [rouletteKey]: { [wheel._id]: {} }, roulettes: {} });
-      if (parentDirectLink && wheel.subtype) {
-        if (!this.roulettes) this.roulettes = {};
-        this.roulettes[wheel.subtype] = wheel;
-      }
-      return wheel;
-    },
-    deleteRoulette(wheel) {
-      wheel.deleteFromParentsObjectStorage();
+        const wheel = new rouletteClass(data, { parent: this });
 
-      const { parentRouletteKey } = wheel.settings;
-      this.set({ [parentRouletteKey]: { [wheel._id]: null } });
+        this.set({ [rouletteKey]: { [wheel._id]: {} }, roulettes: {} });
+        if (parentDirectLink && wheel.subtype) {
+          if (!this.roulettes) this.roulettes = {};
+          this.roulettes[wheel.subtype] = wheel;
+        }
+        return wheel;
+      },
+      deleteRoulette(wheel) {
+        wheel.deleteFromParentsObjectStorage();
 
-      if (wheel.subtype) delete this.roulettes[wheel.subtype];
-    },
-    rollAllRoulettes() {
-      for (const rouletteId of Object.keys(this.rouletteMap || {})) {
-        const wheel = this.get(rouletteId);
-        if (wheel?.matches?.({ className: 'Roulette' })) wheel.spin();
-      }
-    },
-  }),
+        const { parentRouletteKey } = wheel.settings;
+        this.set({ [parentRouletteKey]: { [wheel._id]: null } });
+
+        if (wheel.subtype) delete this.roulettes[wheel.subtype];
+      },
+      rollAllRoulettes() {
+        for (const rouletteId of Object.keys(this.rouletteMap || {})) {
+          const wheel = this.get(rouletteId);
+          if (wheel?.matches?.({ className: 'Roulette' })) wheel.spin();
+        }
+      },
+    });
+  },
 });
