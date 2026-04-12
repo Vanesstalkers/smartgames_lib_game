@@ -8,6 +8,7 @@
     #broadcastDataAfterHandlers = {};
     #objectsDefaultClasses = {};
     startTutorialName = 'game-tutorial-start';
+    #gameMasterId = null;
 
     constructor(storeData = {}, gameObjectData = {}) {
       if (!storeData.col) storeData.col = 'game';
@@ -325,7 +326,18 @@
       return readyOnly ? result.filter((player) => player.ready) : result;
     }
     getPlayerByUserId(id) {
-      return this.players({ readyOnly: false }).find((player) => player.userId === id);
+      return this.players({ readyOnly: false }).find((p) => p.userId === id);
+    }
+    viewers() {
+      const store = this.getStore();
+      return Object.keys(this.viewerMap).map((_id) => store.viewer[_id]);
+    }
+    getViewerByUserId(id) {
+      return this.viewers().find((v) => v.userId === id);
+    }
+    gameMaster(id) {
+      if (id) this.#gameMasterId = id;
+      return this.getViewerByUserId(this.#gameMasterId);
     }
 
     async playerJoin({ playerId, userId, userName, userAvatar, userAvatarUrl }) {
@@ -369,15 +381,19 @@
         });
       }
     }
-    async viewerJoin({ viewerId, userId, userName }) {
+    async viewerJoin({ viewerId, userId, userName, gameMaster = false }) {
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
         const { Viewer: ViewerClass } = this.defaultClasses();
         const viewer = new ViewerClass({ _id: viewerId, userId }, { parent: this });
-        viewer.set({ userId, userName, eventData: { controlBtn: { label: 'Выйти из игры', leaveGame: true } } });
+        viewer.set({
+          ...{ userId, userName, gameMaster },
+          eventData: { controlBtn: { label: 'Выйти из игры', leaveGame: true } },
+        });
+        if (gameMaster) this.gameMaster(viewerId);
 
-        this.logs({ msg: 'Наблюдатель присоединился к игре.' });
+        this.logs({ msg: gameMaster ? 'Ведущий присоединился к игре.' : 'Наблюдатель присоединился к игре.' });
 
         await this.saveChanges();
 
@@ -509,31 +525,33 @@
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
-        const player = this.getPlayerByUserId(userId) || this.roundActivePlayer();
-        if (!player) throw new Error('player not found');
+        const initiator = this.getPlayerByUserId(userId) || this.getViewerByUserId(userId) || this.roundActivePlayer();
+        if (!initiator) throw new Error('initiator not found');
 
-        const activePlayers = this.getActivePlayers();
-        const { disableActivePlayerCheck, disableActionsDisabledCheck } = player.eventData;
-        if (!activePlayers.includes(player) && eventName !== 'leaveGame' && !disableActivePlayerCheck)
-          throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
-        else if (
-          (this.roundReady || player.eventData.actionsDisabled) &&
-          !disableActionsDisabledCheck &&
-          eventName !== 'roundEnd' &&
-          eventName !== 'leaveGame'
-        )
-          throw new Error('Игрок не может совершать действия в этот ход.');
+        if (initiator.gameMaster) {
+          const activePlayers = this.getActivePlayers();
+          const { disableActivePlayerCheck, disableActionsDisabledCheck } = initiator.eventData;
+          if (!activePlayers.includes(initiator) && eventName !== 'leaveGame' && !disableActivePlayerCheck)
+            throw new Error('Игрок не может совершить это действие, так как сейчас не его ход.');
+          else if (
+            (this.roundReady || initiator.eventData.actionsDisabled) &&
+            !disableActionsDisabledCheck &&
+            eventName !== 'roundEnd' &&
+            eventName !== 'leaveGame'
+          )
+            throw new Error('Игрок не может совершать действия в этот ход.');
 
-        if (disableActivePlayerCheck || disableActionsDisabledCheck) {
-          player.set({ eventData: { disableActivePlayerCheck: null, disableActionsDisabledCheck: null } });
+          if (disableActivePlayerCheck || disableActionsDisabledCheck) {
+            initiator.set({ eventData: { disableActivePlayerCheck: null, disableActionsDisabledCheck: null } });
+          }
         }
 
         // !!! защитить методы, которые не должны вызываться с фронта
         let runResult;
         if (this[eventName]) {
-          runResult = this[eventName](eventData, player);
+          runResult = this[eventName](eventData, initiator);
         } else {
-          runResult = this.run(eventName, eventData, player);
+          runResult = this.run(eventName, eventData, initiator);
         }
         if (runResult != null && typeof runResult.then === 'function') {
           await runResult;
@@ -790,7 +808,7 @@
     async saveChanges() {
       if (this.rounds) {
         const round = this.rounds[this.round];
-        if(round) round.save();
+        if (round) round.save();
       }
 
       await super.saveChanges();

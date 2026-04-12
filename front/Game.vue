@@ -206,7 +206,7 @@ export default {
       };
     },
     chatUsers() {
-      return Object.values(this.store.player)
+      return Object.values(this.store?.player || {}) // наблюдататель (ведущий) мог подключиться первым
         .concat(Object.values(this.store.viewer || {}))
         .reduce((obj, { userId, isViewer }) => {
           let user = { ...this.lobby.users?.[userId] };

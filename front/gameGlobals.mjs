@@ -69,6 +69,9 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
   function sessionUserData() {
     return this.$root.state.store?.user?.[this.$root.state.currentUser] || {};
   }
+  function isGameMaster() {
+    return this.store.viewer?.[this.gameState.sessionViewerId]?.gameMaster;
+  }
 
   function logItems() {
     const items = Object.entries(this.game.logs || {})
@@ -118,6 +121,7 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
     },
     sessionPlayer,
     sessionPlayerIsActive,
+    isGameMaster,
     actionsDisabled() {
       return this.sessionPlayer().eventData?.actionsDisabled; // например пропуск хода
     },

@@ -19,7 +19,9 @@ async (context, { gameId, viewerMode = false, ...args }) => {
     session.set({ gameId });
   }
 
-  if (viewerMode) await game.viewerJoin(data);
+  if (game.settings.gameMaster && Object.keys(game.store?.viewer || {}).length === 0) {
+    await game.viewerJoin({ ...data, gameMaster: true });
+  } else if (viewerMode) await game.viewerJoin(data);
   else {
     const { playerId, teamId } = (await game.playerJoin(data)) || {};
     await user.joinGame({ gameId, playerId, teamId });
