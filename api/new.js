@@ -8,7 +8,7 @@ async (
     teamsCount,
     playerCount,
     maxPlayersInGame,
-    minPlayersToStart,
+    minPlayersInGame,
     gameRoundLimit,
     difficulty,
   }
@@ -26,7 +26,7 @@ async (
     const GameClassGetter = domain.game[gameType]?.Class || domain.game.Class;
     const game = await new GameClassGetter().create({
       ...{ gameCode, gameType, gameConfig, gameTimer, gameRoundLimit, difficulty },
-      ...{ teamsCount, playerCount, maxPlayersInGame, minPlayersToStart },
+      ...{ teamsCount, playerCount, maxPlayersInGame, minPlayersToStart: minPlayersInGame.val },
     });
     const gameId = game.id();
 

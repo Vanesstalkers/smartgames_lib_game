@@ -82,15 +82,14 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
   function getCardCustomStyle(component) {
     const {
       state: { serverOrigin },
-      card,
-      game,
+      card: { group, name },
+      game: { templates: { card: cardTemplate = 'default' } = {} } = {},
       cardGroup,
       imgFullPath,
       imgExt = 'jpg',
     } = component;
-    const rootPath = `${serverOrigin}/img/cards/${game?.templates?.card || 'default'}`;
-    const { group, name } = card;
-console.log("getCardCustomStyle name=", name, card);
+
+    const rootPath = `${serverOrigin}/img/cards/${cardTemplate}`;
     const cardPath = [cardGroup || group, name.replace('_drop', '') || 'back-side'].filter((s) => s).join('/');
     const path = imgFullPath || `${rootPath}/${cardPath}.${imgExt}` || `empty-card.${imgExt}`;
 
