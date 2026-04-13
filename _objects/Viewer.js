@@ -1,14 +1,35 @@
 (class Viewer extends lib.game.GameObject {
+  #eventWithTriggerListener = null;
+
   constructor(data, { parent }) {
     super(data, { col: 'viewer', parent });
-    this.broadcastableFields(['_id', 'userId', 'isViewer', 'gameMaster', 'avatarCode', 'avatarUrl']);
+    this.broadcastableFields(['_id', 'userId', 'isViewer', 'gameMaster', 'avatarCode', 'avatarUrl', 'eventData', 'staticHelper']);
 
-    this.set({
-      userId: data.userId,
-      isViewer: true,
-      gameMaster: data.gameMaster,
-      avatarCode: data.avatarCode,
-      avatarUrl: data.avatarUrl,
+    const { userId, gameMaster, avatarCode, avatarUrl, eventData, staticHelper } = data;
+    this.set({ userId, gameMaster, avatarCode, avatarUrl, eventData, staticHelper });
+  }
+
+  notifyUser(data = {}, config = {}) {
+    if (typeof data === 'string') data = { message: data };
+    lib.store.broadcaster.publishAction.call(this.game(), `user-${this.userId}`, 'broadcastToSessions', {
+      data,
+      config,
     });
+  }
+
+  setEventWithTriggerListener(event) {
+    if (this.#eventWithTriggerListener) throw new Error('Предыдущее событие не завершено');
+    if (!event.hasHandler('TRIGGER')) throw new Error('Событие не содержит обработчик TRIGGER');
+
+    this.#eventWithTriggerListener = event;
+    this.set({ eventData: { triggerListenerEnabled: Date.now() } });
+  }
+  removeEventWithTriggerListener() {
+    this.#eventWithTriggerListener = null;
+    this.set({ eventData: { triggerListenerEnabled: null } });
+  }
+  handleEventWithTriggerListener(handler, data = {}) {
+    if (!this.#eventWithTriggerListener) throw new Error('Событие не найдено');
+    return this.#eventWithTriggerListener.emit(handler, data, this);
   }
 });

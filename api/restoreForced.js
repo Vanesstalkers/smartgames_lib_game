@@ -30,10 +30,12 @@ async (context, { round, roundStep } = {}) => {
     // Восстановление игры
     const loadGameAction = domain.game.actions.loadGame || lib.game.actions.loadGame;
     const restoredGame = await loadGameAction({ gameType, gameId, lobbyId, query });
-
+console.info('game.store.viewer=', Object.keys(game.store.viewer || {}));
     // Восстановление игроков и зрителей
     for (const player of [...Object.values(game.store.player), ...Object.values(game.store.viewer || {})]) {
-      const { userId, userName, _id: id, ready } = player;
+      const { userId, userName, _id: id, ready, gameMaster } = player;
+
+      console.info('ready=', ready, 'player.isViewer=', player.isViewer, 'gameMaster=', gameMaster);
 
       if(userId ==='fake') continue; // AI-игрок
       if (!ready) continue; // игрок вышел из игры (через processPlayerLeave)
@@ -42,7 +44,7 @@ async (context, { round, roundStep } = {}) => {
       user.subscribe(`game-${gameId}`, { rule: 'actions-only' });
 
       await (player.isViewer
-        ? restoredGame.viewerJoin({ userId, userName, viewerId: id })
+        ? restoredGame.viewerJoin({ userId, userName, viewerId: id, gameMaster })
         : restoredGame.playerJoin({ userId, userName, playerId: id }));
 
       for (const session of user.sessions()) {

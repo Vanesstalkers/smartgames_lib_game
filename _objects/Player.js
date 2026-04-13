@@ -69,14 +69,14 @@
     return enabled ? this.#eventWithTriggerListener : false;
   }
 
-  activate({ setData, notifyUser } = {}) {
+  activate({ setData, setDataConfig, notifyUser } = {}) {
     this.set({ active: true });
-    if (setData) this.set(setData);
+    if (setData) this.set(setData, setDataConfig);
     if (notifyUser) this.notifyUser(notifyUser);
   }
-  deactivate({ setData = {}, notifyUser } = {}) {
+  deactivate({ setData = {}, setDataConfig = {}, notifyUser } = {}) {
     this.set({ active: false, eventData: { actionsDisabled: null } });
-    if (setData) this.set(setData);
+    if (setData) this.set(setData, setDataConfig);
     if (notifyUser) this.notifyUser(notifyUser);
   }
 

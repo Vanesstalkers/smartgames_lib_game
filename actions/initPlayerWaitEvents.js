@@ -12,7 +12,7 @@
         if (game.restorationMode) {
           this.activePlayers = game
             .getActivePlayers()
-            .map((player) => ({ player, controlBtn: player.eventData.controlBtn }));
+            .map((player) => ({ player, controlBtn: lib.utils.clone(player.eventData.controlBtn) }));
         }
 
         game.set({ statusLabel: 'Ожидание игроков', status: 'WAIT_FOR_PLAYERS' });
@@ -54,8 +54,9 @@
 
           if (game.restorationMode) {
             // восстанавливаем активных игроков (активация сбросилась после нажатия кнопки "Готов")
-            for (const { player, controlBtn } of this.activePlayers)
+            for (const { player, controlBtn } of this.activePlayers) {
               player.activate({ setData: { eventData: { controlBtn } } });
+            }
 
             return game.restart();
           }

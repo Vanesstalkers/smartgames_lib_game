@@ -330,13 +330,13 @@
     }
     viewers() {
       const store = this.getStore();
-      return Object.keys(this.viewerMap).map((_id) => store.viewer[_id]);
+      return Object.keys(this.store.viewer || {}).map((_id) => store.viewer[_id]);
     }
     getViewerByUserId(id) {
       return this.viewers().find((v) => v.userId === id);
     }
     gameMaster(id) {
-      if (id) this.#gameMasterId = id;
+      if (id !== undefined) this.#gameMasterId = id;
       return this.getViewerByUserId(this.#gameMasterId);
     }
 
@@ -385,13 +385,26 @@
       try {
         if (this.status === 'FINISHED') throw new Error('Игра уже завершена.');
 
-        const { Viewer: ViewerClass } = this.defaultClasses();
-        const viewer = new ViewerClass({ _id: viewerId, userId }, { parent: this });
-        viewer.set({
-          ...{ userId, userName, gameMaster },
-          eventData: { controlBtn: { label: 'Выйти из игры', leaveGame: true } },
-        });
-        if (gameMaster) this.gameMaster(viewerId);
+        let viewer = this.get(viewerId);
+
+        if (!viewer) {
+          const { Viewer: ViewerClass } = this.defaultClasses();
+
+          const viewerData = this.store.viewer?.[viewerId] || { _id: viewerId, userId };
+          viewer = new ViewerClass(viewerData, { parent: this });
+          viewer.set({
+            ready: true,
+            ...{ userId, userName, gameMaster },
+            eventData: { controlBtn: { label: 'Выйти из игры', leaveGame: true } },
+          });
+          if (gameMaster) {
+            this.gameMaster(userId);
+            viewer.set(
+              { eventData: { controlBtn: this.getActivePlayer()?.eventData?.controlBtn } },
+              { reset: ['eventData.controlBtn'] }
+            );
+          }
+        }
 
         this.logs({ msg: gameMaster ? 'Ведущий присоединился к игре.' : 'Наблюдатель присоединился к игре.' });
 
@@ -426,6 +439,8 @@
       if (this.status !== 'FINISHED') {
         const viewer = this.get(viewerId);
         if (!viewer) return;
+
+        if (viewer.gameMaster) this.gameMaster(null);
 
         viewer.markDelete({ saveToDB: true });
         this.deleteFromObjectStorage(viewer);
@@ -525,10 +540,11 @@
 
     async handleAction({ name: eventName, data: eventData = {}, sessionUserId: userId }) {
       try {
-        const initiator = this.getPlayerByUserId(userId) || this.getViewerByUserId(userId) || this.roundActivePlayer();
+        const viewer = this.getViewerByUserId(userId);
+        const initiator = viewer?.gameMaster ? viewer : this.getPlayerByUserId(userId) || this.roundActivePlayer();
         if (!initiator) throw new Error('initiator not found');
 
-        if (initiator.gameMaster) {
+        if (initiator.gameMaster !== true) { // initiator-ом может быть game, у которого есть метод gameMaster
           const activePlayers = this.getActivePlayers();
           const { disableActivePlayerCheck, disableActionsDisabledCheck } = initiator.eventData;
           if (!activePlayers.includes(initiator) && eventName !== 'leaveGame' && !disableActivePlayerCheck)

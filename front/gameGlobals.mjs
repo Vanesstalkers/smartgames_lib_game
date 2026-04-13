@@ -61,10 +61,13 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
     return this.getGame().store || {};
   }
   function sessionPlayer() {
-    return this.store.player?.[this.gameState.sessionPlayerId] || { eventData: {} };
+    return (
+      this.store.player?.[this.gameState.sessionPlayerId] ||
+      this.store.viewer?.[this.gameState.sessionViewerId] || { eventData: {} }
+    );
   }
   function sessionPlayerIsActive() {
-    return this.sessionPlayer().active;
+    return this.sessionPlayer().active || this.isGameMaster();
   }
   function sessionUserData() {
     return this.$root.state.store?.user?.[this.$root.state.currentUser] || {};

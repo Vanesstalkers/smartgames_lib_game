@@ -75,7 +75,7 @@
       masterObj: this,
       target: this,
       source: val,
-      config: { deleteNull: true, ...clonedConfig }, // удаляем ключи с null-значением
+      config: { deleteNull: true, ...config }, // удаляем ключи с null-значением
     });
   }
   prepareChanges(val) {
@@ -87,7 +87,7 @@
   markDelete(config) {
     this.game().markDelete(this, config);
   }
-  delete(){
+  delete() {
     this.deleteFromParentsObjectStorage();
     this.markDelete();
   }
@@ -281,7 +281,7 @@
     }
     if (!eventData) throw new Error(`event not found (event=${eventName})`);
 
-    if (this.matches({ className: 'Player' })) player = this;
+    if (this.matches({ className: 'Player' }) || this.gameMaster === true) player = this;
     if (!game) game = this.isGame() ? this : this.game();
 
     let event = new lib.game.GameEvent(eventData);

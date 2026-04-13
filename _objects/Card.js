@@ -87,10 +87,12 @@
         allowedPlayers: [player],
         initData: this.event,
       });
-      event.setHandler('FAILED', () => this.set({ played: null }));
 
-      if (event) event.name = this.title;
-      if (event !== null && player) player.addEvent(event);
+      if (event) {
+        event.name = this.title;
+        event.setHandler('FAILED', () => this.set({ played: null }));
+        if (player) player.addEvent(event);
+      }
 
       return event;
     } catch (error) {
