@@ -127,6 +127,7 @@ export default {
       };
     },
     selectable() {
+      console.log("this.player.eventData.chip=", this.player.eventData.chip);
       return this.sessionPlayerIsActive() && this.player.eventData.chip?.[this.chipId]?.selectable;
     },
   },

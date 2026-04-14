@@ -7,6 +7,7 @@
   #publicHandlers;
   #init;
   #handlers;
+  #beforeEventControlBtn;
   constructor({ init, handlers, ...data }) {
     this.#init = init;
     this.#handlers = handlers || {};
@@ -33,8 +34,11 @@
     if (data) this.#game = data;
     return this.#game;
   }
-  player(data) {
-    if (data) this.#player = data;
+  player(player) {
+    if (player) {
+      this.#beforeEventControlBtn = lib.utils.clone(player.eventData.controlBtn);
+      this.#player = player;
+    }
     return this.#player;
   }
   allowedPlayers(data) {
@@ -69,6 +73,8 @@
       player: this.#player || this.#game.roundActivePlayer(),
       allowedPlayers: this.#allowedPlayers,
       sourceId: this.sourceId(),
+      data: this.data || {},
+      beforeEventControlBtn: this.#beforeEventControlBtn,
     };
   }
   hasInitAction() {

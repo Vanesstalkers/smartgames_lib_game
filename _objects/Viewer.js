@@ -6,7 +6,7 @@
     this.broadcastableFields(['_id', 'userId', 'isViewer', 'gameMaster', 'avatarCode', 'avatarUrl', 'eventData', 'staticHelper']);
 
     const { userId, gameMaster, avatarCode, avatarUrl, eventData, staticHelper } = data;
-    this.set({ userId, gameMaster, avatarCode, avatarUrl, eventData, staticHelper });
+    this.set({ isViewer: true, userId, gameMaster, avatarCode, avatarUrl, eventData, staticHelper }); 
   }
 
   notifyUser(data = {}, config = {}) {
