@@ -74,9 +74,12 @@
     if (this.played) throw new Error('Карта уже была разыграна');
 
     const eventName = this.event?.name || this.name;
-    if (!this.getEvent(eventName)) throw new Error('Событие карты не найдено');
+    if (!this.getEvent(eventName)) {
+      player.notifyUser(`Событие карты <a>${this.title}</a> не найдено`, { displayForced: true });
+      return;
+    }
 
-    this.game().logs({ msg: logMsg || `Разыграна карта "<a>${this.title}</a>"`, userId: player.userId });
+    this.game().logs({ msg: logMsg || `Разыграна карта <a>${this.title}</a>`, userId: player.userId });
 
     this.set({ played: Date.now() });
 
