@@ -273,7 +273,10 @@
     if (!event) return null;
     return event();
   }
-  initEvent(eventData, { game, player, allowedPlayers = [], publicHandlers = [], initData = {} } = {}) {
+  initEvent(
+    eventData,
+    { game, player, allowedPlayers = [], publicHandlers = [], initData = {}, onSuccess, onFailed } = {}
+  ) {
     if (typeof eventData === 'string') {
       const eventName = eventData;
       eventData = this.getEvent(eventName);
@@ -300,6 +303,9 @@
         this.destroy();
       });
     }
+
+    if (onSuccess) event.setHandler('SUCCESS', onSuccess);
+    if (onFailed) event.setHandler('FAILED', onFailed);
 
     const handlers = event.handlers();
     for (const handler of handlers) {

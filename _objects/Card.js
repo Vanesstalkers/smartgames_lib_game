@@ -89,11 +89,12 @@
         player,
         allowedPlayers: [player],
         initData: this.event,
+        onSuccess,
+        onFailed: () => this.set({ played: null }),
       });
 
       if (event) {
         event.name = this.title;
-        event.setHandler('FAILED', () => this.set({ played: null }));
         if (player) player.addEvent(event);
       }
 

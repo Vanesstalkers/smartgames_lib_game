@@ -83,7 +83,7 @@
     if (!this.getEvent(eventName)) return;
 
     this.game().logs({
-      msg: logMsg || `Разыграна фишка "<a>${this.getTitle()}</a>"`,
+      msg: logMsg || `Разыгран ресурс "<a>${this.getTitle()}</a>"`,
       userId: player.userId,
     });
 
