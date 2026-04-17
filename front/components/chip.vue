@@ -6,7 +6,7 @@
       customClass,
       chipId === 'fake' ? 'fake' : '',
       selectable ? 'selectable' : '',
-      chip?.disabled ? 'disabled' : '',
+      disabled ? 'disabled' : '',
     ]"
     :subtype="displaySubtype || undefined"
     :style="rootStyle"
@@ -129,9 +129,13 @@ export default {
     selectable() {
       return this.sessionPlayerIsActive() && this.player.eventData.chip?.[this.chipId]?.selectable;
     },
+    disabled() {
+      return this.chip?.disabled || this.sessionPlayer().eventData.playDisabled;
+    },
   },
   methods: {
     chooseChip() {
+      if (this.disabled) return;
       if (this.onClick) return this.onClick({ chipId: this.chipId, chip: this.chip });
 
       if (!this.selectable) return;

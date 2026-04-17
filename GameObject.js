@@ -320,7 +320,7 @@
       try {
         const { resetEvent } = event.init(initData) || {};
         if (resetEvent) {
-          event.emit('RESET');
+          event.emit('RESET', resetEvent);
           event = null;
         }
       } catch (error) {
