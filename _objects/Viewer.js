@@ -32,4 +32,9 @@
     if (!this.#eventWithTriggerListener) throw new Error('Событие не найдено');
     return this.#eventWithTriggerListener.emit(handler, data, this);
   }
+  triggerEventEnabled({ ignoreEvents = [] } = {}) {
+    const ignore = ignoreEvents.includes(this.#eventWithTriggerListener?.name);
+    const enabled = this.#eventWithTriggerListener !== null && !ignore;
+    return enabled ? this.#eventWithTriggerListener : false;
+  }
 });

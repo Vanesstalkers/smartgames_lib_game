@@ -80,6 +80,7 @@ export default {
       return this.sessionPlayer();
     },
     chip() {
+      if (this.chipData) return this.chipData;
       if (!this.chipId) return {};
       return this.store.chip?.[this.chipId] || {};
     },
@@ -127,10 +128,13 @@ export default {
       };
     },
     selectable() {
-      return this.sessionPlayerIsActive() && this.player.eventData.chip?.[this.chipId]?.selectable;
+      return (
+        this.sessionPlayerIsActive() &&
+        (this.player.eventData.chip?.[this.chipId]?.selectable || (this.chip._id === 'fake' && this.chip.selectable))
+      );
     },
     disabled() {
-      return this.chip?.disabled || this.sessionPlayer().eventData.playDisabled;
+      return this.chip?.disabled || (this.sessionPlayer().eventData.playDisabled && !this.chip.eventData?.playEnabled);
     },
   },
   methods: {
