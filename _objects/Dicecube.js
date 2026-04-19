@@ -13,5 +13,6 @@
   roll() {
     const value = 1 + Math.floor(Math.random() * 6);
     this.set({ value, lastRollTime: Date.now() });
+    return this;
   }
 });

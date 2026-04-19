@@ -289,13 +289,7 @@
           : this.roundActivePlayer();
 
         if (player) {
-          let playerName = player.userName;
-
-          if (!playerName && player.userId) {
-            const user = lib.store('user').get(player.userId);
-            if (user) playerName = user.getName?.() ?? user.login ?? user.name;
-          }
-
+          let playerName = player.getUserName();
           if (playerName) {
             data.msg = data.msg.replace(/{{player}}/g, `<player>${playerName}</player>`);
           }
@@ -544,7 +538,8 @@
         const initiator = viewer?.gameMaster ? viewer : this.getPlayerByUserId(userId) || this.roundActivePlayer();
         if (!initiator) throw new Error('initiator not found');
 
-        if (initiator.gameMaster !== true) { // initiator-ом может быть game, у которого есть метод gameMaster
+        if (initiator.gameMaster !== true) {
+          // initiator-ом может быть game, у которого есть метод gameMaster
           const activePlayers = this.getActivePlayers();
           const { disableActivePlayerCheck, disableActionsDisabledCheck } = initiator.eventData;
           if (!activePlayers.includes(initiator) && eventName !== 'leaveGame' && !disableActivePlayerCheck)

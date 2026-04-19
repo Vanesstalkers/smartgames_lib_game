@@ -92,6 +92,16 @@
       config,
     });
   }
+  getUserName() {
+    let name = this.userName;
+
+    if (!name && this.userId) {
+      const user = lib.store('user').get(this.userId);
+      if (user) name = user.getName?.() ?? user.login ?? user.name;
+    }
+
+    return name;
+  }
 
   setEventWithTriggerListener(event) {
     if (this.#eventWithTriggerListener) throw new Error('Предыдущее событие не завершено');

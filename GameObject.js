@@ -345,7 +345,8 @@
     this.set({ eventData: { activeEvents } });
   }
   removeEvent(event) {
-    const activeEvents = this.eventData.activeEvents.filter((activeEvent) => {
+    // this.eventData.activeEvents может не быть, если произошел destroy события при resetEvent в init
+    const activeEvents = (this.eventData.activeEvents || []).filter((activeEvent) => {
       return activeEvent !== event;
     });
     this.set({ eventData: { activeEvents } });
