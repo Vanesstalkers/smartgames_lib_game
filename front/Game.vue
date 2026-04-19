@@ -60,9 +60,14 @@
       </div>
     </div>
 
-    <div v-if="state.shownCard?.code" class="shown-card scroll-off" v-on:click.stop="closeCardInfo">
+    <div
+      v-if="state.shownCard?.code"
+      :class="['shown-card', 'scroll-off', 'group-' + state.shownCard.group]"
+      v-on:click.stop="closeCardInfo"
+    >
       <div class="close" v-on:click.stop="closeCardInfo" />
       <div class="img" :style="state.shownCard.style" />
+      {{ state.shownCard }}
     </div>
 
     <div

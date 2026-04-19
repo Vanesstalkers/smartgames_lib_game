@@ -14,12 +14,29 @@
     this.set({ value: initialValue, sectors, subtype, eventData, lastRollTime, settings });
   }
 
-  spin({ toValue = null } = {}) {
-    const value = toValue || this.sectors[Math.floor(Math.random() * this.sectors.length)];
+  spin({ toValue = null, skipValues = [] } = {}) {
+    const sectors = Array.isArray(this.sectors) ? this.sectors : [];
+    const sectorsLength = sectors.length;
+    const blockedValues = new Set((skipValues || []).map((v) => String(v)));
+    let skipped = [];
+
+    let value = toValue || sectors[Math.floor(Math.random() * sectorsLength)];
+    if (!toValue && sectorsLength && blockedValues.size) {
+      let idx = sectors.indexOf(value);
+      if (idx < 0) idx = 0;
+      while (blockedValues.has(String(sectors[idx])) && skipped.length < sectorsLength) {
+        skipped.push(sectors[idx]);
+        idx = (idx + 1) % sectorsLength;
+      }
+      value = sectors[idx];
+    }
+
     this.set({
       value,
       lastRollTime: Date.now(),
       eventData: { toValue: toValue ? Date.now() + Math.random() : null },
     });
+
+    return { skipped };
   }
 });

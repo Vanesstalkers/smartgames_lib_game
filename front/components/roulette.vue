@@ -171,6 +171,11 @@ export default {
     hasEmbargoAction() {
       return Boolean(this.roulette?.eventData?.embargoAction);
     },
+    embargoActionSteps() {
+      const raw = Number(this.roulette?.eventData?.embargoAction);
+      if (!Number.isFinite(raw)) return 0;
+      return Math.max(0, Math.trunc(raw));
+    },
     /** Задан целевой сектор на сервере (`spin({ toValue })`); в `eventData.toValue` — маркер, в `value` — итог. */
     hasPredeterminedToValue() {
       return this.roulette?.eventData?.toValue != null;
@@ -312,7 +317,7 @@ export default {
         }
         if (newTime == null || newTime === oldTime) return;
         const finalIndex = this.hasEmbargoAction
-          ? this.getPrevSectorIndex(this.targetSectorIndex)
+          ? this.getPrevSectorIndex(this.targetSectorIndex, this.embargoActionSteps)
           : this.targetSectorIndex;
         if (this.hasPredeterminedToValue) {
           this.clearStopSlotRevealTimeout();
@@ -320,14 +325,12 @@ export default {
           this.stopSpinAnimation();
           this.displaySector = finalIndex;
           if (this.hasEmbargoAction) {
-            this.embargoForwardTimeoutId = setTimeout(() => {
-              this.embargoForwardTimeoutId = null;
-              this.moveOneSectorForward();
+            this.runEmbargoForwardMoves(this.embargoActionSteps, () => {
               this.stopSlotRevealTimeoutId = setTimeout(() => {
                 this.stopSlotRevealTimeoutId = null;
                 this.stopSlotUiVisible = true;
               }, WHEEL_TRANSITION_MS + STOP_SLOT_SHOW_DELAY_MS);
-            }, EMBARGO_FORWARD_DELAY_MS);
+            });
           } else {
             this.stopSlotRevealTimeoutId = setTimeout(() => {
               this.stopSlotRevealTimeoutId = null;
@@ -336,7 +339,7 @@ export default {
           }
           return;
         }
-        this.startSpinAnimation(finalIndex, { embargoFinalStep: this.hasEmbargoAction });
+        this.startSpinAnimation(finalIndex, { embargoFinalSteps: this.embargoActionSteps });
       },
       immediate: true,
     },
@@ -378,11 +381,12 @@ export default {
         this.embargoForwardTimeoutId = null;
       }
     },
-    getPrevSectorIndex(index) {
+    getPrevSectorIndex(index, steps = 1) {
       const count = this.sectorCount;
       if (!count) return 0;
       const current = clampSectorIndex(index, count);
-      return (current - 1 + count) % count;
+      const normalizedSteps = Math.max(0, Math.trunc(steps)) % count;
+      return (current - normalizedSteps + count) % count;
     },
     releaseDiceRollDepth() {
       if (!this.rollDepthApplied) return;
@@ -416,7 +420,28 @@ export default {
       const current = clampSectorIndex(this.displaySector, count);
       this.displaySector = (current + 1) % count;
     },
-    startSpinAnimation(finalIndex, { embargoFinalStep = false } = {}) {
+    runEmbargoForwardMoves(steps, onComplete = null) {
+      const totalSteps = Math.max(0, Math.trunc(Number(steps) || 0));
+      if (!totalSteps) {
+        if (typeof onComplete === 'function') onComplete();
+        return;
+      }
+      let passedSteps = 0;
+      const runStep = () => {
+        this.embargoForwardTimeoutId = setTimeout(() => {
+          this.embargoForwardTimeoutId = null;
+          this.moveOneSectorForward();
+          passedSteps += 1;
+          if (passedSteps >= totalSteps) {
+            if (typeof onComplete === 'function') onComplete();
+            return;
+          }
+          runStep();
+        }, passedSteps === 0 ? EMBARGO_FORWARD_DELAY_MS : WHEEL_TRANSITION_MS);
+      };
+      runStep();
+    },
+    startSpinAnimation(finalIndex, { embargoFinalSteps = 0 } = {}) {
       this.stopSpinAnimation();
       this.isSpinning = true;
       this.rollDepthApplied = true;
@@ -445,11 +470,8 @@ export default {
           }
           this.releaseDiceRollDepth();
           this.isSpinning = false;
-          if (embargoFinalStep) {
-            this.embargoForwardTimeoutId = setTimeout(() => {
-              this.embargoForwardTimeoutId = null;
-              this.moveOneSectorForward();
-            }, EMBARGO_FORWARD_DELAY_MS);
+          if (embargoFinalSteps > 0) {
+            this.runEmbargoForwardMoves(embargoFinalSteps);
           }
           return;
         }

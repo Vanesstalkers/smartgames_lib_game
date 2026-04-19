@@ -133,7 +133,12 @@ export default {
       this.gameCustom.selectedCard = this.isSelected ? null : this.cardId;
     },
     showInfo() {
-      this.$set(this.$root.state, 'shownCard', { id: this.cardId, code: this.card.name, style: this.getCustomStyle });
+      this.$set(this.$root.state, 'shownCard', {
+        id: this.cardId,
+        code: this.card.name,
+        group: this.card.group,
+        style: this.getCustomStyle,
+      });
     },
   },
   mounted() {},
