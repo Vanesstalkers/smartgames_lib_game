@@ -77,15 +77,19 @@
       source: val,
       config: { deleteNull: true, ...config }, // удаляем ключи с null-значением
     });
+
+    return this;
   }
   prepareChanges(val) {
     return { store: { [this._col]: { [this._id]: val } } };
   }
   markNew(config) {
     this.game().markNew(this, config);
+    return this;
   }
   markDelete(config) {
     this.game().markDelete(this, config);
+    return this;
   }
   delete() {
     this.deleteFromParentsObjectStorage();
@@ -280,7 +284,7 @@
     if (typeof eventData === 'string') {
       const eventName = eventData;
       eventData = this.getEvent(eventName);
-      eventData.name = eventName;
+      if(eventData) eventData.code = eventName;
     }
     if (!eventData) throw new Error(`event not found (event=${eventName})`);
 
@@ -335,7 +339,9 @@
   findEvent(attr = {}) {
     return this.eventData.activeEvents.find((event) => {
       const attrEntries = Object.entries(attr);
-      const checkResult = attrEntries.filter(([key, val]) => event[key] === val);
+      const checkResult = attrEntries.filter(([key, val]) => {
+        return key === 'code' ? event.code() === val : event[key] === val;
+      });
       return checkResult.length == attrEntries.length;
     });
   }
@@ -356,6 +362,6 @@
    * @returns {boolean} true если есть активное событие замены костяшек
    */
   hasDiceReplacementEvent() {
-    return this.eventData.activeEvents.some((event) => event.name === 'diceReplacementEvent');
+    return this.eventData.activeEvents.some((event) => event.code() === 'diceReplacementEvent');
   }
 });

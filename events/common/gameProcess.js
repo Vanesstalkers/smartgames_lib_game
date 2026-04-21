@@ -10,5 +10,8 @@
       game.run('roundEnd', { timerOverdue: true }, initPlayer);
       return { preventListenerRemove: true };
     },
+    RESET() {
+      // защита от дефолтного reset-события с this.destroy()
+    },
   },
 });

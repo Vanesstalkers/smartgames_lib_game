@@ -73,11 +73,13 @@
     this.set({ active: true });
     if (setData) this.set(setData, setDataConfig);
     if (notifyUser) this.notifyUser(notifyUser);
+    return this;
   }
   deactivate({ setData = {}, setDataConfig = {}, notifyUser } = {}) {
     this.set({ active: false, eventData: { actionsDisabled: null } });
     if (setData) this.set(setData, setDataConfig);
     if (notifyUser) this.notifyUser(notifyUser);
+    return this;
   }
 
   async updateUser(data = {}) {
@@ -87,6 +89,7 @@
   }
   notifyUser(data = {}, config = {}) {
     if (typeof data === 'string') data = { message: data };
+    if (!data.message) return;
     lib.store.broadcaster.publishAction.call(this.game(), `user-${this.userId}`, 'broadcastToSessions', {
       data,
       config,
@@ -103,6 +106,10 @@
     return name;
   }
 
+  removeEvent(event) {
+    if (event === this.#eventWithTriggerListener) this.removeEventWithTriggerListener();
+    super.removeEvent(event);
+  }
   setEventWithTriggerListener(event) {
     if (this.#eventWithTriggerListener) throw new Error('Предыдущее событие не завершено');
     if (!event.hasHandler('TRIGGER')) throw new Error('Событие не содержит обработчик TRIGGER');

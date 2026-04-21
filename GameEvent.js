@@ -1,5 +1,5 @@
 (class GameEvent {
-  #name;
+  #code;
   #source;
   #game;
   #player;
@@ -11,17 +11,20 @@
   constructor({ init, handlers, ...data }) {
     this.#init = init;
     this.#handlers = handlers || {};
-    this.#name = data.name;
+    if (data.code) {
+      this.#code = data.code;
+      delete data.code;
+    }
     Object.assign(this, data);
   }
   destroy() {
     const { game, player, source } = this.eventContext();
-    if (player) {
-      player.removeEvent(this); // добавляется в card.play()
-      player.removeEventWithTriggerListener();
-    }
+    if (player) player.removeEvent(this); // добавляется в card.play()
     source.removeEvent(this);
     game.removeAllEventListeners({ event: this });
+  }
+  code() {
+    return this.#code;
   }
   source(data) {
     if (data) this.#source = data;
