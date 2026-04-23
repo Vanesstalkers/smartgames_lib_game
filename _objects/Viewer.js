@@ -17,6 +17,10 @@
     });
   }
 
+  removeEvent(event) {
+    if (event === this.#eventWithTriggerListener) this.removeEventWithTriggerListener();
+    super.removeEvent(event);
+  }
   setEventWithTriggerListener(event) {
     if (this.#eventWithTriggerListener) throw new Error('Предыдущее событие не завершено');
     if (!event.hasHandler('TRIGGER')) throw new Error('Событие не содержит обработчик TRIGGER');
