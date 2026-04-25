@@ -683,7 +683,7 @@
       await this.broadcastData({ logs: this.logs() });
       lib.timers.timerDelete(this);
       this.removeStore();
-      this.removeChannel();
+      await this.removeChannel();
       lib.game.flush.list.push(this);
       await db.mongo.deleteOne(this.col(), { _id: this.id() });
       if (!preventDeleteDumps) {
