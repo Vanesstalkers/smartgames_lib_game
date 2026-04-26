@@ -171,6 +171,6 @@
     }
 
     getTutorial(formattedPath) {
-      return lib.helper.getTutorial(formattedPath);
+      return lib.helper.getTutorial(formattedPath.replace(`${config.smartgames.appCode}-`, ''));
     }
   };

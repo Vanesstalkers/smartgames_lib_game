@@ -20,7 +20,10 @@
 
     <GUIWrapper
       :pos="['top', 'left']"
-      :offset="{ top: 20, left: state.isMobile ? 60 : [60, 80, 110, 130, 160, 190][state.guiScale] }"
+      :offset="{
+        top: [20, 20, 30, 50, 60][state.guiScale - 1],
+        left: state.isMobile ? 60 : [80, 90, 130, 160, 190][state.guiScale - 1],
+      }"
       :contentClass="['gui-small']"
       :wrapperStyle="{ zIndex: 5 }"
     >
@@ -41,7 +44,7 @@
       </div>
     </GUIWrapper>
 
-    <div :class="['chat-content', 'scroll-off', showChat ? 'visible' : '']">
+    <div :class="['chat-content', 'scroll-off', showChat ? 'visible' : '', 'scale-' + state.guiScale]">
       <slot name="chat" :isVisible="showChat" :hasUnreadMessages="hasUnreadMessages">
         <chat
           :defActiveChannel="`game-${gameState.gameId}`"
@@ -53,7 +56,7 @@
       </slot>
     </div>
 
-    <div v-if="showLog" class="log-content scroll-off">
+    <div v-if="showLog" :class="['log-content', 'scroll-off', 'scale-' + state.guiScale]">
       <div v-for="[id, logItem] in logItems()" :key="id" class="log-item">
         <span class="time">[ {{ new Date(logItem.time).toTimeString().split(' ')[0] }} ]</span> ::
         <span v-html="logItem.msg" />
@@ -260,7 +263,7 @@ export default {
       const fillTutorials = tutorials({
         showList: [
           { title: 'Стартовое приветствие игры', action: { tutorial: 'game-tutorial-start' } },
-          { title: 'Управление игровым полем', action: { tutorial: 'game-tutorial-gamePlane' } },
+          { title: 'Управление игровым полем', action: { tutorial: 'game-tutorial-gameControls' } },
         ],
       });
 
@@ -661,6 +664,12 @@ export default {
 
 #game .tutorial-active {
   box-shadow: 0 0 20px 20px #f4e205;
+  animation: tutorial-blink 2s ease-in-out infinite;
+  @keyframes tutorial-blink {
+    50% {
+      box-shadow: none;
+    }
+  }
 }
 
 .gui-btn {
@@ -717,7 +726,7 @@ export default {
   left: 40px;
   top: 60px;
   width: 300px;
-  height: calc(100% - 100px);
+  height: calc(100% - 110px);
   margin: 30px;
   background-image: url(@/assets/clear-black-back.png);
   border: 2px solid #f4e205;
@@ -726,6 +735,42 @@ export default {
 
   &.visible {
     display: block;
+  }
+
+  &.scale-2 {
+    left: 60px;
+    top: 70px;
+    height: calc(100% - 120px);
+  }
+  &.scale-3 {
+    left: 100px;
+    top: 110px;
+    width: 500px;
+    height: calc(100% - 170px);
+    font-size: 20px;
+    .msg-list {
+      font-size: 22px;
+    }
+  }
+  &.scale-4 {
+    left: 140px;
+    top: 140px;
+    width: 500px;
+    height: calc(100% - 210px);
+    font-size: 26px;
+    .msg-list {
+      font-size: 32px;
+    }
+  }
+  &.scale-5 {
+    left: 190px;
+    top: 180px;
+    width: 700px;
+    height: calc(100% - 260px);
+    font-size: 40px;
+    .msg-list {
+      font-size: 48px;
+    }
   }
 }
 
@@ -741,13 +786,51 @@ export default {
   top: 60px;
   z-index: 2 !important;
   width: calc(100% - 100px);
-  height: calc(100% - 100px);
+  height: calc(100% - 110px);
   margin: 30px;
   box-shadow: inset 0px 0px 2px 2px #f4e205;
   background-image: url(@/assets/clear-black-back.png);
   color: #f4e205;
   overflow: auto;
   text-align: left;
+
+  &.scale-2 {
+    left: 60px;
+    top: 70px;
+    height: calc(100% - 120px);
+    width: calc(100% - 120px);
+    font-size: 16px;
+  }
+  &.scale-3 {
+    left: 100px;
+    top: 90px;
+    width: calc(100% - 160px);
+    height: calc(100% - 150px);
+    font-size: 20px;
+    > .log-item {
+      line-height: 28px;
+    }
+  }
+  &.scale-4 {
+    left: 130px;
+    top: 120px;
+    width: calc(100% - 200px);
+    height: calc(100% - 180px);
+    font-size: 30px;
+    > .log-item {
+      line-height: 40px;
+    }
+  }
+  &.scale-5 {
+    left: 160px;
+    top: 150px;
+    width: calc(100% - 230px);
+    height: calc(100% - 210px);
+    font-size: 40px;
+    > .log-item {
+      line-height: 50px;
+    }
+  }
 
   .log-item {
     padding: 10px;
