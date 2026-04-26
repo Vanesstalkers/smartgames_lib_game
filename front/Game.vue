@@ -440,13 +440,16 @@ export default {
     };
     window.addEventListener('keydown', this.escKeyHandler);
 
-    // Настраиваем отслеживание изменений window.innerWidth
-    this.$nextTick(() => {
-      this.resizeObserver = () => window.innerWidth > 0 && setTimeout(this.updatePlaneScale, 100);
-      window.addEventListener('resize', this.resizeObserver);
+    this.resizeObserver = () => window.innerWidth > 0 && setTimeout(()=>this.updatePlaneScale(), 100);
+    window.addEventListener('resize', this.resizeObserver);
 
-      this.resizeObserver();
-    });
+    // Настраиваем отслеживание изменений window.innerWidth
+    const updatePlaneScale = () => {
+      if(this.$el instanceof HTMLElement) this.updatePlaneScale();
+      else setTimeout(updatePlaneScale, 100);
+    }
+    updatePlaneScale();
+    
 
     if (this.state.currentLobby && this.state.currentUser) {
       this.callGameEnter();
