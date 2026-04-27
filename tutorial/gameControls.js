@@ -1,7 +1,14 @@
 ({
   steps: {
-    planeControlsMouseLeft: {
+    helperZoom: {
       initialStep: true,
+      text: `
+        При наведении на иконку помощника можно начать увеличить или уменьшать масштаб диалогового окна
+      `,
+      img: '/img/tutorial/helper_zoom.png',
+      buttons: [{ text: 'Продолжай', step: 'planeControlsMouseLeft' }],
+    },
+    planeControlsMouseLeft: {
       text: `
         При зажатой левой кнопке мыши можно перемещать игровое поле.
       `,

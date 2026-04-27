@@ -263,7 +263,7 @@ export default {
       const fillTutorials = tutorials({
         showList: [
           { title: 'Стартовое приветствие игры', action: { tutorial: 'game-tutorial-start' } },
-          { title: 'Управление игровым полем', action: { tutorial: 'game-tutorial-gameControls' } },
+          { title: 'Игровой интерфейс и элементы управления', action: { tutorial: 'game-tutorial-gameControls' } },
         ],
       });
 
