@@ -529,13 +529,16 @@
         }
 
         // !!! защитить методы, которые не должны вызываться с фронта
+        let result;
         if (this[eventName]) {
-          this[eventName](eventData, player);
+          result = this[eventName](eventData, player);
         } else {
-          this.run(eventName, eventData, player);
+          result = this.run(eventName, eventData, player);
         }
 
         await this.saveChanges();
+
+        return result;
       } catch (exception) {
         if (exception instanceof lib.game.endGameException) {
           await this.removeGame();

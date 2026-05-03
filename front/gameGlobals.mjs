@@ -27,6 +27,7 @@ function prepareGameGlobals({ gameCustomArgs = {}, defaultDeviceOffset = 500 } =
 
   async function handleGameApi(data, { onSuccess, onError } = {}) {
     if (!onError) onError = window.prettyAlert;
+    console.log('handleGameApi', data);
     return await api.action
       .call({ path: 'game.api.action', args: [data] })
       .then(onSuccess)

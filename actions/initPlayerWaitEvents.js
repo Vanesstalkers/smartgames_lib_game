@@ -67,20 +67,26 @@
               game.run('initPrepareGameEvents');
             } catch (err) {
               // может не быть обработчика
+              
+              // game.selectNextActivePlayer();
+
+              // const time = game.settings.timer;
+              // if (time) lib.timers.timerRestart(game, { time });
+
               game.run('startGame');
             }
           }
 
-          if (this.data.readyPlayers.length === game.maxPlayersInGame) {
-            for (const player of game.players({ readyOnly: false })) {
-              if (!player.ready) {
-                player.deactivate({
-                  notifyUser: 'Игра началась без тебя. Для более удобного просмотра перейди в режим наблюдателя.',
-                  setData: { eventData: { controlBtn: { leaveGame: true } } },
-                });
-              }
-            }
-          }
+          // if (this.data.readyPlayers.length === game.maxPlayersInGame) {
+          //   for (const player of game.players({ readyOnly: false })) {
+          //     if (!player.ready) {
+          //       player.deactivate({
+          //         notifyUser: 'Игра началась без тебя. Для более удобного просмотра перейди в режим наблюдателя.',
+          //         setData: { eventData: { controlBtn: { leaveGame: true } } },
+          //       });
+          //     }
+          //   }
+          // }
         },
         RESET() {
           const { game } = this.eventContext();

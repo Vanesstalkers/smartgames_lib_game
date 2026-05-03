@@ -15,6 +15,8 @@ async (
 ) => {
   lib.game.flush.exec();
 
+  gameTimer *= 1000;
+
   const { sessionId, userId } = context.session.state;
   const session = lib.store('session').get(sessionId);
   const user = session.user();

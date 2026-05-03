@@ -10,7 +10,7 @@ async (context, actionData) => {
     throw new Error('Действие невозможно, так как игра еще не восстановлена');
   }
 
-  await game.handleAction({ ...actionData, sessionUserId: session.userId });
+  const result = await game.handleAction({ ...actionData, sessionUserId: session.userId });
 
-  return { status: 'ok' };
+  return { status: 'ok', result };
 };

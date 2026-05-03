@@ -342,6 +342,6 @@
    * @returns {boolean} true если есть активное событие замены костяшек
    */
   hasDiceReplacementEvent() {
-    return this.eventData.activeEvents.some((event) => event.name === 'diceReplacementEvent');
+    return this.eventData.activeEvents.some((event) => event.code() === 'diceReplacementEvent');
   }
 });
